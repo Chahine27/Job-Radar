@@ -8,4 +8,5 @@ export * from "./careers/ats";
 export * from "./careers/source";
 export * from "./labonneboite";
 export * from "./jooble";
+export * from "./romeo";
 export * from "./recherche-entreprises";

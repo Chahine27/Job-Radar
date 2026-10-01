@@ -9,6 +9,7 @@ import {
   type JobSource,
   type JoobleQuotaStore,
   LaBonneBoiteClient,
+  RomeoClient,
 } from "@job-radar/source-connectors";
 import { REQUIRED_KEYS, type SettingKey, type SettingService, isSecretKey, maskSecret } from "./settings-keys";
 
@@ -139,15 +140,12 @@ async function runTest(
         }
         return { ok: false, message: `France Travail : ${offers.message}` };
       }
-      try {
-        await new LaBonneBoiteClient(creds).healthCheck();
-        return { ok: true, message: "France Travail répond : offres d'emploi OK et La Bonne Boîte OK." };
-      } catch {
-        return {
-          ok: true,
-          message: "Offres d'emploi OK. La Bonne Boîte refusée : ajoute l'API « La Bonne Boîte » à ton application pour la page Entreprises.",
-        };
-      }
+      // Les deux autres API sont facultatives : on dit seulement ce qui manque.
+      const missing: string[] = [];
+      await new LaBonneBoiteClient(creds).healthCheck().catch(() => missing.push("« La bonne boîte V2 » (page Entreprises)"));
+      await new RomeoClient(creds).healthCheck().catch(() => missing.push("« ROMEO » (codes métier)"));
+      if (missing.length === 0) return { ok: true, message: "France Travail répond : offres d'emploi, La Bonne Boîte et ROMEO OK." };
+      return { ok: true, message: `Offres d'emploi OK. À ajouter à ton application sur francetravail.io : ${missing.join(", ")}.` };
     }
     case "adzuna": {
       const health = await new AdzunaSource({ appId: v("ADZUNA_APP_ID"), appKey: v("ADZUNA_APP_KEY"), ...fetchOpt }).healthCheck();

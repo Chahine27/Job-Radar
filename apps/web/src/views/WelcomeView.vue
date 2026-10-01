@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { departmentFromPostalCode, departmentName } from "@job-radar/shared/geo";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
 import TagInput from "../components/TagInput.vue";
 import { currentEmail, hasAccount, needsSetup } from "../session";
-import type { CvProposal, SetupForm } from "../types";
+import type { CvProposal, RomeJob, RomeSuggestion, SetupForm } from "../types";
 
 /**
  * Premier lancement, en 3 étapes :
@@ -144,6 +144,7 @@ const form = ref<SetupForm>({
   yearsOfExperience: null,
   contracts: ["CDI", "CDD"],
   salaryTarget: null,
+  romes: [],
 });
 const job = ref<string | null>(null);
 
@@ -164,10 +165,55 @@ function fillFrom(p: CvProposal) {
   };
   job.value = p.job;
   step.value = "review";
+  void proposeRomes();
 }
 function fillByHand() {
   step.value = "review";
 }
+
+// Codes métier (ROME) pour les candidatures spontanées : proposés, puis modifiables (5 au plus).
+const MAX_ROMES = 5;
+const romeJobs = ref<RomeJob[]>([]);
+const romeSource = ref<RomeSuggestion["source"] | null>(null);
+const romeBusy = ref(false);
+const romeQuery = ref("");
+const romeResults = ref<RomeJob[]>([]);
+const ROME_SOURCES: Record<RomeSuggestion["source"], string> = {
+  "france-travail": "Proposés par France Travail à partir de tes métiers.",
+  ia: "Proposés par l'IA de ton PC, choisis dans la liste officielle de France Travail.",
+  liste: "Trouvés dans la liste officielle de France Travail.",
+  aucune: "Aucun code trouvé automatiquement : cherche ton métier ci-dessous.",
+};
+
+async function proposeRomes() {
+  if (form.value.searches.length === 0) return;
+  romeBusy.value = true;
+  try {
+    const res = await api.suggestRomes(form.value.searches);
+    romeJobs.value = res.items.slice(0, MAX_ROMES);
+    romeSource.value = res.source;
+  } catch {
+    romeSource.value = "aucune";
+  } finally {
+    romeBusy.value = false;
+  }
+}
+function addRome(j: RomeJob) {
+  if (romeJobs.value.length < MAX_ROMES && !romeJobs.value.some((x) => x.code === j.code)) romeJobs.value = [...romeJobs.value, j];
+  romeQuery.value = "";
+  romeResults.value = [];
+}
+function removeRome(code: string) {
+  romeJobs.value = romeJobs.value.filter((x) => x.code !== code);
+}
+let romeTimer: ReturnType<typeof setTimeout> | undefined;
+watch(romeQuery, (q) => {
+  clearTimeout(romeTimer);
+  if (q.trim().length < 2) return void (romeResults.value = []);
+  romeTimer = setTimeout(async () => {
+    romeResults.value = (await api.searchRome(q).catch(() => ({ items: [] }))).items;
+  }, 250);
+});
 
 const department = computed(() => departmentFromPostalCode(form.value.postalCode) ?? form.value.department);
 const departmentLabel = computed(() => (department.value ? departmentName(department.value) : null));
@@ -218,6 +264,7 @@ async function finish() {
       postalCode: pc,
       department: department.value,
       mastered: form.value.mastered.filter((m) => form.value.skills.includes(m)),
+      romes: romeJobs.value.map((j) => j.code),
     });
     needsSetup.value = false;
     // Dernier écran : proposer d'ajouter les clés des sources d'offres (page Réglages).
@@ -333,6 +380,40 @@ async function finish() {
         </section>
 
         <section class="card stack pad">
+          <h3><Icon name="building" :size="16" />Codes métier (candidatures spontanées)</h3>
+          <p class="muted small">
+            Ils servent à trouver les entreprises qui recrutent près de chez toi (page « Entreprises »). 5 au plus, retire ceux qui ne
+            correspondent pas.
+          </p>
+          <p v-if="romeBusy" class="muted small"><Icon name="sparkle" :size="14" /> Recherche des codes métier…</p>
+          <template v-else>
+            <p v-if="romeSource" class="muted small">{{ ROME_SOURCES[romeSource] }}</p>
+            <div class="row">
+              <span v-for="j in romeJobs" :key="j.code" class="chip accent">
+                {{ j.label }} · {{ j.code }}
+                <button type="button" :aria-label="`Retirer ${j.label}`" @click="removeRome(j.code)">×</button>
+              </span>
+            </div>
+          </template>
+          <div class="rome-add">
+            <input
+              v-model="romeQuery"
+              :disabled="romeJobs.length >= MAX_ROMES"
+              :placeholder="romeJobs.length >= MAX_ROMES ? '5 codes au maximum' : 'Ajouter un métier (ex. aide-soignant)'"
+              aria-label="Chercher un métier dans la liste officielle"
+            />
+            <ul v-if="romeResults.length" class="rome-results">
+              <li v-for="r in romeResults" :key="r.code">
+                <button type="button" @click="addRome(r)">{{ r.label }} <span class="muted">· {{ r.code }}</span></button>
+              </li>
+            </ul>
+          </div>
+          <button type="button" class="ghost small" style="justify-self: start" :disabled="romeBusy || form.searches.length === 0" @click="proposeRomes">
+            <Icon name="refresh" :size="14" />Reproposer à partir des métiers à rechercher
+          </button>
+        </section>
+
+        <section class="card stack pad">
           <h3><Icon name="star" :size="16" />Compétences et outils</h3>
           <p class="muted small">Logiciels, techniques, gestes métier, langues, permis… Clique sur l'étoile des compétences que tu maîtrises vraiment (8 au plus) : les lettres les mettront en avant.</p>
           <div class="row">
@@ -422,6 +503,10 @@ async function finish() {
 .card p { margin: 0; }
 .center { justify-items: center; text-align: center; }
 .row.center { justify-content: center; }
+.rome-add { display: grid; gap: 0.3rem; }
+.rome-results { list-style: none; margin: 0; padding: 0.25rem; border: 1px solid var(--border); border-radius: 10px; display: grid; }
+.rome-results button { width: 100%; text-align: left; border: none; background: none; box-shadow: none; padding: 0.45rem 0.6rem; border-radius: 8px; }
+.rome-results button:hover { background: var(--accent-soft); }
 .steps { list-style: none; display: flex; justify-content: center; gap: 1.2rem; padding: 0; margin: 0; flex-wrap: wrap; }
 .steps li { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.9rem; }
 .steps li.now { color: var(--accent); font-weight: 600; }

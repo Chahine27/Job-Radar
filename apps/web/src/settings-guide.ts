@@ -25,12 +25,12 @@ export const SETTING_CARDS: SettingCard[] = [
   {
     id: "france-travail",
     title: "France Travail",
-    purpose: "Les offres de France Travail et de ses partenaires, et la page « Entreprises » (La Bonne Boîte). Gratuit.",
+    purpose: "Les offres de France Travail et de ses partenaires, la page « Entreprises » (La Bonne Boîte) et les codes métier (ROMEO). Gratuit.",
     link: { href: "https://francetravail.io/produits-partages/catalogue", label: "francetravail.io — catalogue d'API" },
     steps: [
       "Crée un compte gratuit sur francetravail.io, puis connecte-toi.",
       "Dans ton espace, crée une application (nom au choix, par exemple « Ma recherche d'emploi »).",
-      "Ajoute à cette application les API « Offres d'emploi » et « La bonne boîte V2 » (dans le catalogue d'API).",
+      "Ajoute à cette application les API « Offres d'emploi », « La bonne boîte V2 » et « ROMEO » (dans le catalogue d'API).",
       "Copie l'identifiant client et la clé secrète de l'application, colle-les ci-dessous, puis Enregistrer et Tester.",
     ],
     fields: [

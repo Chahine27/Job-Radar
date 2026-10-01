@@ -15,7 +15,11 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
    - Crée ton compte (email + mot de passe de 12 caractères minimum). Il protège seulement ton espace sur ce PC.
    - Dépose ton CV (PDF, Word .docx ou texte). Un CV scanné (image) ne contient pas de texte : colle alors son texte.
    - L'IA locale lit ton CV (30 s à 2 min) et propose : métiers à rechercher, compétences, ville, années d'expérience, contrats.
+   - **Codes métier** : Job Radar propose jusqu'à 5 métiers de la liste officielle de France Travail (avec leur code, ex. « Aide-soignant · J1501 »).
+     Ils servent à la page « Entreprises » (candidatures spontanées). Retire ceux qui ne vont pas, ou cherches-en un autre.
+     Avec les clés France Travail (API ROMEO), la proposition vient de France Travail ; sinon l'IA de ton PC choisit dans la liste officielle.
    - Corrige ce qui ne va pas, clique sur l'étoile des compétences que tu maîtrises vraiment, puis « C'est bon, lancer la recherche ».
+     La zone des candidatures spontanées est mise sur la ville de ton CV (30 km, modifiable ensuite).
    - Si Ollama ne répond pas : ouvre l'appli Ollama puis « Réessayer », ou « Remplir à la main ».
    - Le dernier écran propose d'aller dans **Réglages** pour ajouter les clés des sites d'offres.
    Tout reste modifiable ensuite dans « Profil » et « CV & lettre ».

@@ -14,6 +14,8 @@ import type { Mailer, Notifier } from "@job-radar/notifications";
 import { jobRoutes } from "./routes/jobs";
 import { type Geocoder, profileRoutes } from "./routes/profile";
 import { prefsRoutes } from "./routes/prefs";
+import { romeRoutes } from "./routes/rome";
+import type { RomeSuggestDeps } from "./rome-suggest";
 import { type SettingsService, settingsRoutes } from "./routes/settings";
 import { setupRoutes } from "./routes/setup";
 import type { Stores } from "./stores";
@@ -45,6 +47,8 @@ export type AppOptions = {
   mailer?: Mailer;
   /** Page « Réglages » : clés de .env et tests des services. Absent → routes non exposées. */
   settings?: SettingsService;
+  /** Propositions de codes métier ROME (ROMEO, IA locale). Absent → recherche dans la liste officielle seule. */
+  rome?: RomeSuggestDeps;
 };
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -109,6 +113,7 @@ export async function buildApp(opts: AppOptions) {
     ...(opts.findAddress ? { findAddress: opts.findAddress } : {}),
     ...(opts.companiesConfigured ? { companiesConfigured: opts.companiesConfigured } : {}),
   });
+  await app.register(romeRoutes, { deps: opts.rome ?? {} });
   if (opts.settings) await app.register(settingsRoutes, { settings: opts.settings });
   await app.register(sourceRoutes, { stores: opts.stores, configured: opts.sourcesConfigured ?? {}, quotas: opts.sourceQuotas });
   await app.register(notificationRoutes, {

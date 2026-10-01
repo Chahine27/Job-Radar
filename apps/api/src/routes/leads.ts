@@ -1,6 +1,7 @@
 import type { LbbCompany, LbbSearch } from "@job-radar/source-connectors";
 import type { FastifyInstance } from "fastify";
 import { ProfileSchema } from "@job-radar/shared";
+import { romeSearchCodes } from "@job-radar/shared/rome";
 import { z } from "zod";
 import { requireAuth } from "../auth";
 import { LEAD_STATUSES, type LeadInput, type LeadRow, type Stores } from "../stores";
@@ -140,7 +141,8 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
       const around = place ? `${distanceKm} km autour de ${place.label}` : `départements ${depts.join(", ")}`;
       try {
         const companies = await opts.searchCompanies({
-          romes,
+          // Chaque code et sa fiche « parente » du ROME : La Bonne Boîte trouve ainsi les deux niveaux.
+          romes: romeSearchCodes(romes),
           maxResults: 100,
           ...(place ? { point: { lat: place.lat, lng: place.lng, distanceKm } } : { departments: depts }),
         });

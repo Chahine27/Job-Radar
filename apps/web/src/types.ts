@@ -268,7 +268,13 @@ export type SetupForm = {
   yearsOfExperience: number | null;
   contracts: string[];
   salaryTarget: number | null;
+  /** Codes métier ROME (candidatures spontanées), 5 au plus. */
+  romes: string[];
 };
+
+/** Métier de la liste officielle ROME (France Travail). */
+export type RomeJob = { code: string; label: string };
+export type RomeSuggestion = { items: RomeJob[]; source: "france-travail" | "ia" | "liste" | "aucune" };
 
 /** Page « Réglages » : état des clés (jamais une clé secrète en entier). */
 export type SettingKeyState = { filled: boolean; secret: boolean; display: string };

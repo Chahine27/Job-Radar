@@ -78,7 +78,13 @@ describe("bouton Tester", () => {
       String(init?.body).includes("labonneboite") ? json({ error: "invalid_scope" }, 400) : json({ access_token: "t", expires_in: 1499 });
     const r = await testService("france-travail", { FRANCE_TRAVAIL_CLIENT_ID: "PAR_x_123456", FRANCE_TRAVAIL_CLIENT_SECRET: "s3cr3t-0123456789" }, { ...deps, fetch });
     expect(r.ok).toBe(true);
-    expect(r.message).toContain("La Bonne Boîte refusée");
+    expect(r.message).toBe("Offres d'emploi OK. À ajouter à ton application sur francetravail.io : « La bonne boîte V2 » (page Entreprises).");
+  });
+
+  it("France Travail : les trois API répondent", async () => {
+    const fetch = async () => json({ access_token: "t", expires_in: 1499 });
+    const r = await testService("france-travail", { FRANCE_TRAVAIL_CLIENT_ID: "PAR_x_123456", FRANCE_TRAVAIL_CLIENT_SECRET: "s3cr3t-0123456789" }, { ...deps, fetch });
+    expect(r).toEqual({ ok: true, message: "France Travail répond : offres d'emploi, La Bonne Boîte et ROMEO OK." });
   });
 
   it("Jooble : un appel réel, compté dans le quota", async () => {

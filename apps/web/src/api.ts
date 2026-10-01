@@ -1,4 +1,4 @@
-import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState } from "./types";
+import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -58,6 +58,9 @@ export const api = {
     request<{ text: string; chars: number }>("POST", "/api/setup/cv-file", { fileName, data }),
   readCv: () => request<{ proposal: CvProposal; model: string; durationMs: number }>("POST", "/api/setup/read-cv"),
   finishSetup: (body: SetupForm) => request<ProfileRecord>("POST", "/api/setup/finish", body),
+  // Codes métier ROME : propositions (France Travail ou IA locale) et recherche dans la liste officielle.
+  suggestRomes: (searches: string[]) => request<RomeSuggestion>("POST", "/api/rome/suggest", { searches }),
+  searchRome: (q: string) => request<{ items: RomeJob[] }>("GET", `/api/rome/search?q=${encodeURIComponent(q)}`),
 
   // Réglages : clés des services (écrites dans .env par le serveur).
   settingsKeys: () => request<SettingsState>("GET", "/api/settings/keys"),

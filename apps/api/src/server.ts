@@ -1,4 +1,4 @@
-import { OllamaClient, analyzeJobWithAi, readCvWithAi, readJobWithAi, writeCoverLetter } from "@job-radar/ai";
+import { OllamaClient, analyzeJobWithAi, pickRomeWithAi, readCvWithAi, readJobWithAi, writeCoverLetter } from "@job-radar/ai";
 import { createPrismaClient } from "@job-radar/db";
 import {
   createEmailNotifier,
@@ -19,6 +19,7 @@ import {
   JOOBLE_DEFAULTS,
   JoobleSource,
   LaBonneBoiteClient,
+  RomeoClient,
   RechercheEntreprisesClient,
 } from "@job-radar/source-connectors";
 import { buildApp } from "./app";
@@ -61,6 +62,7 @@ function buildKeyed() {
     jooble: new JoobleSource({ apiKey: joobleKey, quota: joobleQuota }),
     joobleQuota,
     lbb: new LaBonneBoiteClient(ftCreds),
+    romeo: new RomeoClient(ftCreds),
     configured: {
       "france-travail": Boolean(ftCreds.clientId && ftCreds.clientSecret),
       adzuna: Boolean(e.ADZUNA_APP_ID?.trim() && e.ADZUNA_APP_KEY?.trim()),
@@ -190,6 +192,11 @@ const app = await buildApp({
   },
   mailer,
   settings,
+  // Codes métier : ROMEO (France Travail) si les identifiants sont là, sinon l'IA locale choisit dans la liste officielle.
+  rome: {
+    romeo: { isConfigured: () => keyed.romeo.isConfigured(), predict: (titles) => keyed.romeo.predict(titles) },
+    aiPick: (searches, candidates) => pickRomeWithAi(ollama, searches, candidates),
+  },
   appUrl: env.APP_URL,
   secureCookie: env.NODE_ENV === "production",
   logger:

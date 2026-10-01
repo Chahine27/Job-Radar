@@ -41,11 +41,15 @@ Détails et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMENT.md).
 3. ✅ Premier lancement guidé : création du compte, dépôt du CV, profil construit par l'IA puis validé par toi.
 4. ✅ Moteur généraliste : compétences tirées du CV, sans filtre ni pénalité réservés aux métiers de l'informatique.
 5. ✅ Page « Réglages » : clés France Travail, Adzuna, Jooble, Gmail et trajets directement dans le site, avec un bouton Tester, sans redémarrer.
-6. ⏳ Mode d'emploi et tests avec des profils variés.
+6. ✅ Codes métier (ROME) proposés au premier lancement (France Travail ROMEO, ou IA locale contrôlée par la liste officielle) : la page « Entreprises » marche dès le départ.
+7. ⏳ Temps de trajet partout en France.
+8. ⏳ Mode d'emploi et tests avec des profils variés.
 
 ## Données et vie privée
 
 - Ton CV, ton profil, tes lettres et tes candidatures sont stockés **uniquement** dans la base de données de ton PC.
 - L'IA (Ollama) fonctionne **sans internet** : rien n'est envoyé à une IA en ligne.
+- Liste des métiers : Répertoire Opérationnel des Métiers et des Emplois (ROME 4.0) de France Travail, sous Licence Ouverte (Etalab).
+  Pour la mettre à jour : voir `packages/shared/scripts/build-rome.mjs`.
 - Les sites d'offres sont interrogés par leurs **API officielles**. Les sites qui interdisent la collecte automatique ne sont pas
   collectés : pour eux, l'extension te permet d'ajouter une offre que tu consultes toi-même.

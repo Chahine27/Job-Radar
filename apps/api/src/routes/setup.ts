@@ -1,4 +1,5 @@
 import { DEFAULT_PROFILE, EMPTY_LETTER_KIT, departmentName, type Profile } from "@job-radar/shared";
+import { isRomeCode } from "@job-radar/shared/rome";
 import { hash } from "@node-rs/argon2";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -29,6 +30,12 @@ const FinishBody = z.object({
   yearsOfExperience: z.number().int().min(0).max(50).nullable(),
   contracts: z.array(z.string().min(1)).min(1).max(6),
   salaryTarget: z.number().int().min(8_000).max(500_000).nullable().default(null),
+  /** Codes métier pour les candidatures spontanées (La Bonne Boîte) : seulement des codes de la liste officielle. */
+  romes: z
+    .array(z.string().trim().toUpperCase())
+    .max(5, "5 codes métier au maximum")
+    .default([])
+    .refine((codes) => codes.every(isRomeCode), "Code métier inconnu : choisis-le dans la liste proposée."),
 });
 
 /** Années d'expérience → offres acceptables (de 0 à « ses années + 2 », au moins 2 ans). */
@@ -117,6 +124,12 @@ export async function setupRoutes(app: FastifyInstance, opts: { stores: Stores; 
       const found = await opts.geocoder(place).catch(() => []);
       if (found[0]) home = { label: found[0].label, lat: found[0].lat, lng: found[0].lng };
     }
+    // Candidatures spontanées : les codes métier validés, autour de la ville du CV.
+    profile.spontaneous = {
+      ...current.spontaneous,
+      romes: [...new Set(d.romes)],
+      ...(home ? { place: { ...home }, departments: [] } : {}),
+    };
     const saved = await stores.profiles.save(request.userId!, profile, home);
     const kit = (await stores.letterKits.get(request.userId!)) ?? EMPTY_LETTER_KIT;
     const header = [d.fullName, [d.postalCode, d.city].filter(Boolean).join(" "), d.phone, d.email].filter((x) => !!x && x.trim()).join("\n");
