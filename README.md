@@ -3,7 +3,7 @@
 Ton assistant personnel de recherche d'emploi, **sur ton PC** : il récupère les offres de plusieurs sites, les compare à ton CV, te
 dit lesquelles valent le coup, et t'aide à postuler (lettre de motivation, candidatures spontanées).
 
-Tout reste chez toi : la base de données et l'intelligence artificielle (Ollama) tournent sur ton ordinateur.
+Tout reste chez toi : la base de données (intégrée, sans Docker ni compte) et l'intelligence artificielle (Ollama) tournent sur ton ordinateur.
 
 > 🚧 **Version en construction.** Cette version publique est adaptée à tous les métiers étape par étape (voir « Avancement » ci-dessous).
 
@@ -20,7 +20,7 @@ Tout reste chez toi : la base de données et l'intelligence artificielle (Ollama
 ## Ce qu'il faut
 
 - Un PC **Windows 10 ou 11**, 8 Go de mémoire minimum (16 Go conseillés), une carte graphique conseillée pour que l'IA soit rapide.
-- Environ 10 Go d'espace disque (Docker, IA, base de données).
+- Environ 8 Go d'espace disque (IA, base de données).
 - Une connexion internet.
 
 ## Installation
@@ -34,7 +34,7 @@ Détails et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMENT.md).
 ## Avancement
 
 1. ✅ Copie propre du projet d'origine (aucune donnée personnelle).
-2. ✅ Installeur Windows (Node, Docker Desktop, Ollama, modèle d'IA, base de données, raccourci).
+2. ✅ Installeur Windows (Node, Ollama, modèle d'IA, base de données intégrée sans Docker, raccourci).
 3. ⏳ Premier lancement guidé : création du compte, dépôt du CV, profil construit par l'IA puis validé par toi.
 4. ⏳ Moteur pour tous les métiers (compétences tirées de ton CV, plus seulement l'informatique).
 5. ⏳ Assistant des clés (France Travail, Adzuna, Jooble, trajets, Gmail) directement dans le site.

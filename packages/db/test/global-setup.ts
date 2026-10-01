@@ -1,6 +1,6 @@
 /**
  * Tests d'intégration : prépare une base SÉPARÉE « jobradar_test » (ta vraie base n'est jamais touchée),
- * puis y applique les migrations. Nécessite Docker lancé (pnpm db:up).
+ * puis y applique les migrations. Nécessite la base lancée (pnpm db:server, ou le lanceur).
  */
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -24,7 +24,7 @@ export default async function setup() {
   try {
     await client.connect();
   } catch (err) {
-    throw new Error(`Base de données injoignable : lance Docker puis « pnpm db:up ». (${String(err)})`);
+    throw new Error(`Base de données injoignable : lance « pnpm db:server » (ou le lanceur). (${String(err)})`);
   }
   const exists = await client.query("SELECT 1 FROM pg_database WHERE datname = 'jobradar_test'");
   if (exists.rowCount === 0) await client.query("CREATE DATABASE jobradar_test");

@@ -1,4 +1,6 @@
 node_modules/
+# Base de données locale (fichiers PostgreSQL)
+data/
 dist/
 coverage/
 .env

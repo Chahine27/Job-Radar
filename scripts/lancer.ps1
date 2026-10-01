@@ -1,9 +1,10 @@
-﻿# Lance Job Radar en un double-clic : Docker (base de données), Ollama (IA), mises à jour, puis « pnpm dev ».
+﻿# Lance Job Radar en un double-clic : Ollama (IA), mises à jour, base de données (intégrée, sans Docker), puis « pnpm dev ».
 # Appelé par « Lancer Job Radar.cmd » à la racine du projet. Fermer cette fenêtre (ou Ctrl + C) arrête l'appli.
-# « Continue » : avec « Stop », Windows PowerShell 5 s'arrête dès qu'un programme (docker) écrit sur sa sortie d'erreur.
+# « Continue » : avec « Stop », Windows PowerShell 5 s'arrête dès qu'un programme écrit sur sa sortie d'erreur.
 $ErrorActionPreference = "Continue"
 $Host.UI.RawUI.WindowTitle = "Job Radar"
 Set-Location (Split-Path -Parent $PSScriptRoot)
+. (Join-Path $PSScriptRoot "db.ps1")
 $url = "http://localhost:5173"
 
 function Step($text) { Write-Host ""; Write-Host "==> $text" -ForegroundColor Cyan }
@@ -28,31 +29,7 @@ if (Responds $url) {
 if (-not (Test-Path ".env")) { Fail "le fichier .env est introuvable dans $(Get-Location)." }
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) { Fail "pnpm est introuvable. Installe Node.js puis pnpm (voir docs/LANCEMENT.md)." }
 
-# 1. Docker Desktop
-Step "Docker"
-docker info *> $null
-if ($LASTEXITCODE -ne 0) {
-  $dockerExe = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
-  if (-not (Test-Path $dockerExe)) { Fail "Docker Desktop est introuvable ($dockerExe)." }
-  Write-Host "Démarrage de Docker Desktop (jusqu'à 2 minutes)..."
-  Start-Process $dockerExe
-  $ok = $false
-  for ($i = 0; $i -lt 60; $i++) {
-    Start-Sleep -Seconds 2
-    docker info *> $null
-    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
-  }
-  if (-not $ok) { Fail "Docker ne démarre pas. Ouvre Docker Desktop à la main, attends « Engine running », puis relance." }
-}
-Write-Host "Docker est prêt." -ForegroundColor Green
-
-# 2. Base de données et Redis (attend qu'ils soient en bonne santé)
-Step "Base de données"
-docker compose up -d --wait
-if ($LASTEXITCODE -ne 0) { Fail "la base de données ne démarre pas (docker compose up)." }
-Write-Host "Base de données prête." -ForegroundColor Green
-
-# 3. Ollama (IA locale) : lancé s'il ne tourne pas. Pas bloquant : l'appli marche sans.
+# 1. Ollama (IA locale) : lancé s'il ne tourne pas. Pas bloquant : l'appli marche sans.
 Step "IA locale (Ollama)"
 if (Responds "http://127.0.0.1:11434/api/version") {
   Write-Host "Ollama tourne déjà." -ForegroundColor Green
@@ -69,21 +46,23 @@ if (Responds "http://127.0.0.1:11434/api/version") {
   }
 }
 
-# 4. Après une mise à jour du code : modules et base de données à jour
-Step "Mises à jour"
+# 2. Après une mise à jour du code : modules et base de données à jour
+Step "Mises à jour et base de données"
 $stamp = "node_modules\.modules.yaml"
 if (-not (Test-Path $stamp) -or (Get-Item "pnpm-lock.yaml").LastWriteTime -gt (Get-Item $stamp).LastWriteTime) {
   Write-Host "Installation des modules (pnpm install)..."
   pnpm install
   if ($LASTEXITCODE -ne 0) { Fail "pnpm install a échoué." }
 }
+# Base de données intégrée : démarrée en arrière-plan (invisible) si elle ne tourne pas déjà.
+if (-not (StartDatabase)) { Fail "la base de données ne démarre pas. Regarde le fichier data\postgres.log pour le détail." }
 pnpm --filter @job-radar/db migrate:deploy
 if ($LASTEXITCODE -ne 0) { Fail "la mise à jour de la base de données a échoué (migrate deploy)." }
 pnpm db:generate | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "prisma generate a échoué." }
 Write-Host "Tout est à jour." -ForegroundColor Green
 
-# 5. Ouvre le site dès qu'il répond (en arrière-plan), puis lance l'appli dans cette fenêtre
+# 3. Ouvre le site dès qu'il répond (en arrière-plan), puis lance l'appli dans cette fenêtre
 Start-Job -ArgumentList $url -ScriptBlock {
   param($u)
   for ($i = 0; $i -lt 90; $i++) {

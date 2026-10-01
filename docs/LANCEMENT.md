@@ -6,26 +6,26 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
 ## 0. Première installation
 
 1. Télécharge le projet et décompresse-le où tu veux (par exemple `Documents\jobRadar`).
-2. Double-clic sur **« Installer Job Radar.cmd »**. Il vérifie le PC puis installe ce qui manque : Node.js, pnpm,
-   Docker Desktop, Ollama et le modèle d'IA ; il crée les réglages (`.env`, mots de passe internes générés tout seuls),
-   ton compte, la base de données et le raccourci « Job Radar » sur le Bureau.
-3. Si Docker Desktop vient d'être installé, Windows demande souvent de **redémarrer** : redémarre, ouvre Docker Desktop
-   une fois (accepte les conditions), puis relance l'installeur. Tout ce qui est déjà fait est gardé.
+2. Double-clic sur **« Installer Job Radar.cmd »**. Il crée d'abord les réglages (`.env`, mot de passe de la base généré
+   tout seul) et ton compte, puis installe ce qui manque : Node.js, pnpm, Ollama et le modèle d'IA. Il crée ensuite la base
+   de données et le raccourci « Job Radar » sur le Bureau.
+3. Pas de Docker : la base de données est intégrée au projet (dossier `data\`), invisible, sans compte à créer.
+   Si l'installation s'arrête, corrige le point indiqué et relance l'installeur : ce qui est déjà fait est gardé.
 
 ## 1. Après un redémarrage du PC
 
 **Le plus simple : double-clic sur « Lancer Job Radar.cmd »** (à la racine de `jobRadar`), ou sur le raccourci « Job Radar » du Bureau.
-Il démarre Docker Desktop s'il est éteint, la base de données, Ollama, installe les mises à jour (`pnpm install` si besoin,
+Il démarre la base de données (en arrière-plan, invisible), Ollama, installe les mises à jour (`pnpm install` si besoin,
 migrations de la base), lance `pnpm dev` et ouvre http://localhost:5173 tout seul. Si Job Radar tourne déjà, il ouvre juste le site.
 Pour créer le raccourci du Bureau (une seule fois) : clic droit sur `scripts\creer-raccourci.ps1` → « Exécuter avec PowerShell ».
 
 À la main, si besoin :
 
-1. Ouvre **Docker Desktop** et attends qu'il affiche « Engine running ».
-2. Démarre la base de données et Redis :
+1. Démarre la base de données (laisse cette fenêtre ouverte) :
    ```
-   pnpm db:up
+   pnpm db:server
    ```
+2. Dans une autre fenêtre, mets la base à jour : `pnpm --filter @job-radar/db migrate:deploy`
 3. Démarre l'appli (serveur + site) :
    ```
    pnpm dev
@@ -35,7 +35,8 @@ Pour créer le raccourci du Bureau (une seule fois) : clic droit sur `scripts\cr
 Laisse le terminal de `pnpm dev` ouvert : tant qu'il tourne, la collecte des offres se fait toute seule
 (toutes les heures), les offres expirées sont nettoyées (toutes les 6 heures) et les alertes partent.
 
-Pour tout arrêter : `Ctrl + C` dans le terminal, puis `pnpm db:down`.
+Pour tout arrêter : `Ctrl + C` dans le terminal. La base lancée par le lanceur reste allumée en arrière-plan
+(elle consomme très peu) et s'arrête avec le PC.
 
 ## 2. Au quotidien
 
@@ -69,7 +70,7 @@ Puis relance `pnpm dev`.
 | Commande           | Ce qu'elle vérifie                                                    |
 |--------------------|-----------------------------------------------------------------------|
 | `pnpm check`       | Le code se compile et les tests rapides passent (sans base de données) |
-| `pnpm test:int`    | Les tests avec une vraie base (Docker doit tourner). Utilise une base à part, `jobradar_test` : tes vraies données ne sont pas touchées |
+| `pnpm test:int`    | Les tests avec une vraie base (la base doit tourner). Utilise une base à part, `jobradar_test` : tes vraies données ne sont pas touchées |
 | `pnpm ft:test`     | Tes identifiants France Travail fonctionnent                          |
 | `pnpm sources:test`| Chaque source (France Travail, Adzuna, pages carrières) répond         |
 | `pnpm travel:test` | Le calcul du temps de trajet (Géoplateforme + PRIM) répond             |
@@ -81,7 +82,7 @@ Puis relance `pnpm dev`.
 ## 5. Problèmes courants
 
 **« Can't reach database server » / erreur de connexion à la base**
-→ Docker Desktop n'est pas lancé, ou `pnpm db:up` n'a pas été fait.
+→ La base n'est pas lancée : relance avec le raccourci, ou `pnpm db:server`. Le détail est dans `data\postgres.log`.
 
 **Une page affiche une erreur après une mise à jour / « companyLead is undefined »**
 → La base ou le client Prisma n'est pas à jour : `pnpm db:migrate`, puis relance `pnpm dev`.
