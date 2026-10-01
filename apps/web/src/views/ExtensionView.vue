@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 
 type Browser = "chrome" | "edge" | "firefox" | "opera" | "unknown";
+type InstallableBrowser = "chrome" | "edge" | "opera";
 
 function detectBrowser(userAgent: string): Browser {
   if (/Edg(e|A|iOS)?\//i.test(userAgent)) return "edge";
@@ -21,11 +23,24 @@ const browserNames: Record<Browser, string> = {
   unknown: "ton navigateur",
 };
 const browserName = browserNames[browser];
-const extensionPage: Partial<Record<Browser, string>> = {
+const extensionPage: Record<InstallableBrowser, string> = {
   chrome: "chrome://extensions/",
   edge: "edge://extensions/",
   opera: "opera://extensions/",
 };
+const copiedBrowser = ref<InstallableBrowser | null>(null);
+const copyErrorBrowser = ref<InstallableBrowser | null>(null);
+
+async function copyExtensionsAddress(targetBrowser: InstallableBrowser) {
+  try {
+    await navigator.clipboard.writeText(extensionPage[targetBrowser]);
+    copiedBrowser.value = targetBrowser;
+    copyErrorBrowser.value = null;
+  } catch {
+    copiedBrowser.value = null;
+    copyErrorBrowser.value = targetBrowser;
+  }
+}
 </script>
 
 <template>
@@ -39,56 +54,64 @@ const extensionPage: Partial<Record<Browser, string>> = {
       <h2><Icon name="info" :size="18" />{{ browser === "firefox" ? "Firefox détecté" : `Installation pour ${browserName}` }}</h2>
       <template v-if="browser === 'firefox'">
         <p class="info">
-          L'extension actuelle n'est pas compatible avec Firefox : elle utilise un service worker Manifest V3 qui n'est pas
-          pris en charge par Firefox. Job Radar reste utilisable sans l'extension.
+          L'extension actuelle n'est pas compatible avec Firefox : son script d'arrière-plan utilise un service worker
+          Manifest V3. Job Radar reste utilisable sans l'extension.
         </p>
       </template>
       <template v-else>
         <p class="muted">
-          L'extension est fournie avec le dossier Job Radar. Pour des raisons de sécurité, le navigateur demande de confirmer
-          son ajout depuis sa page d'extensions.
+          Job Radar ne peut pas ouvrir directement cette page interne ni sélectionner le dossier à ta place. Copie son
+          adresse, colle-la dans la barre d'adresse de {{ browserName }}, puis appuie sur Entrée.
           <template v-if="browser === 'opera'">Opera GX utilise le même accès aux extensions qu'Opera.</template>
         </p>
         <div class="row">
-          <a
-            v-if="extensionPage[browser]"
+          <button
+            v-if="browser !== 'unknown'"
+            type="button"
             class="btn primary"
-            :href="extensionPage[browser]"
-            target="_blank"
-            rel="noopener noreferrer"
+            @click="copyExtensionsAddress(browser)"
           >
-            <Icon name="external" :size="16" />Ouvrir les extensions {{ browserName }}
-          </a>
+            <Icon :name="copiedBrowser === browser ? 'check' : 'file'" :size="16" />
+            {{ copiedBrowser === browser ? "Adresse copiée" : `Copier l'adresse des extensions ${browserName}` }}
+          </button>
           <template v-else>
-            <a class="btn primary" href="chrome://extensions/" target="_blank" rel="noopener noreferrer">
-              <Icon name="external" :size="16" />Chrome
-            </a>
-            <a class="btn primary" href="edge://extensions/" target="_blank" rel="noopener noreferrer">
-              <Icon name="external" :size="16" />Edge
-            </a>
-            <a class="btn primary" href="opera://extensions/" target="_blank" rel="noopener noreferrer">
-              <Icon name="external" :size="16" />Opera / Opera GX
-            </a>
+            <button type="button" class="btn" @click="copyExtensionsAddress('chrome')">
+              {{ copiedBrowser === "chrome" ? "Chrome : adresse copiée" : "Copier l'adresse pour Chrome" }}
+            </button>
+            <button type="button" class="btn" @click="copyExtensionsAddress('edge')">
+              {{ copiedBrowser === "edge" ? "Edge : adresse copiée" : "Copier l'adresse pour Edge" }}
+            </button>
+            <button type="button" class="btn" @click="copyExtensionsAddress('opera')">
+              {{ copiedBrowser === "opera" ? "Opera : adresse copiée" : "Copier l'adresse pour Opera / Opera GX" }}
+            </button>
           </template>
         </div>
-        <p class="muted small">
-          Si le bouton ne fonctionne pas, copie l'adresse
-          <code>{{ extensionPage[browser] ?? "chrome://extensions" }}</code> dans la barre d'adresse de {{ browserName }}.
+        <p v-if="copiedBrowser" class="success small" role="status">
+          Colle l'adresse copiée dans la barre d'adresse du navigateur et appuie sur Entrée.
+        </p>
+        <p v-if="copyErrorBrowser" class="alert small" role="alert">
+          La copie automatique est bloquée. Saisis manuellement l'adresse
+          <code>{{ extensionPage[copyErrorBrowser] }}</code>
+          dans la barre d'adresse du navigateur.
         </p>
       </template>
     </section>
 
     <section v-if="browser !== 'firefox'" class="card stack">
-      <h2>Ajouter Job Radar dans {{ browserName }}</h2>
+      <h2>Charger le dossier de l'extension dans {{ browserName }}</h2>
       <ol class="install-steps">
         <li>Active le <strong>Mode développeur</strong> sur la page des extensions.</li>
         <li>Clique sur <strong>Charger l'extension non empaquetée</strong>.</li>
-        <li>Choisis le dossier <code>extension</code> situé dans le dossier où Job Radar a été installé ou extrait.</li>
+        <li>
+          Dans le sélecteur de dossiers du navigateur, choisis le dossier <code>extension</code> qui se trouve à la racine
+          du dossier où Job Radar a été installé ou extrait. Il faut sélectionner ce dossier, pas le dossier Job Radar
+          complet ni un fichier à l'intérieur.
+        </li>
         <li>Épingle l'icône Job Radar depuis le menu des extensions pour l'avoir sous la main.</li>
       </ol>
       <p class="info">
-        L'extension ne lit la page que lorsque tu cliques dessus. Elle envoie l'offre uniquement à ton instance Job Radar
-        sur ce PC.
+        L'ajout doit être confirmé dans le navigateur : une page web ne peut pas installer une extension locale ni choisir
+        un dossier sur ton ordinateur à ta place.
       </p>
     </section>
 
@@ -101,8 +124,7 @@ const extensionPage: Partial<Record<Browser, string>> = {
       </ol>
       <p class="muted small">
         L'extension est compatible avec Chrome, Edge, Opera et Opera GX. Elle n'est pas publiée sur leurs boutiques :
-        l'ajout se fait depuis le dossier local. Opera GX est détecté comme Opera, car son identifiant navigateur ne permet
-        pas toujours de le distinguer.
+        il faut charger le dossier local <code>extension</code>. Opera GX est détecté comme Opera.
       </p>
     </section>
   </div>

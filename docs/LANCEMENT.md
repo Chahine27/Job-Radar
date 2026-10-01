@@ -118,12 +118,13 @@ Le message sous le trajet (page de l'offre) donne la raison.
 Un clic sur une offre (LinkedIn, Indeed, HelloWork, Welcome to the Jungle…) l'ouvre dans Job Radar, déjà remplie.
 
 **Installation (une seule fois)**
-1. Dans Job Radar, clique sur **Installer l'extension** (sur la page Offres ou dans le menu). La page détecte Chrome, Edge ou Opera et propose d'ouvrir la page d'extensions correspondante. Opera GX est détecté comme Opera.
-2. Active le **Mode développeur** sur la page des extensions.
-3. Clique sur **Charger l'extension non empaquetée** et choisis le dossier `jobRadar/extension`.
-4. Épingle l'icône Job Radar (pièce de puzzle → punaise) pour l'avoir toujours sous la main.
+1. Dans Job Radar, clique sur **Installer l'extension** (sur la page Offres ou dans le menu). La page détecte Chrome, Edge ou Opera et propose de copier l'adresse de gestion des extensions. Opera GX est détecté comme Opera.
+2. Colle l'adresse dans la barre d'adresse du navigateur et appuie sur Entrée. Les navigateurs bloquent l'ouverture de leurs pages internes depuis une page web.
+3. Active le **Mode développeur** sur la page des extensions.
+4. Clique sur **Charger l'extension non empaquetée**. Dans le sélecteur qui s'ouvre, choisis le dossier `extension` à la racine du dossier où Job Radar a été installé ou extrait (pas le dossier Job Radar complet).
+5. Épingle l'icône Job Radar (pièce de puzzle → punaise) pour l'avoir toujours sous la main.
 
-Firefox n'est pas encore compatible avec l'extension actuelle : celle-ci utilise un service worker Manifest V3 non pris en charge par Firefox. La page d'installation l'indique si Firefox est détecté.
+L'installation doit être confirmée par l'utilisateur : une page web ne peut pas installer une extension locale ni sélectionner un dossier sur l'ordinateur. Firefox n'est pas encore compatible avec le script d'arrière-plan Manifest V3 de l'extension. La page d'installation l'indique si Firefox est détecté.
 
 **Utilisation**
 1. `pnpm dev` doit tourner.
