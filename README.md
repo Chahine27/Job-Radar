@@ -37,7 +37,7 @@ Détails et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMENT.md).
 1. ✅ Copie propre du projet d'origine (aucune donnée personnelle).
 2. ✅ Installeur Windows (Node, Ollama, modèle d'IA, base de données intégrée sans Docker, raccourci).
 3. ✅ Premier lancement guidé : création du compte, dépôt du CV, profil construit par l'IA puis validé par toi.
-4. ⏳ Moteur pour tous les métiers (compétences tirées de ton CV, plus seulement l'informatique).
+4. ✅ Moteur généraliste : compétences tirées du CV, sans filtre ni pénalité réservés aux métiers de l'informatique.
 5. ⏳ Assistant des clés (France Travail, Adzuna, Jooble, trajets, Gmail) directement dans le site.
 6. ⏳ Mode d'emploi et tests avec des profils variés.
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { hashProfile } from "./profile-hash";
-import { contractFromTitle, detectNonDevRole, detectRemote, detectSeniority, looksLikeItTitle, normalizeContract, parseExperienceYears } from "./signals";
+import { contractFromTitle, detectRemote, detectSeniority, normalizeContract, parseExperienceYears } from "./signals";
 
 describe("detectSeniority", () => {
   it.each([
@@ -9,7 +9,7 @@ describe("detectSeniority", () => {
     ["Développeur Senior Java", "senior"],
     ["Développeur confirmé React", "senior"],
     ["Tech Lead Node.js", "lead"],
-    ["Architecte logiciel", "lead"],
+    ["Architecte logiciel", null],
     ["Stage développeur web", "intern"],
     ["Développeur Full Stack", null],
     ["Développeur Fullstack Node.js / React (futur lead) - CDI", null],
@@ -17,6 +17,9 @@ describe("detectSeniority", () => {
     ["Développeur Java à terme tech lead", null],
     ["Tech Lead Fullstack JavaScript", "lead"],
     ["Staff Engineer Back-End", "lead"],
+    ["Office Manager", null],
+    ["Senior Account Manager", "senior"],
+    ["Directeur administratif", "lead"],
   ] as const)("%s → %s", (title, expected) => {
     expect(detectSeniority(title)).toBe(expected);
   });
@@ -93,24 +96,6 @@ describe("detectRemote", () => {
   });
 });
 
-describe("detectNonDevRole", () => {
-  it.each([
-    ["CHEF DE PROJET MOE JAVA / SPRING BOOT (F/H)", "chef de projet"],
-    ["Product Owner Data", "product owner / manager"],
-    ["Scrum Master", "scrum master / coach agile"],
-    ["Développeur Foncier 77 et 93 (H/F)", "développement commercial / immobilier"],
-    ["Business Developer IT", "commercial"],
-    ["Responsable applicatif", "poste de direction / responsable"],
-    ["[Mission] Product designer - PARTAGEONS L'EAU", "design (UX/UI)"],
-    ["UX/UI Designer", "design (UX/UI)"],
-    ["Développeur Full Stack (H/F)", null],
-    ["Développeur Front-end Vue.js & Accessibilité - CDI", null],
-    ["Tech Lead Flutter", null],
-  ] as const)("%s → %s", (title, expected) => {
-    expect(detectNonDevRole(title)).toBe(expected);
-  });
-});
-
 describe("contractFromTitle", () => {
   it.each([
     ["Développeur React - Freelance", "FREELANCE"],
@@ -123,21 +108,6 @@ describe("contractFromTitle", () => {
     ["Développeur Vue.js H/F", null],
   ] as const)("%s → %s", (title, expected) => {
     expect(contractFromTitle(title)).toBe(expected);
-  });
-});
-
-describe("titre informatique ou non", () => {
-  it.each([
-    ["Développeur Vue.js H/F", true],
-    ["Ingénieur logiciel", true],
-    ["Intégrateur web", true],
-    ["Technicien support informatique", true],
-    ["Dessinateur (H/F)", false],
-    ["Soudeur", false],
-    ["Comptable", false],
-    ["Technicien de maintenance", false],
-  ])("%s → %s", (title, expected) => {
-    expect(looksLikeItTitle(title)).toBe(expected);
   });
 });
 

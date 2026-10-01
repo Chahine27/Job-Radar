@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AdzunaSource } from "../adzuna/source";
 import { SourceUnavailableError } from "../types";
 import { type CompanyTarget, parseCareersInput } from "./ats";
-import { CompanyCareersSource, isTechTitle } from "./source";
+import { CompanyCareersSource, hasJobTitle, isTechTitle } from "./source";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const noWait = { now: () => 0, sleep: async () => {} };
@@ -22,13 +22,14 @@ describe("parseCareersInput", () => {
   });
 });
 
-describe("isTechTitle", () => {
-  it("garde les postes pertinents pour un moteur d'offres généraliste, pas seulement les postes tech", () => {
-    expect(isTechTitle("Développeur Front-end Vue.js")).toBe(true);
-    expect(isTechTitle("Senior Software Engineer")).toBe(true);
-    expect(isTechTitle("Account Executive")).toBe(true);
-    expect(isTechTitle("Chargé de recrutement")).toBe(true);
-    expect(isTechTitle("   ")).toBe(false);
+describe("hasJobTitle", () => {
+  it("garde tous les métiers et écarte seulement les titres vides ou invalides", () => {
+    expect(hasJobTitle("Développeur Front-end Vue.js")).toBe(true);
+    expect(hasJobTitle("Senior Software Engineer")).toBe(true);
+    expect(hasJobTitle("Account Executive")).toBe(true);
+    expect(hasJobTitle("Infirmière")).toBe(true);
+    expect(hasJobTitle("   ")).toBe(false);
+    expect(isTechTitle("Comptable")).toBe(true);
   });
 });
 

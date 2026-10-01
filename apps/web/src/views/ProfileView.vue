@@ -133,24 +133,24 @@ async function save() {
     <div class="grid-2">
       <section class="card stack">
         <div>
-          <h2><Icon name="code" :size="17" />Compétences que je maîtrise</h2>
-          <p class="muted small hint">Sert au pourcentage technique : part des compétences de l'offre que tu as.</p>
+          <h2><Icon name="star" :size="17" />Compétences que je maîtrise</h2>
+          <p class="muted small hint">Sert à comparer ton profil aux compétences demandées dans chaque offre.</p>
         </div>
-        <TagInput v-model="profile.skills" placeholder="Ex. PostgreSQL" />
+        <TagInput v-model="profile.skills" placeholder="Ex. Excel, soins infirmiers, permis B…" />
       </section>
 
       <section class="card stack">
         <div>
-          <h2><Icon name="star" :size="17" />Technos préférées</h2>
-          <p class="muted small hint">Servent aux recherches et à départager deux offres de même score. Importance de 0 à 1.</p>
+          <h2><Icon name="star" :size="17" />Compétences préférées</h2>
+          <p class="muted small hint">Servent à départager deux offres de même score. Importance de 0 à 1.</p>
         </div>
         <div v-for="(p, i) in profile.preferredTechs" :key="i" class="pref">
-          <input v-model="p.name" placeholder="Techno" aria-label="Techno" />
+          <input v-model="p.name" placeholder="Compétence" aria-label="Compétence préférée" />
           <input v-model.number="p.weight" type="range" min="0" max="1" step="0.1" :aria-label="`Importance ${p.name}`" />
           <span class="small num">{{ p.weight.toFixed(1) }}</span>
           <button type="button" class="icon-btn danger" :aria-label="`Retirer ${p.name}`" @click="profile.preferredTechs.splice(i, 1)"><Icon name="trash" :size="15" /></button>
         </div>
-        <div><button type="button" class="small" @click="addPreferred"><Icon name="plus" :size="14" />Ajouter une techno</button></div>
+        <div><button type="button" class="small" @click="addPreferred"><Icon name="plus" :size="14" />Ajouter une compétence</button></div>
       </section>
     </div>
 

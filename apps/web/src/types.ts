@@ -210,7 +210,7 @@ export type AiAnalysis = {
   competences_bonus: string[];
   niveau: "junior" | "confirme" | "senior" | "inconnu";
   experience_min_ans: number | null;
-  employeur: "direct" | "esn_ou_cabinet" | "inconnu";
+  employeur: "direct" | "cabinet_ou_client" | "esn_ou_cabinet" | "inconnu";
   points_attention: string[];
   adequation: "forte" | "moyenne" | "faible";
   avis: string;

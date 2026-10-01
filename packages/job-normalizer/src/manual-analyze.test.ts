@@ -87,6 +87,13 @@ Salaire : 38k€ - 42k€`);
     expect(a.salaryMin).toBe(38000);
   });
 
+  it.each(["Infirmière diplômée d'État", "Agent d'entretien", "Conducteur de travaux", "Juriste en droit social"])(
+    "reconnaît les intitulés de métiers variés : %s",
+    (title) => {
+      expect(analyzeJobText(`${title}\nNous recherchons un(e) ${title} pour rejoindre notre équipe.`).title).toContain(title);
+    },
+  );
+
   it("nettoyage : liens Markdown, lignes vides en trop", () => {
     expect(cleanPastedText("Voir [le site ](https://x.fr/a)\n\n\n\nFin")).toBe("Voir le site\n\nFin");
   });

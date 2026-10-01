@@ -134,7 +134,7 @@ const addCompany = () =>
             <h2 style="margin: 0"><Icon name="building" :size="17" />Entreprises suivies</h2>
             <p class="muted small" style="margin: 0">
               Colle l'adresse de la page carrières d'une entreprise qui utilise Greenhouse, Lever, Ashby ou Recruitee (ex.
-              <code>https://jobs.lever.co/nom</code>). Seuls les postes techniques sont gardés.
+              <code>https://jobs.lever.co/nom</code>). Tous les métiers sont gardés.
             </p>
             <form class="add" @submit.prevent="addCompany">
               <input v-model="newName" placeholder="Nom de l'entreprise" aria-label="Nom de l'entreprise" required />

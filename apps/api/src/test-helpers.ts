@@ -58,13 +58,43 @@ export const TEST_EMAIL = "test@example.com";
 export const TEST_PASSWORD = "un-mot-de-passe-solide";
 export const APP_URL = "http://localhost:5173";
 
+/** Profil technique isolé aux tests API dont les offres de démonstration sont des postes de développement. */
+export const DEVELOPER_TEST_PROFILE: Profile = {
+  ...EXAMPLE_PROFILE,
+  skills: [
+    "Vue.js", "JavaScript", "TypeScript", "React", "Node.js", "Java", "Spring Boot", "API REST", "C#", ".NET",
+    "Python", "C", "C++", "SQL", "HTML", "CSS", "Docker", "Git", "GitLab", "CI/CD",
+  ],
+  searches: [
+    "Développeur Vue.js",
+    "Développeur Java Spring",
+    "Développeur React TypeScript",
+    "Développeur Node.js",
+    "Développeur Full Stack",
+    "Développeur .NET",
+  ],
+  experienceMin: 1,
+  experienceMax: 3,
+  salaryMinimum: 38000,
+  preferredTechs: [
+    { name: "Vue.js", weight: 1 },
+    { name: "Java", weight: 0.9 },
+    { name: "Spring Boot", weight: 0.9 },
+    { name: "React", weight: 0.8 },
+    { name: "TypeScript", weight: 0.8 },
+    { name: "Node.js", weight: 0.7 },
+  ],
+  scoringWeights: { technical: 0.35, experience: 0.2, contract: 0.15, salary: 0.1, location: 0.1, transport: 0.1 },
+  spontaneous: { ...EXAMPLE_PROFILE.spontaneous, romes: ["M1805"] },
+};
+
 /** Stockage en mémoire, même comportement que la version Prisma. */
 export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
   const users = new Map<string, UserRecord>();
   if (!opts.noUser) users.set("u1", { id: "u1", email: TEST_EMAIL, passwordHash: await hash(TEST_PASSWORD) });
   const sessions = new Map<string, { userId: string; expiresAt: Date }>();
   const profiles = new Map<string, ProfileRecord>([
-    ["u1", { profile: structuredClone(EXAMPLE_PROFILE), home: null, updatedAt: new Date() }],
+    ["u1", { profile: structuredClone(DEVELOPER_TEST_PROFILE), home: null, updatedAt: new Date() }],
   ]);
 
   const jobs = new Map(TEST_JOBS.map((j) => [j.id, structuredClone(j)]));

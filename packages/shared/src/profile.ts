@@ -28,33 +28,27 @@ export const PreferredTechSchema = z.object({
   weight: z.number().min(0).max(1),
 });
 
-/** Compétences d'un profil d'EXEMPLE (développeur fictif) : tests et démonstration seulement. */
+/** Compétences d'un profil d'EXEMPLE généraliste : tests et démonstration seulement. */
 export const EXAMPLE_SKILLS = [
-  "Vue.js",
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Java",
-  "Spring Boot",
-  "API REST",
-  "C#",
-  ".NET",
-  "Python",
-  "C",
-  "C++",
-  "SQL",
-  "HTML",
-  "CSS",
-  "Docker",
-  "Git",
-  "GitLab",
-  "CI/CD",
+  "Excel",
+  "PowerPoint",
+  "Sage",
+  "Gestion de projet",
+  "Relation client",
+  "CRM",
+  "Paie",
+  "Comptabilité",
+  "Rédaction de documents",
+  "Organisation administrative",
+  "Anglais",
+  "Support client",
+  "Logistique",
+  "Qualité de service",
 ];
 
 export const ProfileSchema = z
   .object({
-    /** Ce que tu maîtrises : sert au pourcentage technique. */
+    /** Ce que tu maîtrises : sert à comparer les compétences de l'offre. */
     skills: z.array(z.string().trim().min(1)).default([]),
     contracts: z.array(z.string().min(1)).min(1),
     experienceMin: z.number().int().min(0),
@@ -91,48 +85,48 @@ export const ProfileSchema = z
 export type Profile = z.infer<typeof ProfileSchema>;
 
 /**
- * Profil d'EXEMPLE (développeur fictif, Île-de-France) : sert aux tests et à la démonstration.
+ * Profil d'EXEMPLE générique : sert aux tests et à la démonstration sans imposer un métier technique.
  * Un vrai utilisateur part du profil vierge DEFAULT_PROFILE, rempli au premier lancement à partir de son CV.
  */
 export const EXAMPLE_PROFILE: Profile = {
   skills: EXAMPLE_SKILLS,
   contracts: ["CDI"],
   experienceMin: 1,
-  experienceMax: 3,
+  experienceMax: 5,
   salaryTarget: 40000,
-  salaryMinimum: 38000,
+  salaryMinimum: 36000,
   locations: [
     { label: "Zone A", department: "69" },
     { label: "Paris", department: "75" },
   ],
   preferredTechs: [
-    { name: "Vue.js", weight: 1 },
-    { name: "Java", weight: 0.9 },
-    { name: "Spring Boot", weight: 0.9 },
-    { name: "React", weight: 0.8 },
-    { name: "TypeScript", weight: 0.8 },
-    { name: "Node.js", weight: 0.7 },
-    { name: ".NET", weight: 0.6 },
-    { name: "C#", weight: 0.6 },
-    { name: "JavaScript", weight: 0.6 },
+    { name: "Excel", weight: 1 },
+    { name: "CRM", weight: 0.9 },
+    { name: "Gestion de projet", weight: 0.9 },
+    { name: "Sage", weight: 0.8 },
+    { name: "Paie", weight: 0.8 },
+    { name: "Relation client", weight: 0.7 },
+    { name: "Support client", weight: 0.7 },
+    { name: "Organisation administrative", weight: 0.6 },
+    { name: "Anglais", weight: 0.6 },
   ],
   searches: [
-    "Développeur Vue.js",
-    "Développeur Java Spring",
-    "Développeur React TypeScript",
-    "Développeur Node.js",
-    "Développeur Full Stack",
-    "Développeur .NET",
+    "Gestionnaire administratif",
+    "Chargé de clientèle",
+    "Assistant comptable",
+    "Support client",
+    "Coordinateur logistique",
+    "Commercial B2B",
   ],
   scoringWeights: {
-    technical: 0.35,
-    experience: 0.2,
+    technical: 0.2,
+    experience: 0.25,
     contract: 0.15,
-    salary: 0.1,
+    salary: 0.2,
     location: 0.1,
     transport: 0.1,
   },
-  spontaneous: { romes: ["M1805"], distanceKm: 30, place: null, departments: [] },
+  spontaneous: { romes: ["M1607"], distanceKm: 30, place: null, departments: [] },
   minScoreForAnalysis: 55,
   minScoreForNotification: 70,
   setupDone: true,

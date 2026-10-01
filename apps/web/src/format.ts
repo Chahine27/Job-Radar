@@ -48,7 +48,7 @@ export function scoreTone(score: number, notifyThreshold = 70): Tone {
 }
 
 export const BREAKDOWN_LABELS = {
-  technical: "Technique",
+  technical: "Compétences",
   experience: "Expérience",
   contract: "Contrat",
   salary: "Salaire",

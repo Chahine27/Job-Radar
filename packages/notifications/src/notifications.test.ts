@@ -155,8 +155,18 @@ function fakeNotifier(channel: Channel, fail = false) {
   return n;
 }
 
+const DEVELOPER_PROFILE = {
+  ...EXAMPLE_PROFILE,
+  skills: ["Vue.js", "JavaScript", "TypeScript", "React", "Node.js", "Java", "Spring Boot", "API REST", "Docker"],
+  experienceMin: 1,
+  experienceMax: 3,
+  salaryMinimum: 38000,
+  preferredTechs: [{ name: "Vue.js", weight: 1 }, { name: "TypeScript", weight: 0.8 }],
+  scoringWeights: { technical: 0.35, experience: 0.2, contract: 0.15, salary: 0.1, location: 0.1, transport: 0.1 },
+};
+
 const run = (repo: NotifyRepo, notifiers: Notifier[]) =>
-  notifyNewMatches({ repo, notifiers, profile: EXAMPLE_PROFILE, since: new Date(0), appUrl: "http://localhost:5173" });
+  notifyNewMatches({ repo, notifiers, profile: DEVELOPER_PROFILE, since: new Date(0), appUrl: "http://localhost:5173" });
 
 describe("notifyNewMatches", () => {
   it("n'annonce que les offres au-dessus du seuil, non masquées, meilleures d'abord", async () => {

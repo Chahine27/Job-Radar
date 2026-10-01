@@ -4,7 +4,30 @@ import { ACCEPTABLE, LOW_SALARY, NOT_CDI, PERFECT, TOO_FAR, TOO_SENIOR } from ".
 import { DEFAULT_RULES } from "./rules";
 import { scoreJob, type ScoringInput } from "./score";
 
-const score = (input: ScoringInput, profile: Profile = EXAMPLE_PROFILE) => scoreJob(input, profile);
+const DEV_PROFILE: Profile = {
+  ...EXAMPLE_PROFILE,
+  skills: [
+    "Vue.js", "JavaScript", "TypeScript", "React", "Node.js", "Java", "Spring Boot", "API REST", "C#", ".NET",
+    "Python", "C", "C++", "SQL", "HTML", "CSS", "Docker", "Git", "GitLab", "CI/CD",
+  ],
+  experienceMin: 1,
+  experienceMax: 3,
+  salaryMinimum: 38000,
+  preferredTechs: [
+    { name: "Vue.js", weight: 1 },
+    { name: "Java", weight: 0.9 },
+    { name: "Spring Boot", weight: 0.9 },
+    { name: "React", weight: 0.8 },
+    { name: "TypeScript", weight: 0.8 },
+    { name: "Node.js", weight: 0.7 },
+    { name: ".NET", weight: 0.6 },
+    { name: "C#", weight: 0.6 },
+    { name: "JavaScript", weight: 0.6 },
+  ],
+  scoringWeights: { technical: 0.35, experience: 0.2, contract: 0.15, salary: 0.1, location: 0.1, transport: 0.1 },
+};
+
+const score = (input: ScoringInput, profile: Profile = DEV_PROFILE) => scoreJob(input, profile);
 
 /**
  * Scores figés (README §32 : « le score ne doit pas changer sans modification explicite des règles »).
@@ -23,7 +46,7 @@ describe(`scores figés — règles ${DEFAULT_RULES.version}`, () => {
   });
 
   it("version des règles attendue", () => {
-    expect(DEFAULT_RULES.version).toBe("2026-10-01.1");
+    expect(DEFAULT_RULES.version).toBe("2026-10-01.2");
   });
 });
 
@@ -99,10 +122,11 @@ describe("données absentes = neutre, jamais inventées", () => {
     );
   });
 
-  it("aucune techno détectée → note technique basse + vigilance", () => {
+  it("aucune compétence reconnue → note neutre et aucune pénalité liée au métier", () => {
     const r = score({ ...PERFECT, title: "Développeur H/F", description: "Rejoignez une super équipe." });
-    expect(r.breakdown.technical).toBe(DEFAULT_RULES.noSkillsTechnical);
-    expect(r.warnings).toContain("Aucune techno détectée : poste peut-être hors informatique");
+    expect(r.breakdown.technical).toBe(DEFAULT_RULES.neutral);
+    expect(r.warnings).toContain("Aucune compétence reconnue dans l'annonce");
+    expect(r.hidden).toBe(false);
   });
 });
 
@@ -127,7 +151,7 @@ describe("règles détaillées", () => {
     expect(r.breakdown.technical).toBe(0);
     expect(r.missingSkills).toEqual(["Ruby", "Kubernetes"]);
     expect(r.final).toBe(25);
-    expect(r.capLabel).toMatch(/technique trop faible/);
+    expect(r.capLabel).toMatch(/compétences trop peu correspondantes/);
   });
 
   it("la technique tient le reste : tout à 100 % sauf la technique → jamais plus que technique + 25", () => {
@@ -136,8 +160,8 @@ describe("règles détaillées", () => {
     expect(low.breakdown.technical).toBeLessThanOrEqual(40);
     expect(low.final).toBe(low.breakdown.technical + 25);
     expect(low.weighted).toBeGreaterThan(low.final);
-    // Aucune techno détectée : technique inconnue, pas de plafond « technique ».
-    expect(tech("Poste de développeur dans une équipe sympa.").capLabel ?? "").not.toMatch(/technique trop faible/);
+    // Aucune compétence reconnue : information inconnue, pas de plafond lié aux compétences.
+    expect(tech("Poste de développeur dans une équipe sympa.").capLabel ?? "").not.toMatch(/compétences trop peu correspondantes/);
   });
 
   it("télétravail complet → lieu et trajet au maximum", () => {
@@ -164,7 +188,7 @@ describe("règles détaillées", () => {
 
   it("les poids du profil changent le résultat", () => {
     const profile: Profile = {
-      ...EXAMPLE_PROFILE,
+      ...DEV_PROFILE,
       scoringWeights: { technical: 1, experience: 0, contract: 0, salary: 0, location: 0, transport: 0 },
     };
     expect(score(ACCEPTABLE, profile).final).toBe(score(ACCEPTABLE).breakdown.technical);
@@ -183,12 +207,12 @@ describe("règles détaillées", () => {
     expect(r.final).toBeGreaterThanOrEqual(90);
   });
 
-  it("poste qui n'est pas du développement → plafonné, avec la raison", () => {
+  it("les intitulés non informatiques ne sont ni plafonnés ni masqués", () => {
     const r = score({ ...PERFECT, title: "Chef de projet MOE Java / Spring Boot" });
-    expect(r.final).toBe(DEFAULT_RULES.nonDevRoleCap);
-    expect(r.warnings[0]).toMatch(/^Score plafonné à 35 % : pas un poste de développement \(chef de projet\)/);
+    expect(r.capLabel ?? "").not.toMatch(/poste de développement/);
+    expect(r.hidden).toBe(false);
     const foncier = score({ ...PERFECT, title: "Développeur Foncier 77 et 93", description: "Prospection de terrains." });
-    expect(foncier.final).toBeLessThanOrEqual(35);
+    expect(foncier.hidden).toBe(false);
   });
 
   it("contrat lu dans le titre quand la source ne le donne pas", () => {
@@ -205,11 +229,13 @@ describe("règles détaillées", () => {
     expect(score({ ...PERFECT, contractType: "CDI", title: "Développeur Vue.js (CDD possible)" }).breakdown.contract).toBe(100);
   });
 
-  it("postes senior / confirmé / lead masqués du flux principal", () => {
+  it("postes senior / confirmé / lead masqués, mais « manager » seul ne suffit pas", () => {
     expect(score({ ...PERFECT, title: "Développeur Java Confirmé H/F" }).hiddenReason).toBe("Poste senior / confirmé");
     expect(score({ ...PERFECT, title: "Senior Frontend Engineer" }).hidden).toBe(true);
-    expect(score({ ...PERFECT, title: "Tech Lead Vue.js" }).hiddenReason).toBe("Poste de lead / manager");
+    expect(score({ ...PERFECT, title: "Tech Lead Vue.js" }).hiddenReason).toBe("Poste de lead / direction");
     expect(score({ ...PERFECT, title: "Développeur Vue.js (futur lead)" }).hidden).toBe(false);
+    expect(score({ ...PERFECT, title: "Office Manager" }).hidden).toBe(false);
+    expect(score({ ...PERFECT, title: "Senior Account Manager" }).hiddenReason).toBe("Poste senior / confirmé");
   });
 
   it("un « salaire » sous 8 000 € (taux journalier) est ignoré", () => {
@@ -228,8 +254,8 @@ describe("règles détaillées", () => {
   });
 });
 
-describe("offres hors informatique (aucune techno + titre sans rapport)", () => {
-  const offTopic: ScoringInput = {
+describe("annonces sans compétence reconnue", () => {
+  const genericJob: ScoringInput = {
     title: "Dessinateur (H/F)",
     description: "Mobilité pour des déplacements ponctuels sur chantier. Contrat : CDI. Perspectives d'évolution.",
     contractType: null,
@@ -241,23 +267,25 @@ describe("offres hors informatique (aucune techno + titre sans rapport)", () => 
     travelMinutes: null,
   };
 
-  it("« Dessinateur » dans ta zone : plafonné à 15 % et masqué", () => {
-    const s = scoreJob(offTopic, EXAMPLE_PROFILE);
-    expect(s.final).toBeLessThanOrEqual(DEFAULT_RULES.offTopicCap);
-    expect(s.hidden).toBe(true);
-    expect(s.hiddenReason).toBe("Pas un poste informatique");
-    expect(s.warnings[0]).toMatch(/titre sans rapport avec l'informatique/);
-  });
-
-  it("titre de développeur avec un extrait trop court (aucune techno) : ni plafonné ni masqué", () => {
-    const s = scoreJob({ ...offTopic, title: "Développeur web (H/F)" }, EXAMPLE_PROFILE);
+  it("métier généraliste sans mots-clés reconnus : score neutre sur les compétences, pas de masquage hors domaine", () => {
+    const s = scoreJob(genericJob, EXAMPLE_PROFILE);
+    expect(s.breakdown.technical).toBe(DEFAULT_RULES.neutral);
     expect(s.hidden).toBe(false);
-    expect(s.final).toBeGreaterThan(DEFAULT_RULES.offTopicCap);
+    expect(s.warnings).toContain("Aucune compétence reconnue dans l'annonce");
   });
 
-  it("une techno dans l'annonce suffit à ne pas être hors sujet", () => {
-    const s = scoreJob({ ...offTopic, title: "Chargé d'études", description: "Vous utiliserez Python au quotidien." }, EXAMPLE_PROFILE);
-    expect(s.hiddenReason).not.toBe("Pas un poste informatique");
+  it("les compétences de profil non informatique sont extraites et comparées", () => {
+    const profile: Profile = {
+      ...EXAMPLE_PROFILE,
+      skills: ["Sage", "Paie", "Excel"],
+      preferredTechs: [{ name: "Paie", weight: 1 }],
+    };
+    const s = scoreJob(
+      { ...genericJob, title: "Assistant comptable", description: "Maîtrise de Sage et Excel. La paie est un plus." },
+      profile,
+    );
+    expect(s.breakdown.technical).toBe(100);
+    expect(s.matchedSkills).toEqual(expect.arrayContaining(["Sage", "Excel", "Paie"]));
   });
 });
 

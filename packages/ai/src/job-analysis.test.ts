@@ -22,7 +22,7 @@ const GOOD = {
   competences_bonus: ["Kubernetes", "java"],
   niveau: "confirme",
   experience_min_ans: 5,
-  employeur: "esn_ou_cabinet",
+  employeur: "cabinet_ou_client",
   points_attention: ["5 ans demandés", "Mission chez un client"],
   adequation: "faible",
   avis: "Stack Java/Angular éloignée de ton profil Vue.js, et 5 ans demandés.",
@@ -51,7 +51,7 @@ describe("IA locale (Ollama)", () => {
     expect(model).toBe("gemma4:e4b");
     expect(result.missions).toEqual(["Développer en Java", "Faire les interfaces Angular"]);
     expect(result.competences_bonus).toEqual(["Kubernetes"]); // « java » est déjà obligatoire
-    expect(result.employeur).toBe("esn_ou_cabinet");
+    expect(result.employeur).toBe("cabinet_ou_client");
   });
 
   it("cas réel : phrases retirées des compétences, poste trop expérimenté → adéquation faible", async () => {

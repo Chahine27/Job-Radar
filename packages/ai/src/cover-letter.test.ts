@@ -236,6 +236,17 @@ describe("atouts / manques et formulation humaine (cas n°2)", () => {
     expect(gaps.join()).not.toMatch(/React|PostgreSQL/);
   });
 
+  it("compare aussi les compétences personnalisées d'un métier non informatique", () => {
+    const cv = "Assistante comptable : j'ai suivi la paie avec Sage et Excel.";
+    const job = "Assistant comptable. Compétences demandées : paie, Sage et Excel.";
+    const skills = ["Paie", "Sage", "Excel"];
+    const { strengths, gaps } = strengthsAndGaps(job, cv, skills);
+    expect(strengths.map((x) => x.skill)).toEqual(skills);
+    expect(strengths[0]?.proof).toContain("paie");
+    expect(gaps).toEqual([]);
+    expect(findLetterIssues("Je maîtrise la paie avec Sage.", { ...KIT, cvText: cv, mastered: "Paie, Sage" }, job)).toEqual([]);
+  });
+
   it("le prompt contient le tableau ATOUTS VÉRIFIÉS et MANQUES avant le CV", () => {
     const prompt = buildLetterPrompt({ ...JOB, description: job }, { ...KIT, cvText: cv });
     expect(prompt.indexOf("ATOUTS VÉRIFIÉS")).toBeGreaterThanOrEqual(0);

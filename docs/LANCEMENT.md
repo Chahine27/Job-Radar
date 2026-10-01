@@ -191,7 +191,7 @@ Le score, l'analyse IA et la lettre utilisent alors l'annonce complète (la coll
 **Lettre de motivation**
 1. Menu **CV & lettre** : colle ton CV (texte), une lettre que tu as déjà écrite (pour le style), ton en-tête → **Enregistrer**.
 2. Page d'une offre, carte **Lettre de motivation** → **Écrire la lettre avec l'IA**.
-3. Lis l'encadré **À vérifier avant d'envoyer** (techno absente de ton CV, nom repris de ta lettre exemple…), corrige
+3. Lis l'encadré **À vérifier avant d'envoyer** (compétence absente de ton CV, nom repris de ta lettre exemple…), corrige
    directement dans le texte, puis **Enregistrer mes modifications**.
 4. **Copier** (pour un formulaire ou un email) ou **Enregistrer en PDF** (choisis « Enregistrer au format PDF » comme imprimante).
 

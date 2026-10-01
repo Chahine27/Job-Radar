@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les analyses déjà faites seront refaites à la demande. */
-export const ANALYSIS_PROMPT_VERSION = "2026-09-30.6";
+export const ANALYSIS_PROMPT_VERSION = "2026-10-01.1";
 
 /** Ce que l'IA doit rendre (validé : une réponse hors format est refusée). */
 export const JobAnalysisSchema = z.object({
@@ -12,7 +12,7 @@ export const JobAnalysisSchema = z.object({
   competences_bonus: z.array(z.string().trim().min(1).max(60)).max(15),
   niveau: z.enum(["junior", "confirme", "senior", "inconnu"]),
   experience_min_ans: z.number().int().min(0).max(30).nullable(),
-  employeur: z.enum(["direct", "esn_ou_cabinet", "inconnu"]),
+  employeur: z.enum(["direct", "cabinet_ou_client", "esn_ou_cabinet", "inconnu"]),
   points_attention: z.array(z.string().trim().min(1).max(200)).max(6),
   adequation: z.enum(["forte", "moyenne", "faible"]),
   avis: z.string().trim().min(1).max(400),
@@ -29,7 +29,7 @@ export const JOB_ANALYSIS_JSON_SCHEMA = {
     competences_bonus: { type: "array", items: { type: "string" } },
     niveau: { type: "string", enum: ["junior", "confirme", "senior", "inconnu"] },
     experience_min_ans: { type: ["integer", "null"] },
-    employeur: { type: "string", enum: ["direct", "esn_ou_cabinet", "inconnu"] },
+    employeur: { type: "string", enum: ["direct", "cabinet_ou_client", "esn_ou_cabinet", "inconnu"] },
     points_attention: { type: "array", items: { type: "string" } },
     adequation: { type: "string", enum: ["forte", "moyenne", "faible"] },
     avis: { type: "string" },
@@ -87,14 +87,14 @@ Règles :
 - competences_bonus : celles présentées comme un plus (« apprécié », « souhaité », « un plus », « idéalement », « nice to have »).
 - niveau : junior, confirme ou senior. Si le TITRE du poste dit « junior », « confirmé » ou « senior », c'est le titre qui compte ; si le texte dit autre chose, signale la contradiction dans points_attention. Sinon, d'après l'expérience demandée ; inconnu si rien ne l'indique.
 - experience_min_ans : le MINIMUM d'années d'expérience demandées AU CANDIDAT (« 1 à 2 ans » → 1, « > 1 an » → 1, « junior / débutant accepté » → 0). Jamais l'âge de l'entreprise ni l'expérience d'une personne de l'équipe (« notre CTO a 12 ans d'expérience »). Rien d'écrit → null. Si l'annonce se contredit (fiche du site « Expérience : 1 à 2 ans » mais texte « au moins 5 ans »), prends ce que dit le texte rédigé par le recruteur (profil recherché) et signale la contradiction dans points_attention.
-- employeur : esn_ou_cabinet si c'est une ESN, un cabinet ou une mission chez un client (« pour l'un de nos clients », « en mission chez ») ; direct si l'entreprise recrute pour elle-même ; sinon inconnu.
+- employeur : cabinet_ou_client si une agence, un cabinet, une ESN ou un intermédiaire recrute pour un client (« pour l'un de nos clients », « en mission chez ») ; direct si l'entreprise recrute pour elle-même ; sinon inconnu.
 - Si l'annonce est marquée EXTRAIT : ce n'est que le début du texte. Ne déduis rien de ce qui manque, et mets « Annonce incomplète : ouvre l'annonce complète pour vérifier les exigences » dans points_attention.
 - Ce qui correspond au parcours du candidat (secteur où il a déjà travaillé, compétence de son CV) est un ATOUT : cite-le dans avis, jamais dans points_attention.
 - Type de contrat : ne le mets dans points_attention QUE s'il n'est pas dans les « Contrats souhaités » du candidat.
 - points_attention : les pièges concrets pour le candidat (poste senior, mission chez un client, astreintes, déplacements, anglais exigé, habilitation, salaire non indiqué, compétence principale absente de son profil…). 5 maximum.
 - adequation : compare l'annonce au PROFIL DU CANDIDAT donné.
   forte = il a la plupart des compétences exigées ET l'expérience demandée ne dépasse pas la sienne.
-  faible = expérience demandée nettement au-dessus de la sienne, OU technologie principale absente de son profil.
+  faible = expérience demandée nettement au-dessus de la sienne, OU compétence principale absente de son profil.
   moyenne = entre les deux.
 - avis : une phrase directe, en TUTOYANT le candidat (« tu », jamais « vous »), qui dit pourquoi ça colle ou pas. Même règle pour points_attention.`;
 

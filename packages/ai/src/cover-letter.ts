@@ -1,11 +1,11 @@
 import type { LetterKit } from "@job-radar/shared";
-import { extractSkills, getSkill } from "@job-radar/skills";
+import { extractSkills, getSkill, resolveSkill, type Skill } from "@job-radar/skills";
 import { z } from "zod";
 import type { AnalysisJobInput } from "./job-analysis";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les lettres existantes seront signalées « à refaire ». */
-export const LETTER_PROMPT_VERSION = "2026-10-01.1";
+export const LETTER_PROMPT_VERSION = "2026-10-01.2";
 
 /** Ce que l'IA écrit : l'objet et le corps. L'en-tête, « Madame, Monsieur » et la politesse sont ajoutés par le code. */
 export const LetterDraftSchema = z.object({
@@ -100,16 +100,33 @@ Tu réponds UNIQUEMENT avec le JSON demandé.
   5. une phrase de conclusion qui propose un échange (avec le nom de l'entreprise s'il est connu).
 - N'écris PAS « Madame, Monsieur », ni la formule de politesse finale, ni la signature : elles sont ajoutées automatiquement.`;
 
+function customSkills(labels: string[]): Skill[] {
+  return labels.map((name) => resolveSkill(name)).filter((skill) => skill.id.startsWith("custom:"));
+}
+
+function masteredLabels(kit: Pick<LetterKit, "mastered">): string[] {
+  return (kit.mastered ?? "").split(/[,;\n]+/).map((name) => name.trim()).filter(Boolean);
+}
+
+function skillLabel(id: string, extraSkills: Skill[] = []): string {
+  return getSkill(id)?.label ?? extraSkills.find((skill) => skill.id === id)?.label ?? id;
+}
+
 /**
- * Calcul fait par le code (fiable) avant d'écrire : technologies de l'annonce présentes dans le CV (avec la ligne
- * du CV qui le prouve), dans l'ordre où l'annonce les cite, et technologies qui manquent.
+ * Calcul fait par le code (fiable) avant d'écrire : compétences de l'annonce présentes dans le CV (avec la ligne
+ * du CV qui le prouve), dans l'ordre où l'annonce les cite, et compétences qui manquent.
  */
-export function strengthsAndGaps(jobText: string, cvText: string): { strengths: Array<{ id: string; skill: string; proof: string }>; gaps: string[] } {
-  const job = extractSkills(jobText);
-  const cv = new Set(extractSkills(cvText));
+export function strengthsAndGaps(
+  jobText: string,
+  cvText: string,
+  knownSkills: string[] = [],
+): { strengths: Array<{ id: string; skill: string; proof: string }>; gaps: string[] } {
+  const extraSkills = customSkills(knownSkills);
+  const job = extractSkills(jobText, extraSkills);
+  const cv = new Set(extractSkills(cvText, extraSkills));
   const lower = jobText.toLowerCase();
   const pos = (id: string) => {
-    const sk = getSkill(id);
+    const sk = getSkill(id) ?? extraSkills.find((skill) => skill.id === id);
     const idx = [sk?.label ?? id, ...(sk?.aliases ?? [])].map((a) => lower.indexOf(a.toLowerCase())).filter((i) => i >= 0);
     return idx.length ? Math.min(...idx) : Number.MAX_SAFE_INTEGER;
   };
@@ -117,13 +134,13 @@ export function strengthsAndGaps(jobText: string, cvText: string): { strengths: 
   const lines = cvText.split(/\n+/).map((l) => l.trim()).filter((l) => l.length > 3);
   const proofOf = (id: string) => {
     // La ligne la plus « concrète » (expérience ou projet) plutôt que la liste de compétences.
-    const hits = lines.filter((l) => extractSkills(l).includes(id));
+    const hits = lines.filter((l) => extractSkills(l, extraSkills).includes(id));
     const concrete = hits.find((l) => !/^(-\s*)?(frontend|backend|mobile|architecture|devops|autres|outils|accessibilit|comp[ée]tences)\b/i.test(l));
     return (concrete ?? hits[0] ?? "").slice(0, 160);
   };
   return {
-    strengths: ordered.filter((id) => cv.has(id)).map((id) => ({ id, skill: getSkill(id)?.label ?? id, proof: proofOf(id) })).slice(0, 8),
-    gaps: ordered.filter((id) => !cv.has(id)).map((id) => getSkill(id)?.label ?? id).slice(0, 8),
+    strengths: ordered.filter((id) => cv.has(id)).map((id) => ({ id, skill: skillLabel(id, extraSkills), proof: proofOf(id) })).slice(0, 8),
+    gaps: ordered.filter((id) => !cv.has(id)).map((id) => skillLabel(id, extraSkills)).slice(0, 8),
   };
 }
 
@@ -176,18 +193,18 @@ const SPONTANEOUS_RULES = `CANDIDATURE SPONTANÉE (priorité sur tout le reste)
 - Il n'y a PAS d'offre : n'écris jamais « votre offre », « votre annonce », « le poste que vous proposez ». Objet : « Candidature spontanée – » + l'intitulé visé.
 - Si les RÈGLES DU CANDIDAT prévoient une phrase sur « votre offre », remplace-la par l'envie de rejoindre l'entreprise, avec une raison liée à son SECTEUR (seule info connue).
 - N'invente RIEN sur l'entreprise : ni produit, ni client, ni projet, ni valeur, ni actualité. Seuls le nom, le secteur, la ville et la taille sont connus.
-- Présente les expériences les plus solides du CV (pas de technologies « demandées » : il n'y en a pas).
+- Présente les expériences les plus solides du CV (pas de compétences « demandées » : il n'y en a pas).
 `;
 
 export function buildLetterPrompt(job: AnalysisJobInput, kit: LetterKit, opts: LetterOptions = {}): string {
   const place = [job.city, job.department ? `(${job.department})` : null].filter(Boolean).join(" ") || "non indiqué";
-  const { strengths, gaps } = strengthsAndGaps(`${job.title}\n${job.description}`, kit.cvText);
+  const { strengths, gaps } = strengthsAndGaps(`${job.title}\n${job.description}`, kit.cvText, masteredLabels(kit));
   const table = strengths.length
-    ? `ATOUTS VÉRIFIÉS (technologies de l'annonce présentes dans le CV, dans l'ordre de l'annonce ; utilise en priorité les premières)
+    ? `ATOUTS VÉRIFIÉS (compétences de l'annonce présentes dans le CV, dans l'ordre de l'annonce ; utilise en priorité les premières)
 ${strengths.map((x) => `- ${x.skill} ← CV : « ${x.proof} »`).join("\n")}
 `
     : "";
-  const missing = gaps.length ? `MANQUES (technologies de l'annonce absentes du CV : NE LES LISTE PAS dans la lettre ; au plus une, si elle est centrale)\n- ${gaps.join(", ")}\n` : "";
+  const missing = gaps.length ? `MANQUES (compétences de l'annonce absentes du CV : NE LES LISTE PAS dans la lettre ; au plus une, si elle est centrale)\n- ${gaps.join(", ")}\n` : "";
   const own = kit.rules?.trim()
     ? `RÈGLES DU CANDIDAT (écrites par lui : elles passent AVANT les règles générales ; les faits qu'elles contiennent sont vrais)
 """
@@ -266,25 +283,26 @@ export function assembleLetter(kit: LetterKit, draft: LetterBody, date: Date): s
 
 /**
  * Relecture automatique : ce qui mérite un coup d'œil avant d'envoyer.
- * - technologie citée dans la lettre mais absente du CV (l'IA a peut-être dit que tu la maîtrises) ;
+ * - compétence citée dans la lettre mais absente du CV (l'IA a peut-être dit que tu la maîtrises) ;
  * - nom propre venant de la lettre exemple (autre entreprise) et absent de l'annonce et du CV.
  */
 export function checkLetter(letter: string, kit: LetterKit, jobText: string, jobTitle = "", opts: LetterOptions = {}): string[] {
   const warnings: string[] = [];
-  const inCv = new Set(extractSkills(kit.cvText));
+  const extraSkills = customSkills(masteredLabels(kit));
+  const inCv = new Set(extractSkills(kit.cvText, extraSkills));
   // Le titre du poste recopié (objet, 1re phrase) n'est pas une affirmation de maîtrise.
   const title = jobTitle.replace(/\s*[(\[]?\b[HF]\s*\/\s*[HF]\b[)\]]?/gi, "").trim();
   const claims = title ? letter.split(title).join(" ") : letter;
-  for (const id of extractSkills(claims)) {
+  for (const id of extractSkills(claims, extraSkills)) {
     if (inCv.has(id)) continue;
-    const label = getSkill(id)?.label ?? id;
+    const label = skillLabel(id, extraSkills);
     warnings.push(`« ${label} » n'est pas dans ton CV : vérifie que la lettre ne dit pas que tu le maîtrises.`);
   }
   // « je souhaite apprendre Python » alors que Python est dans le CV : la lettre se sous-vend.
   for (const m of letter.matchAll(/(?:apprendre|découvrir|me former (?:à|sur)|monter en compétences? (?:sur|en))\s+(?:le |la |l'|les )?([^.,;\n]{2,60})/gi)) {
-    for (const id of extractSkills(m[1]!)) {
+    for (const id of extractSkills(m[1]!, extraSkills)) {
       if (!inCv.has(id)) continue;
-      const label = getSkill(id)?.label ?? id;
+      const label = skillLabel(id, extraSkills);
       warnings.push(`La lettre dit que tu veux apprendre « ${label} », alors que c'est dans ton CV : dis plutôt que tu l'as déjà pratiqué.`);
     }
   }
@@ -293,11 +311,11 @@ export function checkLetter(letter: string, kit: LetterKit, jobText: string, job
   for (const issue of findLetterIssues(letter, kit, jobText, opts)) {
     if (/^(Supprime|Pas de « maîtrise »|Phrase trop longue|Ne liste pas tes manques|Le chiffre|Phrase recopiée|Candidature spontanée)/.test(issue)) warnings.push(issue);
   }
-  // Technologies du CV citées dans la lettre mais absentes de l'annonce : la lettre récite le CV au lieu de répondre à l'offre.
-  const inJob = new Set(extractSkills(jobText));
-  const offTopicIds = offTopicSkills(letter, inCv, inJob);
-  const offTopic = offTopicIds.map((id) => getSkill(id)?.label ?? id);
-  if (familiesOf(offTopicIds) >= 2) {
+  // Compétences du CV citées dans la lettre mais absentes de l'annonce : la lettre récite le CV au lieu de répondre à l'offre.
+  const inJob = new Set(extractSkills(jobText, extraSkills));
+  const offTopicIds = offTopicSkills(letter, inCv, inJob, extraSkills);
+  const offTopic = offTopicIds.map((id) => skillLabel(id, extraSkills));
+  if (familiesOf(offTopicIds, extraSkills) >= 2) {
     warnings.push(`La lettre cite ${offTopic.join(", ")}, absents de l'annonce : garde seulement ce qui répond à l'offre (sinon ça ressemble à une récitation du CV).`);
   }
   if (kit.letterExample) {
@@ -365,10 +383,12 @@ const FORBIDDEN: Array<[RegExp, string]> = [
 ];
 
 /**
- * Projets et entreprises du CV, avec les technologies écrites pour chacun :
- * « - NomDuProjet — … React, Node JS » (projet) et « … · ENTREPRISE » suivi de ses lignes « - … » (entreprise).
+ * Projets et entreprises du CV, avec les compétences et outils écrits pour chacun.
  */
-export function cvEntities(cvText: string): Array<{ name: string; kind: "projet" | "entreprise"; skills: Set<string> }> {
+export function cvEntities(
+  cvText: string,
+  extraSkills: Skill[] = [],
+): Array<{ name: string; kind: "projet" | "entreprise"; skills: Set<string> }> {
   const out: Array<{ name: string; kind: "projet" | "entreprise"; skills: Set<string> }> = [];
   let employer: { name: string; kind: "entreprise"; skills: Set<string> } | null = null;
   for (const raw of cvText.split(/\n/)) {
@@ -383,10 +403,10 @@ export function cvEntities(cvText: string): Array<{ name: string; kind: "projet"
     const proj = line.match(/^[-•]\s*([^—–:]{2,40}?)\s+[—–]\s+/);
     if (proj) {
       employer = null;
-      out.push({ name: proj[1]!.trim(), kind: "projet", skills: new Set(extractSkills(line)) });
+      out.push({ name: proj[1]!.trim(), kind: "projet", skills: new Set(extractSkills(line, extraSkills)) });
       continue;
     }
-    if (employer && /^[-•]/.test(line)) for (const id of extractSkills(line)) employer.skills.add(id);
+    if (employer && /^[-•]/.test(line)) for (const id of extractSkills(line, extraSkills)) employer.skills.add(id);
     else if (!line.startsWith("-")) employer = null;
   }
   return out;
@@ -395,17 +415,26 @@ const MASTERY = word("je ma[îi]trise|ma ma[îi]trise|ma[îi]triser|ma[îi]trise
 const KNOWS = /(approfondi|consolid|renforc|ma connaissance d|connaissances? (en|de|sur)|exp[ée]rience (avec|en|sur|de)|j['’]ai (utilis|pratiqu|travaill|d[ée]velopp|con[çc]u)|ma[îi]tris)/i;
 
 /**
- * Technologies du CV citées dans la lettre mais sans rapport avec l'annonce : ni demandées, ni de la même famille
- * qu'une techno demandée (TypeScript pour un poste Vue.js est normal ; .NET ou Flutter pour un poste Python / Vue.js, non).
+ * Compétences du CV citées dans la lettre mais sans rapport avec l'annonce : ni demandées, ni proches du même domaine.
  */
-/** Nombre de familles différentes (Java + Spring Boot = 1 famille : c'est UNE expérience backend). */
-const familiesOf = (ids: string[]) => new Set(ids.map((id) => getSkill(id)?.family ?? id)).size;
+/** Compétences personnalisées inconnues partagent la famille « other ». */
+const familiesOf = (ids: string[], extraSkills: Skill[] = []) =>
+  new Set(
+    ids.map((id) => {
+      const family = getSkill(id)?.family ?? extraSkills.find((skill) => skill.id === id)?.family;
+      return family && family !== "other" ? family : id;
+    }),
+  ).size;
 
-function offTopicSkills(text: string, inCv: Set<string>, inJob: Set<string>): string[] {
-  const families = new Set([...inJob].map((id) => getSkill(id)?.family).filter(Boolean));
-  return [...new Set(extractSkills(text))].filter((id) => {
+function offTopicSkills(text: string, inCv: Set<string>, inJob: Set<string>, extraSkills: Skill[] = []): string[] {
+  const families = new Set(
+    [...inJob]
+      .map((id) => getSkill(id)?.family ?? extraSkills.find((skill) => skill.id === id)?.family)
+      .filter(Boolean),
+  );
+  return [...new Set(extractSkills(text, extraSkills))].filter((id) => {
     if (!inCv.has(id) || inJob.has(id)) return false;
-    const fam = getSkill(id)?.family;
+    const fam = getSkill(id)?.family ?? extraSkills.find((skill) => skill.id === id)?.family;
     return !(fam && fam !== "other" && families.has(fam));
   });
 }
@@ -414,9 +443,10 @@ function offTopicSkills(text: string, inCv: Set<string>, inJob: Set<string>): st
  * Problèmes précis d'une lettre, rédigés comme des consignes de correction pour l'IA.
  * Vide = rien à corriger.
  */
-/** Technos que le candidat dit maîtriser (champ « mastered »). */
+/** Compétences que le candidat dit maîtriser (champ « mastered »). */
 export function masteredSkills(kit: Pick<LetterKit, "mastered">): Set<string> {
-  return new Set(extractSkills(kit.mastered ?? ""));
+  const names = masteredLabels(kit);
+  return new Set(extractSkills(names.join("\n"), customSkills(names)));
 }
 
 /** Mots interdits choisis par le candidat (virgules, points-virgules ou un par ligne). */
@@ -466,21 +496,22 @@ export function copiedFromJob(body: string, jobText: string, jobTitle = ""): str
 
 export function findLetterIssues(body: string, kit: LetterKit, jobText: string, opts: LetterOptions = {}): string[] {
   const issues: string[] = [];
-  const inCv = new Set(extractSkills(kit.cvText));
-  const inJob = new Set(extractSkills(jobText));
+  const extraSkills = customSkills(masteredLabels(kit));
+  const inCv = new Set(extractSkills(kit.cvText, extraSkills));
+  const inJob = new Set(extractSkills(jobText, extraSkills));
   const sentences = body.split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
-  const label = (id: string) => getSkill(id)?.label ?? id;
+  const label = (id: string) => skillLabel(id, extraSkills);
 
   for (const [re, name] of [...FORBIDDEN, ...ownBanned(kit)]) if (re.test(body)) issues.push(`Supprime ${name}.`);
   const mastered = masteredSkills(kit);
   for (const s of sentences) {
-    // « maîtrise » accepté seulement si ce qui suit le mot (jusqu'à la virgule ou « en m'appuyant ») ne parle que de technos maîtrisées.
+    // « maîtrise » accepté seulement si ce qui suit le mot (jusqu'à la virgule ou « en m'appuyant ») ne parle que de compétences maîtrisées.
     const m = MASTERY.exec(s);
     const after = m ? s.slice(m.index + m[0].length).split(/[,;.:]|\s(?:en m['’]appuyant|grâce|gr[aâ]ce à|avec|et j['’]ai|car)\s/i)[0] ?? "" : "";
-    const claimed = extractSkills(after);
+    const claimed = extractSkills(after, extraSkills);
     const masteryOk = mastered.size > 0 && claimed.length > 0 && claimed.every((id) => mastered.has(id));
     if (MASTERY.test(s) && !masteryOk) issues.push(`Pas de « maîtrise » ni « expert » (seulement pour ce que tu as déclaré maîtriser) : « ${s.slice(0, 90)}… » → « j'ai utilisé / j'ai développé ».`);
-    const absent = extractSkills(s).filter((id) => !inCv.has(id));
+    const absent = extractSkills(s, extraSkills).filter((id) => !inCv.has(id));
     if (absent.length && KNOWS.test(s) && !/pas encore|jamais (?:utilis|travaill|pratiqu)|n['’]ai pas/i.test(s)) {
       issues.push(`${absent.map(label).join(", ")} n'est pas dans le CV : ne prétends pas le connaître (« ${s.slice(0, 90)}… »). Une seule phrase franche : pas encore utilisé, envie de s'y former.`);
     }
@@ -488,9 +519,9 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
     if (words > 38) issues.push(`Phrase trop longue (${words} mots) à couper : « ${s.slice(0, 70)}… ».`);
   }
   for (const m of body.matchAll(/(?:apprendre|découvrir|me former (?:à|sur))\s+(?:le |la |l'|les )?([^.,;\n]{2,60})/gi)) {
-    for (const id of extractSkills(m[1]!)) if (inCv.has(id)) issues.push(`${label(id)} est dans le CV : ne dis pas vouloir l'apprendre, dis qu'il l'a pratiqué.`);
+    for (const id of extractSkills(m[1]!, extraSkills)) if (inCv.has(id)) issues.push(`${label(id)} est dans le CV : ne dis pas vouloir l'apprendre, dis qu'il l'a pratiqué.`);
   }
-  const offIds = offTopicSkills(body, inCv, inJob);
+  const offIds = offTopicSkills(body, inCv, inJob, extraSkills);
   const offTopic = offIds.map(label);
   if (familiesOf(offIds) >= 2) issues.push(`Retire ${offTopic.join(", ")} : sans rapport avec l'annonce, ça fait récitation du CV.`);
   // Débuts de phrase répétitifs (« J'ai … J'ai … J'ai … »).
@@ -502,23 +533,23 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
       break;
     }
   }
-  // Même technologie citée plus de deux fois.
+  // Même compétence citée plus de deux fois.
   const counts = new Map<string, number>();
-  for (const s of sentences) for (const id of extractSkills(s)) counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const s of sentences) for (const id of extractSkills(s, extraSkills)) counts.set(id, (counts.get(id) ?? 0) + 1);
   for (const [id, n] of counts) if (n > 2 && !inJob.has(id)) issues.push(`${label(id)} est cité ${n} fois : une ou deux suffisent.`);
   // Atouts vérifiés oubliés (dans l'annonce ET dans le CV) : la lettre doit s'en servir.
-  const { strengths } = strengthsAndGaps(jobText, kit.cvText);
-  const used = new Set(extractSkills(body));
+  const { strengths } = strengthsAndGaps(jobText, kit.cvText, masteredLabels(kit));
+  const used = new Set(extractSkills(body, extraSkills));
   const forgotten = strengths.slice(0, 5).filter((x) => !used.has(x.id)).map((x) => `${x.skill} (CV : « ${x.proof.slice(0, 80)} »)`);
   if (forgotten.length >= 2) issues.push(`Atouts demandés par l'annonce et prouvés par le CV mais absents de la lettre : ${forgotten.slice(0, 3).join(" ; ")}.`);
   // Technologie du CV attribuée au mauvais projet / à la mauvaise entreprise (ex. « microservices … projet parking »).
-  const entities = cvEntities(kit.cvText);
+  const entities = cvEntities(kit.cvText, extraSkills);
   // Découpage en propositions (« …PostgreSQL et j'ai utilisé SQL sur Doc Chez Vous » = deux faits distincts).
   const clauses = sentences.flatMap((x) => x.split(/;|\s(?:et|puis|mais)\s+(?=j['’]|je\s|nous\s)/i));
   for (const s of clauses) {
     const named = entities.filter((e) => s.toLowerCase().includes(e.name.toLowerCase()));
     if (!named.length) continue;
-    const wrong = extractSkills(s).filter((id) => inCv.has(id) && !named.some((e) => e.skills.has(id)));
+    const wrong = extractSkills(s, extraSkills).filter((id) => inCv.has(id) && !named.some((e) => e.skills.has(id)));
     if (wrong.length) {
       issues.push(`${wrong.map(label).join(", ")} n'est pas écrit pour ${named.map((e) => e.name).join(" / ")} dans le CV : ne l'y associe pas (« ${s.slice(0, 90)}… »).`);
     }
@@ -528,8 +559,8 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   }
   // Manques listés : au plus un.
   const title = jobText.split("\n")[0] ?? "";
-  const inTitle = new Set(extractSkills(title));
-  const gapsCited = [...new Set(extractSkills(body))].filter((id) => !inCv.has(id) && inJob.has(id) && !inTitle.has(id));
+  const inTitle = new Set(extractSkills(title, extraSkills));
+  const gapsCited = [...new Set(extractSkills(body, extraSkills))].filter((id) => !inCv.has(id) && inJob.has(id) && !inTitle.has(id));
   if (gapsCited.length >= 2) issues.push(`Ne liste pas tes manques (${gapsCited.map(label).join(", ")}) : au plus un, seulement s'il est central dans l'annonce.`);
   // Chiffres inventés.
   const sources = `${kit.cvText}\n${kit.rules ?? ""}\n${jobText}\n${kit.closing ?? ""}`;

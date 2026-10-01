@@ -1,6 +1,6 @@
 import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { describe, expect, it } from "vitest";
-import { APP_URL, TEST_EMAIL, TEST_PASSWORD, createTestApp, login } from "./test-helpers";
+import { APP_URL, DEVELOPER_TEST_PROFILE, TEST_EMAIL, TEST_PASSWORD, createTestApp, login } from "./test-helpers";
 
 describe("santé", () => {
   it("GET /api/health répond ok", async () => {
@@ -124,7 +124,7 @@ describe("profil", () => {
     const cookies = await login(app);
     const res = await app.inject({ method: "GET", url: "/api/profile", cookies });
     expect(res.statusCode).toBe(200);
-    expect(res.json().profile).toEqual(EXAMPLE_PROFILE);
+    expect(res.json().profile).toEqual(DEVELOPER_TEST_PROFILE);
     expect(res.json().home).toBeNull();
   });
 

@@ -4,14 +4,17 @@ import { ATS_FETCHERS, type AtsPosting, type CompanyTarget } from "./ats";
 
 export const CAREERS_SOURCE = "company-careers";
 
-/** Les sources d'entreprise peuvent publier n'importe quel type de poste. On n'impose plus un filtre strictement technique. */
+/** Les sources d'entreprise publient tout type de poste ; seul un titre vide ou invalide est écarté. */
 const JOB_TITLE = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
 
-export function isTechTitle(title: string): boolean {
+export function hasJobTitle(title: string): boolean {
   const t = title.trim();
   if (!t || t.length < 2 || t.length > 200 || !JOB_TITLE.test(t)) return false;
   return true;
 }
+
+/** @deprecated Use hasJobTitle; this check accepts every profession. */
+export const isTechTitle = hasJobTitle;
 
 /**
  * Sites carrières des entreprises choisies (Greenhouse, Lever, Ashby, Recruitee).
@@ -46,7 +49,7 @@ export class CompanyCareersSource implements JobSource {
       try {
         const postings = await this.limiter.schedule(() => ATS_FETCHERS[c.ats](this.fetch, c));
         const collectedAt = new Date(this.opts.now?.() ?? Date.now());
-        for (const p of postings.filter((p) => p.title && isTechTitle(p.title))) {
+        for (const p of postings.filter((p) => p.title && hasJobTitle(p.title))) {
           jobs.push({ source: CAREERS_SOURCE, sourceJobId: `${p.ats}:${p.boardKey}:${p.id}`, data: p satisfies AtsPosting, collectedAt });
         }
       } catch (err) {

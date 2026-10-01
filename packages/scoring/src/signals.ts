@@ -14,7 +14,7 @@ export function detectSeniority(title: string): Seniority | null {
     " ",
   );
   if (/\b(stage|stagiaire|intern(ship)?)\b/.test(t)) return "intern";
-  if (/\b(lead|tech ?lead|principal|staff|head of|architecte|manager)\b/.test(t)) return "lead";
+  if (/\b(lead|tech ?lead|principal|staff|head of|director|directeur|directrice)\b/.test(t)) return "lead";
   if (/\b(senior|sr\.?|confirme|expert|experimente)\b/.test(t)) return "senior";
   if (/\b(junior|jr\.?|debutant|jeune diplome)\b/.test(t)) return "junior";
   return null;
@@ -74,41 +74,6 @@ export function detectRemote(text: string): "remote" | "hybrid" | "onsite" | "un
   }
   if (/100\s*%\s*(sur site|presentiel)|pas de teletravail/.test(t)) return "onsite";
   return "unknown";
-}
-
-/**
- * Postes qui ne sont pas du développement, même si le titre contient des technos ou le mot « développeur »
- * (« Chef de projet Java », « Développeur foncier », « Business developer »...). Lu dans le titre uniquement.
- * Renvoie un libellé lisible, ou null si c'est bien un poste de développement.
- */
-export function detectNonDevRole(title: string): string | null {
-  const t = normalizeText(title);
-  const rules: Array<[RegExp, string]> = [
-    [/\bchef(fe)? de projets?\b|\bproject manager\b/, "chef de projet"],
-    [/\bproduct (owner|manager)\b|\bproduct ops\b/, "product owner / manager"],
-    [/\bscrum master\b|\bagile coach\b|\bcoach agile\b/, "scrum master / coach agile"],
-    [/\b(product|ux|ui|ux\/ui|ui\/ux|web|graphic|graphique)\s*designer\b|\bdesigner (ux|ui)\b/, "design (UX/UI)"],
-    [/\bbusiness analyst\b|\bconsultant(e)? fonctionnel(le)?\b|\bamoa\b/, "fonctionnel / AMOA"],
-    [/\bbusiness develop(er|pement)\b|\bingenieur(e)? d'affaires\b|\bcommercial(e)?\b|\bsales\b/, "commercial"],
-    [
-      /\bdeveloppeu(r|se)s?\s+(foncier|fonciere|immobilier|commercial(e)?|d'affaires|business|rh|territorial(e)?|economique|de reseau|de franchise|de clientele)\b/,
-      "développement commercial / immobilier",
-    ],
-    [/\b(directeur|directrice|responsable|head of)\b/, "poste de direction / responsable"],
-  ];
-  for (const [re, label] of rules) if (re.test(t)) return label;
-  return null;
-}
-
-/**
- * Le titre évoque-t-il un métier de l'informatique ? Sert quand AUCUNE techno n'est trouvée dans l'annonce :
- * « Dessinateur », « Soudeur », « Comptable » → non ; « Développeur », « Ingénieur logiciel » (extrait trop court) → oui.
- */
-export function looksLikeItTitle(title: string): boolean {
-  const t = normalizeText(title);
-  return /\b(developpeu(r|se)s?|developers?|dev|devops|programmeu(r|se)|logiciels?|software|informatiques?|informaticien(ne)?|web|webmaster|mobile|full ?stack|front ?end|back ?end|frontend|backend|integrat(eur|rice)|data|cloud|api|applications?|applicatif|numerique|digital|it|tech|si|systemes? d'information|sre|qa|testeu(r|se)|recette|cyber|securite informatique|reseaux?|administrateur|sysadmin|codeu(r|se)|code|java|php|python)\b/.test(
-    t,
-  );
 }
 
 /**

@@ -1,13 +1,13 @@
 import { neighborDepartments, type Profile, type RemoteType } from "@job-radar/shared";
 import { extractSkills, getSkill, resolveSkill } from "@job-radar/skills";
 import { DEFAULT_RULES, type ScoringRules } from "./rules";
-import { contractFromTitle, detectNonDevRole, detectSeniority, looksLikeItTitle, normalizeContract, type Seniority } from "./signals";
+import { contractFromTitle, detectSeniority, normalizeContract, type Seniority } from "./signals";
 
 /** Ce dont le score a besoin. Les champs inconnus sont `null` — jamais devinés. */
 export type ScoringInput = {
   title: string;
   description: string;
-  /** Technologies déjà listées par la source, en plus du texte. */
+  /** Compétences déjà listées par la source, en plus du texte. */
   technologies?: string[];
   contractType: string | null;
   experienceMinYears: number | null;
@@ -47,7 +47,7 @@ export type ScoreResult = {
   matchedSkills: string[];
   /** Mots-clés de l'offre absents de ton profil (pistes pour le CV / la lettre). */
   missingSkills: string[];
-  /** Tes technos préférées présentes : sert à départager deux offres de même score. */
+  /** Tes compétences préférées présentes : servent à départager deux offres de même score. */
   preferredSkills: string[];
   /** Offre gardée en base mais masquée du flux principal. */
   hidden: boolean;
@@ -125,8 +125,8 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
 
   const part: Part = { score: rules.neutral, reasons: [], warnings: [] };
   if (found.length === 0) {
-    part.score = rules.noSkillsTechnical;
-    part.warnings.push("Aucune techno détectée : poste peut-être hors informatique");
+    part.score = rules.neutral;
+    part.warnings.push("Aucune compétence reconnue dans l'annonce");
   } else {
     part.score = clamp((100 * matched.length) / found.length);
     part.reasons.push(`${matched.length}/${found.length} compétences de l'offre dans ton profil`);
@@ -168,7 +168,7 @@ function scoreExperience(input: ScoringInput, profile: Profile, rules: ScoringRu
 
   if (seniority === "junior" && byYears === null) part.reasons.push("Poste junior");
   if (seniority === "senior") part.warnings.push("Poste indiqué senior / confirmé");
-  if (seniority === "lead") part.warnings.push("Poste de lead / architecte / manager");
+  if (seniority === "lead") part.warnings.push("Poste de lead / direction");
   if (seniority === "intern") part.warnings.push("Annonce de stage");
 
   const known = [byYears, bySeniority].filter((n): n is number => n !== null);
@@ -291,28 +291,14 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
     }
   }
 
-  // La technique tient le reste : jamais plus de « technique + N points ».
+  // Les compétences tiennent le reste : une absence de données reste neutre, jamais bloquante.
   const skillsKnown = tech.matched.length + tech.missing.length > 0;
   if (rules.technicalMargin !== null && skillsKnown) {
     const cap = breakdown.technical + rules.technicalMargin;
     if (cap < final) {
       final = cap;
-      capLabel = `technique trop faible (${breakdown.technical} %) : le score ne dépasse pas la technique + ${rules.technicalMargin} points`;
+      capLabel = `compétences trop peu correspondantes (${breakdown.technical} %) : le score ne dépasse pas les compétences + ${rules.technicalMargin} points`;
     }
-  }
-
-  const nonDev = detectNonDevRole(input.title);
-  if (nonDev && rules.nonDevRoleCap < final) {
-    final = rules.nonDevRoleCap;
-    capLabel = `pas un poste de développement (${nonDev})`;
-  }
-
-  // Aucune techno dans l'annonce et un titre sans rapport avec l'informatique : hors sujet
-  // (sinon la zone et les infos « non précisées » suffisent à atteindre ~50 %).
-  const offTopic = tech.matched.length + tech.missing.length === 0 && !looksLikeItTitle(input.title);
-  if (offTopic && rules.offTopicCap < final) {
-    final = rules.offTopicCap;
-    capLabel = "aucune techno et titre sans rapport avec l'informatique";
   }
 
   let hiddenReason: string | null = null;
@@ -321,15 +307,13 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
   if (rules.hideNonMatchingContract && kind && breakdown.contract < 100) {
     hiddenReason = `Contrat ${kind} hors profil`;
   } else if (rules.hideSenior && (seniority === "senior" || seniority === "lead")) {
-    hiddenReason = seniority === "lead" ? "Poste de lead / manager" : "Poste senior / confirmé";
+    hiddenReason = seniority === "lead" ? "Poste de lead / direction" : "Poste senior / confirmé";
   } else if (
     rules.hideAboveYears !== null &&
     input.experienceMinYears !== null &&
     input.experienceMinYears > rules.hideAboveYears
   ) {
     hiddenReason = `Demande ${input.experienceMinYears} ans d'expérience`;
-  } else if (rules.hideOffTopic && offTopic) {
-    hiddenReason = "Pas un poste informatique";
   }
 
   const all = Object.values(parts);

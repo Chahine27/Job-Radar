@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change. */
-export const READING_PROMPT_VERSION = "2026-09-30.2";
+export const READING_PROMPT_VERSION = "2026-10-01.1";
 
 /** Ce que l'IA rend quand elle lit une annonce brute (page envoyée par l'extension). */
 export const JobReadingSchema = z.object({
@@ -70,7 +70,7 @@ Tu réponds UNIQUEMENT avec le JSON demandé. N'invente rien : ce qui n'est pas 
 - teletravail : complet (100 % à distance), hybride (quelques jours, « occasionnel », « partiel », « flexible »), sur_site (écrit qu'il n'y en a pas), sinon inconnu.
 - salaire_min / salaire_max / salaire_periode : seulement le salaire écrit dans l'annonce, en euros, tel qu'écrit (« 45k€ » → 45000), avec sa période. Une « estimation » du site n'est PAS un salaire : ignore-la. Un seul montant → min = max.
 - experience_min_ans : le nombre d'années d'expérience DEMANDÉES AU CANDIDAT (« 1 à 2 ans » → 1, « > 1 an » → 1, « junior / débutant accepté » → 0). JAMAIS l'expérience d'une personne de l'équipe (« notre CTO a 12 ans d'expérience ») ni l'âge de l'entreprise. Rien d'écrit → null.
-- competences : les technologies et compétences techniques demandées, noms courts (« React », « Java », « SQL », « Docker »), 20 maximum.`;
+- competences : les compétences, savoir-faire, logiciels, outils, diplômes et habilitations demandés, tous métiers confondus. Noms courts (ex. « Excel », « Permis B », « Paie », « SQL »), 25 maximum.`;
 
 export function buildReadingPrompt(text: string, hints?: { title?: string | null; company?: string | null } | null): string {
   const known = [hints?.title ? `- titre donné par la page : ${hints.title}` : "", hints?.company ? `- entreprise donnée par la page : ${hints.company}` : ""]
