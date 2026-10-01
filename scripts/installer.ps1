@@ -129,7 +129,7 @@ Ok "IA locale prête ($model)"
 # 6. Modules du site
 Step 6 "Modules du site (pnpm install, quelques minutes)"
 pnpm install
-if ($LASTEXITCODE -ne 0) { Fail "pnpm install a échoué (connexion internet ?)." }
+if ($LASTEXITCODE -ne 0) { Fail "pnpm install a échoué : le message juste au-dessus dit pourquoi (envoie-en une photo si besoin)." }
 Ok "Modules installés"
 
 # 7. Base de données (intégrée, fichiers dans le dossier data\)

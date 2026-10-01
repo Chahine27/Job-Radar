@@ -25,8 +25,8 @@ const pg = new EmbeddedPostgres({
   authMethod: "scram-sha-256",
   // Accents et émojis des annonces : base en UTF-8 quelle que soit la langue de Windows.
   initdbFlags: ["--encoding=UTF8"],
-  // Seulement depuis ce PC.
-  postgresFlags: ["-c", "listen_addresses=127.0.0.1"],
+  // Seulement depuis ce PC, par le réseau local (pas de fichier « socket » qui pourrait rester bloqué après un arrêt brutal).
+  postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "unix_socket_directories="],
   onLog: log,
   onError: log,
 });
