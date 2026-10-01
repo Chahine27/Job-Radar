@@ -32,7 +32,7 @@ onUnmounted(() => clearTimeout(timer));
 
 const norm = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 
-/** Départements proposés sans appel réseau (« oise », « 60 », « val d'oise »…). */
+/** Départements proposés sans appel réseau (« rhône », « 69 », « val de marne »…). */
 function departmentMatches(q: string): Suggestion[] {
   const n = norm(q);
   return Object.entries(DEPARTMENTS)
@@ -151,10 +151,11 @@ const zone = computed(() => {
 
     <div v-if="showRomes" class="stack romes">
       <p class="muted small" style="margin: 0">
-        Codes ROME : M1805 études et développement informatique · M1810 production et exploitation · M1806 conseil et maîtrise
-        d'ouvrage.
+        Codes ROME de ton métier (5 au maximum). Pour les trouver : tape ton métier sur
+        <a href="https://candidat.francetravail.fr/metierscope/" target="_blank" rel="noopener noreferrer">Métierscope (France Travail)</a>,
+        le code est écrit sur la fiche du métier.
       </p>
-      <TagInput v-model="s.romes" placeholder="Ex. M1810" />
+      <TagInput v-model="s.romes" placeholder="Ex. M1203" />
       <div><button type="button" class="small primary" @click="saveRomes">Appliquer les métiers</button></div>
     </div>
   </section>

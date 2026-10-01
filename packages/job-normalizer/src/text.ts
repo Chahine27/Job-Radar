@@ -31,7 +31,7 @@ export function fingerprintOf(input: {
   return `job:${sha([company, comparable(input.title), comparable(input.city)])}`;
 }
 
-/** « COMPIEGNE » → « Compiègne » n'est pas possible sans dictionnaire : on met juste une casse lisible. */
+/** « SAINT ETIENNE » → « Saint-Étienne » n'est pas possible sans dictionnaire : on met juste une casse lisible. */
 export function titleCase(text: string): string {
   return text
     .toLowerCase()

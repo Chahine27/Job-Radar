@@ -1,5 +1,5 @@
 import { hash } from "@node-rs/argon2";
-import { DEFAULT_PROFILE, type LetterKit, type Profile } from "@job-radar/shared";
+import { EXAMPLE_PROFILE, type LetterKit, type Profile } from "@job-radar/shared";
 import type { Mailer, Notifier, OutgoingMail } from "@job-radar/notifications";
 import { buildManualJob } from "@job-radar/pipeline";
 import { buildApp } from "./app";
@@ -26,9 +26,9 @@ export function job(partial: Partial<JobRow> & Pick<JobRow, "id" | "title" | "de
     salaryMin: 40000,
     salaryMax: 45000,
     salaryText: null,
-    city: "Compiègne",
-    postalCode: "60200",
-    department: "60",
+    city: "Villeurbanne",
+    postalCode: "69100",
+    department: "69",
     address: null,
     remoteType: "hybrid",
     technologies: [],
@@ -59,11 +59,12 @@ export const TEST_PASSWORD = "un-mot-de-passe-solide";
 export const APP_URL = "http://localhost:5173";
 
 /** Stockage en mémoire, même comportement que la version Prisma. */
-export async function createMemoryStores() {
-  const user: UserRecord = { id: "u1", email: TEST_EMAIL, passwordHash: await hash(TEST_PASSWORD) };
+export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
+  const users = new Map<string, UserRecord>();
+  if (!opts.noUser) users.set("u1", { id: "u1", email: TEST_EMAIL, passwordHash: await hash(TEST_PASSWORD) });
   const sessions = new Map<string, { userId: string; expiresAt: Date }>();
   const profiles = new Map<string, ProfileRecord>([
-    ["u1", { profile: structuredClone(DEFAULT_PROFILE), home: null, updatedAt: new Date() }],
+    ["u1", { profile: structuredClone(EXAMPLE_PROFILE), home: null, updatedAt: new Date() }],
   ]);
 
   const jobs = new Map(TEST_JOBS.map((j) => [j.id, structuredClone(j)]));
@@ -293,8 +294,14 @@ export async function createMemoryStores() {
       },
     },
     users: {
-      findByEmail: async (email) => (email === user.email ? user : null),
-      findById: async (id) => (id === user.id ? user : null),
+      findByEmail: async (email) => [...users.values()].find((u) => u.email === email) ?? null,
+      findById: async (id) => users.get(id) ?? null,
+      count: async () => users.size,
+      create: async (email, passwordHash) => {
+        const u = { id: `u${users.size + 1}`, email, passwordHash };
+        users.set(u.id, u);
+        return u;
+      },
     },
     sessions: {
       create: async ({ id, ...rest }) => void sessions.set(id, rest),
@@ -339,8 +346,8 @@ export function createFakeCollector() {
   return collector;
 }
 
-export async function createTestApp() {
-  const mem = await createMemoryStores();
+export async function createTestApp(opts: { noUser?: boolean } = {}) {
+  const mem = await createMemoryStores(opts);
   const collector = createFakeCollector();
   const tests: string[] = [];
   const travelRequests: string[] = [];
@@ -392,11 +399,32 @@ export async function createTestApp() {
           },
         };
       },
+      readCv: async (cvText) => {
+        if (!aiState.online) throw Object.assign(new Error("Ollama ne répond pas : lance l'appli Ollama sur ce PC."), { code: "AI_UNAVAILABLE" });
+        aiCalls.push({ title: `cv:${cvText.slice(0, 20)}`, skills: [] });
+        return {
+          model: "fake-model",
+          durationMs: 6,
+          proposal: {
+            fullName: "Camille Martin",
+            email: "camille.martin@example.com",
+            phone: null,
+            city: "Lyon",
+            postalCode: "69003",
+            department: "69",
+            job: "Assistante comptable",
+            searches: ["Assistant comptable", "Comptable"],
+            skills: ["Sage", "Excel"],
+            yearsOfExperience: 3,
+            contracts: ["CDI"],
+          },
+        };
+      },
       writeLetter: async (job, kit, opts) => {
         if (!aiState.online) throw Object.assign(new Error("Ollama ne répond pas : lance l'appli Ollama sur ce PC."), { code: "AI_UNAVAILABLE" });
         aiCalls.push({ title: `lettre:${job.title}`, skills: [] });
         if (opts?.spontaneous) {
-          return { model: "fake-model", durationMs: 7, content: `${kit.header}\n\nObjet : Candidature spontanée – ${job.title}\n\nChez Banquo, j'ai développé des écrans en Vue.js pour ${job.company}.` };
+          return { model: "fake-model", durationMs: 7, content: `${kit.header}\n\nObjet : Candidature spontanée – ${job.title}\n\nChez Nordia, j'ai développé des écrans en Vue.js pour ${job.company}.` };
         }
         return { model: "fake-model", durationMs: 7, content: `${kit.header}\n\nObjet : Candidature au poste de ${job.title}\n\nJe maîtrise Kafka.` };
       },
@@ -422,15 +450,15 @@ export async function createTestApp() {
       },
     },
     sourcesConfigured: { "france-travail": true, adzuna: false },
-    findAddress: async (siret: string) => (siret === "11111111100011" ? "12 RUE DE LA GARE 60100 CREIL" : null),
+    findAddress: async (siret: string) => (siret === "11111111100011" ? "12 RUE DE LA GARE 69200 VENISSIEUX" : null),
     searchCompanies: async (p) => {
       lbbSearches.push(p);
       return [
         { siret: "11111111100011", company_name: "ALPHA LOGICIELS", office_name: "", email: "yes", naf: "6201Z", naf_label: "Programmation informatique",
-          headcount_min: 10, headcount_max: 19, location: { lat: 49.26, lon: 2.47 }, city: "Creil", postcode: "60100", department_number: "60",
+          headcount_min: 10, headcount_max: 19, location: { lat: 45.61, lon: 4.89 }, city: "Vénissieux", postcode: "69200", department_number: "69",
           hiring_potential: 61.23, is_high_potential: true },
         { siret: "22222222200022", company_name: "BETA SERVICES", office_name: "", email: "no", naf: "6202B", naf_label: "Tierce maintenance",
-          headcount_min: 0, headcount_max: 0, location: { lat: 49.3, lon: 2.3 }, city: "Chambly", postcode: "60230", department_number: "60",
+          headcount_min: 0, headcount_max: 0, location: { lat: 45.65, lon: 4.72 }, city: "Écully", postcode: "69130", department_number: "69",
           hiring_potential: 7.9, is_high_potential: false },
       ];
     },
@@ -442,7 +470,7 @@ export async function createTestApp() {
       return null;
     },
     geocoder: async (q: string) =>
-      q.includes("introuvable") ? [] : [{ label: "Place de la Gare 60200 Compiègne", lat: 49.4214, lng: 2.8267, precision: "address" }],
+      q.includes("introuvable") ? [] : [{ label: "Place de la Gare 69100 Villeurbanne", lat: 45.7714, lng: 5.2467, precision: "address" }],
   });
   return { app, collector, tests, travelRequests, lbbSearches, aiCalls, aiState, sentMails, ...mem };
 }

@@ -2,7 +2,7 @@
 
 export type SearchParams = {
   keywords: string;
-  /** Code département, ex. "60". */
+  /** Code département, ex. "69". */
   department?: string;
   /** Ne garder que les offres publiées depuis N jours. */
   publishedSinceDays?: 1 | 3 | 7 | 14 | 31;

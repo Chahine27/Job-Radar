@@ -120,10 +120,15 @@ const pasteOpen = ref(false);
 const pasted = ref("");
 const overwrite = ref(false);
 const importing = ref(false);
+/** Métier visé, écrit dans le prompt (premier métier recherché du profil). */
+const job = ref<string | null>(null);
+onMounted(() => {
+  api.getProfile().then((r) => (job.value = r.profile.searches[0] ?? null)).catch(() => {});
+});
 
 async function copyPrompt() {
   try {
-    await navigator.clipboard.writeText(buildEmailPrompt(withoutEmail.value));
+    await navigator.clipboard.writeText(buildEmailPrompt(withoutEmail.value, job.value));
     promptCopied.value = true;
     pasteOpen.value = true;
     setTimeout(() => (promptCopied.value = false), 2500);
@@ -191,7 +196,7 @@ const searchUrl = (l: Lead) =>
 <template>
   <PageHeader title="Candidatures spontanées">
     <p class="subtitle">
-      Entreprises qui devraient recruter des développeurs dans les 6 prochains mois, dans la zone choisie. Données
+      Entreprises qui devraient recruter dans ton métier dans les 6 prochains mois, dans la zone choisie. Données
       <a href="https://labonneboite.francetravail.fr/" target="_blank" rel="noopener noreferrer">La Bonne Boîte</a> (France Travail, licence Etalab).
     </p>
     <p class="subtitle small"><Icon name="clock" :size="13" /> Dernière mise à jour : {{ lastRefreshAt ? timeAgo(lastRefreshAt) : "jamais" }}</p>

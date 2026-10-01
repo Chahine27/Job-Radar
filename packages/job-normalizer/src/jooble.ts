@@ -20,8 +20,8 @@ export function normalizeJooble(raw: RawJob): NormalizedJob | null {
   const description = htmlToText(j.snippet ?? "");
   const company = j.company?.trim() || null;
   const location = j.location?.trim() || null;
-  // « Creil », « Paris (75) », « Compiègne, Hauts-de-France »… : la ville est la première partie.
-  // « Oise (60) » : c'est un département, pas une ville → ville inconnue.
+  // « Lyon », « Paris (75) », « Lille, Hauts-de-France »… : la ville est la première partie.
+  // « Rhône (69) » : c'est un département, pas une ville → ville inconnue.
   const first = location ? location.split(/,|\(/)[0]!.trim() || null : null;
   const isDepartment = (t: string) => Object.values(DEPARTMENTS).some((d) => comparable(d) === comparable(t));
   const city = first && !isDepartment(first) ? first : null;

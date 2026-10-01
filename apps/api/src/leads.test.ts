@@ -18,8 +18,8 @@ describe("candidatures spontanées", () => {
   it("actualise depuis La Bonne Boîte (départements si pas de point de départ), sans doublon", async () => {
     const { req, lbbSearches } = await setup();
     const r1 = (await req("POST", "/api/leads/refresh")).json();
-    expect(r1).toMatchObject({ found: 2, created: 2, updated: 0, around: "départements 60, 75" });
-    expect(lbbSearches[0]).toMatchObject({ romes: ["M1805"], departments: ["60", "75"] });
+    expect(r1).toMatchObject({ found: 2, created: 2, updated: 0, around: "départements 69, 75" });
+    expect(lbbSearches[0]).toMatchObject({ romes: ["M1805"], departments: ["69", "75"] });
     const r2 = (await req("POST", "/api/leads/refresh")).json();
     expect(r2).toMatchObject({ created: 0, updated: 2 });
 
@@ -34,32 +34,32 @@ describe("candidatures spontanées", () => {
     profiles.get("u1")!.home = { label: "Paris Gare du Nord", lat: 48.8809, lng: 2.3553 };
 
     // Départements choisis pour les candidatures spontanées.
-    expect((await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 30, place: null, departments: ["60"] })).statusCode).toBe(200);
-    expect((await req("POST", "/api/leads/refresh")).json().around).toBe("départements 60");
-    expect(lbbSearches[0]).toMatchObject({ departments: ["60"] });
+    expect((await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 30, place: null, departments: ["69"] })).statusCode).toBe(200);
+    expect((await req("POST", "/api/leads/refresh")).json().around).toBe("départements 69");
+    expect(lbbSearches[0]).toMatchObject({ departments: ["69"] });
     expect(lbbSearches[0]).not.toHaveProperty("point");
 
     // Lieu + rayon.
-    const place = { label: "Compiègne", lat: 49.4179, lng: 2.8261 };
+    const place = { label: "Villeurbanne", lat: 45.7679, lng: 5.2461 };
     await req("PUT", "/api/leads/settings", { romes: ["M1805", "M1810"], distanceKm: 40, place, departments: [] });
-    expect((await req("POST", "/api/leads/refresh")).json().around).toBe("40 km autour de Compiègne");
-    expect(lbbSearches[1]).toMatchObject({ romes: ["M1805", "M1810"], point: { lat: 49.4179, lng: 2.8261, distanceKm: 40 } });
+    expect((await req("POST", "/api/leads/refresh")).json().around).toBe("40 km autour de Villeurbanne");
+    expect(lbbSearches[1]).toMatchObject({ romes: ["M1805", "M1810"], point: { lat: 45.7679, lng: 5.2461, distanceKm: 40 } });
     expect((await req("GET", "/api/leads/settings")).json().place).toEqual(place);
 
   });
 
   it("n'affiche que les entreprises de la zone actuelle, tri par potentiel ou du plus proche au plus loin", async () => {
     const { req } = await setup();
-    await req("POST", "/api/leads/refresh"); // ALPHA à Creil (49.26, 2.47), BETA à Chambly (49.3, 2.3)
+    await req("POST", "/api/leads/refresh"); // ALPHA à Vénissieux (45.61, 4.89), BETA à Écully (45.65, 4.72)
 
-    // Autour de Creil, 5 km : seule ALPHA est dans la zone.
-    await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 5, place: { label: "Creil", lat: 49.2638, lng: 2.4692 }, departments: [] });
+    // Autour de Vénissieux, 5 km : seule ALPHA est dans la zone.
+    await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 5, place: { label: "Vénissieux", lat: 45.6138, lng: 4.8892 }, departments: [] });
     const near = (await req("GET", "/api/leads")).json();
     expect(near.items.map((l: { name: string }) => l.name)).toEqual(["ALPHA LOGICIELS"]);
     expect(near.items[0].distanceKm).toBeLessThan(1);
 
-    // Autour de Chambly, 30 km : les deux ; tri par distance → BETA (Chambly) d'abord.
-    await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 30, place: { label: "Chambly", lat: 49.3, lng: 2.3 }, departments: [] });
+    // Autour de Écully, 30 km : les deux ; tri par distance → BETA (Écully) d'abord.
+    await req("PUT", "/api/leads/settings", { romes: ["M1805"], distanceKm: 30, place: { label: "Écully", lat: 45.65, lng: 4.72 }, departments: [] });
     const byDistance = (await req("GET", "/api/leads?sort=distance")).json();
     expect(byDistance.items.map((l: { name: string }) => l.name)).toEqual(["BETA SERVICES", "ALPHA LOGICIELS"]);
     const byPotential = (await req("GET", "/api/leads?sort=potential")).json();
@@ -143,7 +143,7 @@ describe("adresse exacte des entreprises (API Recherche d'entreprises)", () => {
     expect(res!.addressesPending).toBe(false);
     const alpha = res!.items.find((l) => l.name === "ALPHA LOGICIELS")!;
     const beta = res!.items.find((l) => l.name === "BETA SERVICES")!;
-    expect(alpha.address).toBe("12 RUE DE LA GARE 60100 CREIL");
+    expect(alpha.address).toBe("12 RUE DE LA GARE 69200 VENISSIEUX");
     expect(beta.address).toBeNull();
     expect(beta.addressCheckedAt).not.toBeNull(); // rien trouvé, mais on ne redemande pas
   });

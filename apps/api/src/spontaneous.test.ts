@@ -10,7 +10,7 @@ const KIT = {
   header: "Alex Martin\n75011 Paris\n06 00 00 00 00\nalex.martin@example.com",
   city: "Paris",
   signature: "Alex MARTIN",
-  cvText: "Développeur Full Stack. Alternance chez Banquo : Vue.js, TypeScript, Java Spring Boot, PostgreSQL. ".repeat(4),
+  cvText: "Développeur Full Stack. Alternance chez Nordia : Vue.js, TypeScript, Java Spring Boot, PostgreSQL. ".repeat(4),
   letterExample: "",
 };
 
@@ -28,7 +28,7 @@ describe("candidature spontanée", () => {
   it("message et objet écrits par le code, avec le téléphone de l'en-tête", () => {
     const m = defaultMail(KIT, "ALPHA LOGICIELS", "Développeur full stack");
     expect(m.subject).toBe("Candidature spontanée – Développeur full stack – Alex MARTIN");
-    expect(m.message).toContain("pour un poste de développeur full stack en CDI chez ALPHA LOGICIELS.");
+    expect(m.message).toContain("pour un poste de développeur full stack chez ALPHA LOGICIELS.");
     expect(m.message).toContain("Vous trouverez ci-joint mon CV et ma lettre de motivation.");
     expect(m.message.trim().endsWith("Alex MARTIN\n06 00 00 00 00")).toBe(true);
   });

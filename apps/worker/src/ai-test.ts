@@ -31,7 +31,7 @@ Missions : développer des outils d'aide à la décision pour le Front Office, d
 Vous avez minimum 5 ans sur du développement Java en backend et Angular ou React en front end. La pratique de l'anglais est demandée.
 Kubernetes et Docker souhaitables.`,
       },
-      { skills: ["Vue.js", "TypeScript", "JavaScript", "Node.js", "PostgreSQL"], experienceMin: 0, experienceMax: 3, contracts: ["CDI"], locations: ["Oise (60)", "Paris (75)"] },
+      { skills: ["Vue.js", "TypeScript", "JavaScript", "Node.js", "PostgreSQL"], experienceMin: 0, experienceMax: 3, contracts: ["CDI"], locations: ["Rhône (69)", "Paris (75)"] },
     );
     console.log(JSON.stringify(result, null, 2));
     console.log(`\nDurée : ${(durationMs / 1000).toFixed(1)} s`);

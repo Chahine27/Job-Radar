@@ -6,7 +6,7 @@ export type ScoringRules = {
   version: string;
   /** Sous-score donné quand l'information est absente (salaire, trajet...). */
   neutral: number;
-  /** Départements proches des zones du profil → note intermédiaire. */
+  /** Départements à compter comme « proches » en plus des voisins des zones du profil (calculés tout seuls). */
   nearbyDepartments: string[];
   /** Masquer du flux principal les contrats hors profil (ils restent en base). */
   hideNonMatchingContract: boolean;
@@ -37,9 +37,9 @@ export type ScoringRules = {
 export type CapPart = "technical" | "experience" | "contract" | "salary" | "location" | "transport";
 
 export const DEFAULT_RULES: ScoringRules = {
-  version: "2026-09-30.5",
+  version: "2026-10-01.1",
   neutral: 60,
-  nearbyDepartments: ["92", "93", "94", "95", "77", "78", "91", "02", "80"],
+  nearbyDepartments: [],
   hideNonMatchingContract: true,
   hideAboveYears: 4,
   hideSenior: true,

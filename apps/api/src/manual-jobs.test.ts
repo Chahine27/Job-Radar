@@ -13,7 +13,7 @@ const OFFER = {
   url: "https://www.linkedin.com/jobs/view/123",
   title: "Développeur Frontend Vue.js",
   company: "Acme",
-  location: "Creil (60)",
+  location: "Vénissieux (69)",
   description: "Nous cherchons un développeur Vue.js / TypeScript en CDI, 2 ans d'expérience. Télétravail 2 jours par semaine.",
 };
 
@@ -37,7 +37,7 @@ describe("offres ajoutées à la main", () => {
     expect(res.statusCode).toBe(201);
     const { job, duplicate } = res.json();
     expect(duplicate).toBe(false);
-    expect(job).toMatchObject({ title: OFFER.title, company: "Acme", city: "Creil", department: "60", contractType: "CDI", remoteType: "hybrid", status: "SAVED" });
+    expect(job).toMatchObject({ title: OFFER.title, company: "Acme", city: "Vénissieux", department: "69", contractType: "CDI", remoteType: "hybrid", status: "SAVED" });
     expect(job.matchedSkills).toEqual(expect.arrayContaining(["Vue.js", "TypeScript"]));
     expect(job.sources).toEqual([{ source: "manual", url: OFFER.url }]);
 
@@ -58,7 +58,7 @@ describe("offres ajoutées à la main", () => {
 
   it("offre déjà connue (même entreprise, titre, ville) : rattachée, pas de doublon ; retirer ne supprime que l'ajout", async () => {
     const { req } = await setup();
-    const known = { title: "Développeur Vue.js", company: "Entreprise test", location: "Compiègne", description: OFFER.description };
+    const known = { title: "Développeur Vue.js", company: "Entreprise test", location: "Villeurbanne", description: OFFER.description };
     const res = (await req("POST", "/api/jobs/manual", known)).json();
     expect(res.duplicate).toBe(true);
     expect(res.otherSources).toEqual(["demo"]);
@@ -80,10 +80,10 @@ describe("offres ajoutées à la main", () => {
   it("lecture d'une annonce collée : pré-remplissage, rien d'enregistré", async () => {
     const { req } = await setup();
     const res = await req("POST", "/api/jobs/manual/analyze", {
-      text: "Acme recrute !\nDéveloppeur Vue.js (H/F)\nLocalisation : Creil (60)\nCDI, télétravail 2 jours. Vue.js, TypeScript.",
+      text: "Acme recrute !\nDéveloppeur Vue.js (H/F)\nLocalisation : Vénissieux (69)\nCDI, télétravail 2 jours. Vue.js, TypeScript.",
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ title: "Développeur Vue.js (H/F)", company: "Acme", location: "Creil (60)", contractType: "CDI", remoteType: "hybrid" });
+    expect(res.json()).toMatchObject({ title: "Développeur Vue.js (H/F)", company: "Acme", location: "Vénissieux (69)", contractType: "CDI", remoteType: "hybrid" });
     expect((await req("GET", "/api/jobs/manual")).json().items).toEqual([]);
   });
 });

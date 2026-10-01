@@ -42,12 +42,12 @@ describe("normalize (France Travail)", () => {
       salaryMin: 38000,
       salaryMax: 42000,
       salaryPeriod: "year",
-      city: "Compiegne",
-      postalCode: "60200",
-      department: "60",
+      city: "Villeurbanne",
+      postalCode: "69100",
+      department: "69",
       address: null,
-      latitude: 49.4179,
-      longitude: 2.8261,
+      latitude: 45.7719,
+      longitude: 4.8902,
       locationPrecision: "city_centroid",
       remoteType: "hybrid",
     });
@@ -117,8 +117,8 @@ describe("normalize (France Travail)", () => {
 
 describe("dédoublonnage : empreinte", () => {
   it("même entreprise + titre + ville → même empreinte, malgré casse / accents / (H/F)", () => {
-    const a = fingerprintOf({ source: "france-travail", sourceJobId: "1", company: "Atelier Numérique", title: "Développeur Vue.js (H/F)", city: "Compiègne" });
-    const b = fingerprintOf({ source: "adzuna", sourceJobId: "99", company: "ATELIER NUMERIQUE", title: "developpeur vue.js", city: "COMPIEGNE" });
+    const a = fingerprintOf({ source: "france-travail", sourceJobId: "1", company: "Atelier Numérique", title: "Développeur Vue.js (H/F)", city: "Villeurbanne" });
+    const b = fingerprintOf({ source: "adzuna", sourceJobId: "99", company: "ATELIER NUMERIQUE", title: "developpeur vue.js", city: "VILLEURBANNE" });
     expect(a).toBe(b);
   });
 

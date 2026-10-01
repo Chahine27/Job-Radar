@@ -1,9 +1,9 @@
 /**
  * Remplit la base avec le minimum pour démarrer :
- *  - ton compte (email + mot de passe du .env)
- *  - ton profil par défaut
  *  - la configuration des sources et des notifications
- * On peut le relancer sans risque : rien n'est dupliqué, ton profil existant n'est pas écrasé.
+ *  - (facultatif) un compte si SEED_USER_EMAIL / SEED_USER_PASSWORD sont remplis dans .env.
+ *    Sinon, le compte se crée depuis le site au premier lancement (écran « Bienvenue »).
+ * On peut le relancer sans risque : rien n'est dupliqué, un profil existant n'est pas écrasé.
  */
 import path from "node:path";
 import { config } from "dotenv";
@@ -13,31 +13,31 @@ import { createPrismaClient } from "../src/client";
 
 config({ path: path.resolve(import.meta.dirname, "../../../.env"), quiet: true });
 
-const email = process.env.SEED_USER_EMAIL?.trim().toLowerCase();
+const email = process.env.SEED_USER_EMAIL?.trim().toLowerCase() || null;
 const password = process.env.SEED_USER_PASSWORD ?? "";
 
-if (!email) throw new Error("SEED_USER_EMAIL manquant dans .env");
-if (password.length < 12) {
+if (email && password.length < 12) {
   throw new Error("SEED_USER_PASSWORD manquant ou trop court dans .env (12 caractères minimum)");
 }
 
 const prisma = createPrismaClient();
 
 async function main() {
-  const profile = ProfileSchema.parse(DEFAULT_PROFILE);
-  const passwordHash = await hash(password);
-
-  const user = await prisma.user.upsert({
-    where: { email: email! },
-    update: { passwordHash },
-    create: { email: email!, passwordHash },
-  });
-
-  await prisma.profile.upsert({
-    where: { userId: user.id },
-    update: {}, // ne jamais écraser un profil modifié depuis l'interface
-    create: { userId: user.id, data: profile },
-  });
+  if (email) {
+    const profile = ProfileSchema.parse(DEFAULT_PROFILE);
+    const passwordHash = await hash(password);
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { passwordHash },
+      create: { email, passwordHash },
+    });
+    await prisma.profile.upsert({
+      where: { userId: user.id },
+      update: {}, // ne jamais écraser un profil modifié depuis l'interface
+      create: { userId: user.id, data: profile },
+    });
+    console.log(`✔ Compte prêt : ${user.email}`);
+  }
 
   const sources = [
     { source: "france-travail", intervalMinutes: 5, enabled: true },
@@ -52,11 +52,11 @@ async function main() {
   await prisma.notificationSettings.upsert({
     where: { id: "singleton" },
     update: {},
-    create: { id: "singleton", emailTo: process.env.NOTIFY_EMAIL_TO || email! },
+    create: { id: "singleton", emailTo: process.env.NOTIFY_EMAIL_TO?.trim() || email },
   });
 
-  console.log(`✔ Compte prêt : ${user.email}`);
-  console.log(`✔ Profil, ${sources.length} sources et réglages de notification en place`);
+  console.log(`✔ ${sources.length} sources et réglages de notification en place`);
+  if (!email) console.log("→ Ton compte se crée sur le site au premier lancement.");
 }
 
 main()

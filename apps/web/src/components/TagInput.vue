@@ -3,7 +3,8 @@ import { ref } from "vue";
 import Icon from "./Icon.vue";
 
 const model = defineModel<string[]>({ required: true });
-defineProps<{ placeholder?: string }>();
+/** hideTags : la liste est affichée ailleurs par la page (seul le champ d'ajout est montré). */
+defineProps<{ placeholder?: string; hideTags?: boolean }>();
 const draft = ref("");
 
 function add() {
@@ -20,7 +21,7 @@ function remove(i: number) {
 
 <template>
   <div class="stack">
-    <div class="row">
+    <div v-if="!hideTags" class="row">
       <span v-for="(tag, i) in model" :key="tag" class="chip">
         {{ tag }}
         <button type="button" :aria-label="`Retirer ${tag}`" @click="remove(i)">×</button>

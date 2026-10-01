@@ -1,5 +1,5 @@
 import { normalize } from "@job-radar/job-normalizer";
-import { DEFAULT_PROFILE } from "@job-radar/shared";
+import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { FT_SAMPLE_OFFER, type JobSource, JoobleSource, type RawJob } from "@job-radar/source-connectors";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase, testPrisma } from "../../db/test/helpers";
@@ -42,7 +42,7 @@ describe("source → normalisation → base (README §32)", () => {
   it("collecte complète : une source en erreur n'arrête pas les autres, tout est tracé", async () => {
     const ok: JobSource = {
       name: "france-travail",
-      search: async (q) => (q.department === "60" ? [raw(FT_SAMPLE_OFFER), raw({ ...FT_SAMPLE_OFFER, id: "2", intitule: "Développeur Java" })] : []),
+      search: async (q) => (q.department === "69" ? [raw(FT_SAMPLE_OFFER), raw({ ...FT_SAMPLE_OFFER, id: "2", intitule: "Développeur Java" })] : []),
       healthCheck: async () => ({ status: "OK" }),
     };
     const broken: JobSource = {
@@ -52,7 +52,7 @@ describe("source → normalisation → base (README §32)", () => {
       },
       healthCheck: async () => ({ status: "ERROR", message: "x" }),
     };
-    const r = await collectOnce({ prisma, sources: [ok, broken], profile: DEFAULT_PROFILE, trigger: "cli", publishedSinceDays: 7 });
+    const r = await collectOnce({ prisma, sources: [ok, broken], profile: EXAMPLE_PROFILE, trigger: "cli", publishedSinceDays: 7 });
     expect(r).toMatchObject({ status: "partial", fetched: 2, created: 2 });
     expect(r.sources.map((s) => s.status)).toEqual(["OK", "ERROR"]);
 
@@ -107,7 +107,7 @@ describe("source → normalisation → base (README §32)", () => {
               {
                 id: 1,
                 title: "Développeur Vue.js",
-                location: "Creil",
+                location: "Vénissieux",
                 snippet: "Vue.js et TypeScript",
                 type: "CDI",
                 link: "https://fr.jooble.org/desc/-111?ckey=x",
@@ -120,7 +120,7 @@ describe("source → normalisation → base (README §32)", () => {
         );
       },
     });
-    const profile = { ...DEFAULT_PROFILE, searches: ["Développeur Vue.js", "Développeur frontend"], locations: [{ label: "Oise", department: "60" }] };
+    const profile = { ...EXAMPLE_PROFILE, searches: ["Développeur Vue.js", "Développeur frontend"], locations: [{ label: "Rhône", department: "69" }] };
     const r1 = await collectOnce({ prisma, profile, sources: [jooble], trigger: "manual" });
     expect(r1.created).toBe(1);
     expect(calls).toBe(1); // 2 recherches, 1 zone → 1 seul appel
@@ -130,20 +130,20 @@ describe("source → normalisation → base (README §32)", () => {
     expect(r2.sources[0]!.status).toBe("OK");
     expect(calls).toBe(1); // moins de 20 h : ignorée
     expect((await prisma.apiQuota.findMany()).map((q) => q.used)).toEqual([1]);
-    expect((await prisma.job.findFirstOrThrow()).department).toBe("60");
+    expect((await prisma.job.findFirstOrThrow()).department).toBe("69");
   });
 
   it("offre ajoutée à la main : sauvegardée, jamais expirée ; rattachée si déjà connue ; retrait", async () => {
     const form = {
       title: "Développeur Vue.js",
       company: "Acme Manuel",
-      location: "Creil",
+      location: "Vénissieux",
       description: "Vue.js et TypeScript, CDI, 2 ans d'expérience minimum.",
     };
     const a = await saveManualJob(prisma, buildManualJob(form)!);
     expect(a.duplicate).toBe(false);
     const job = await prisma.job.findUniqueOrThrow({ where: { id: a.jobId } });
-    expect(job).toMatchObject({ status: "SAVED", contractType: "CDI", city: "Creil", department: "60" });
+    expect(job).toMatchObject({ status: "SAVED", contractType: "CDI", city: "Vénissieux", department: "69" });
 
     // Deuxième ajout identique : rattaché à la même offre.
     const b = await saveManualJob(prisma, buildManualJob(form)!);

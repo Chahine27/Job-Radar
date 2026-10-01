@@ -4,7 +4,7 @@ import type { Point, RoutingService, TravelEstimate } from "./types";
 /**
  * Calculateur Île-de-France Mobilités (PRIM, moteur Navitia).
  * Nouveaux comptes : 5 appels/s, 1 000 appels/jour. Couvre les réseaux d'Île-de-France :
- * certains trajets depuis l'Oise peuvent ne pas être trouvés → null.
+ * certains trajets depuis l'extérieur de l'Île-de-France peuvent ne pas être trouvés → null.
  */
 export const PRIM_DEFAULTS = {
   baseUrl: "https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia",

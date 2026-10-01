@@ -6,6 +6,7 @@ import {
   type AiStatus,
   type AnalysisJobInput,
   type AnalysisProfileInput,
+  type CvProfileProposal,
   type JobAnalysisResult,
   type ReadFields,
 } from "@job-radar/ai";
@@ -21,7 +22,7 @@ import { z } from "zod";
 import { AUTO_ANALYSIS_THRESHOLD, analysisHash, isAbridged, toJobInput, toProfileInput } from "../ai-context";
 import { requireAuth } from "../auth";
 import { DEFAULT_PDF_NAME, renderLetterPdf, safeName, saveLetterPdf } from "../letter-pdf";
-import { DEFAULT_SPONTANEOUS_TITLE, defaultMail } from "../spontaneous-mail";
+import { defaultMail, defaultSpontaneousTitle } from "../spontaneous-mail";
 import type { JobService } from "../jobs/service";
 import type { JobRow, LeadRow, StoredAnalysis, StoredApplication, StoredLetter, Stores } from "../stores";
 
@@ -32,6 +33,8 @@ export type AiService = {
   analyze(job: AnalysisJobInput, profile: AnalysisProfileInput): Promise<{ result: JobAnalysisResult; model: string; durationMs: number }>;
   writeLetter(job: AnalysisJobInput, kit: LetterKit, opts?: LetterOptions): Promise<{ content: string; model: string; durationMs: number }>;
   readJob(text: string, hints: { title?: string | null; company?: string | null } | null): Promise<{ fields: ReadFields; model: string; durationMs: number }>;
+  /** Premier lancement : lit le CV et propose un profil (relu par la personne avant d'être enregistré). */
+  readCv(cvText: string): Promise<{ proposal: CvProfileProposal; model: string; durationMs: number }>;
 };
 
 const LetterBody = z.object({ content: z.string().trim().min(1).max(20_000) });
@@ -122,6 +125,23 @@ export async function aiRoutes(
       const res = await analyzeJob(request.userId!, params.data.id, force);
       if (!res) return reply.code(404).send({ error: "JOB_NOT_FOUND" });
       return { ...res, upToDate: true };
+    } catch (err) {
+      const e = errorReply(err);
+      return reply.code(e.status).send(e.body);
+    }
+  });
+
+  // ───────────── Premier lancement : l'IA lit le CV déposé ─────────────
+
+  app.post("/api/setup/read-cv", async (request, reply) => {
+    if (!ai) return reply.code(503).send({ error: "AI_UNAVAILABLE", message: "IA non configurée." });
+    const kit = await stores.letterKits.get(request.userId!);
+    const cvText = kit?.cvText?.trim() ?? "";
+    if (cvText.length < 200) return reply.code(400).send({ error: "NO_CV", message: "Dépose d'abord ton CV." });
+    try {
+      const res = await withLock(() => ai.readCv(cvText));
+      request.log.info({ durationMs: res.durationMs, model: res.model }, "CV lu par l'IA");
+      return res;
     } catch (err) {
       const e = errorReply(err);
       return reply.code(e.status).send(e.body);
@@ -354,9 +374,15 @@ export async function aiRoutes(
     force: z.boolean().optional(),
   });
 
-  async function applicationContext(userId: string, leadId: string, title = DEFAULT_SPONTANEOUS_TITLE) {
-    const [lead, kit, application] = await Promise.all([stores.leads.get(leadId), stores.letterKits.get(userId), stores.applications.get(leadId)]);
+  async function applicationContext(userId: string, leadId: string, chosenTitle?: string) {
+    const [lead, kit, application, rec] = await Promise.all([
+      stores.leads.get(leadId),
+      stores.letterKits.get(userId),
+      stores.applications.get(leadId),
+      stores.profiles.get(userId),
+    ]);
     if (!lead) return null;
+    const title = chosenTitle?.trim() || defaultSpontaneousTitle(rec?.profile.searches ?? []);
     const job = spontaneousJobInput(
       { name: lead.name, sector: lead.nafLabel, city: lead.city, department: lead.department, headcountMin: lead.headcountMin, headcountMax: lead.headcountMax },
       title,

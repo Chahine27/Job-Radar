@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PROFILE } from "@job-radar/shared";
+import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { hashProfile } from "./profile-hash";
 import { contractFromTitle, detectNonDevRole, detectRemote, detectSeniority, looksLikeItTitle, normalizeContract, parseExperienceYears } from "./signals";
 
@@ -73,9 +73,9 @@ describe("normalizeContract", () => {
 
 describe("hashProfile", () => {
   it("stable quel que soit l'ordre des clés, différent si le profil change", () => {
-    const reordered = Object.fromEntries(Object.entries(DEFAULT_PROFILE).reverse()) as typeof DEFAULT_PROFILE;
-    expect(hashProfile(reordered)).toBe(hashProfile(DEFAULT_PROFILE));
-    expect(hashProfile({ ...DEFAULT_PROFILE, salaryTarget: 41000 })).not.toBe(hashProfile(DEFAULT_PROFILE));
+    const reordered = Object.fromEntries(Object.entries(EXAMPLE_PROFILE).reverse()) as typeof EXAMPLE_PROFILE;
+    expect(hashProfile(reordered)).toBe(hashProfile(EXAMPLE_PROFILE));
+    expect(hashProfile({ ...EXAMPLE_PROFILE, salaryTarget: 41000 })).not.toBe(hashProfile(EXAMPLE_PROFILE));
   });
 });
 
@@ -87,7 +87,7 @@ describe("detectRemote", () => {
     ["2 jours de télétravail par semaine", "hybrid"],
     ["Organisation hybride", "hybrid"],
     ["Pas de télétravail", "onsite"],
-    ["Poste basé à Compiègne", "unknown"],
+    ["Poste basé à Villeurbanne", "unknown"],
   ] as const)("%s → %s", (text, expected) => {
     expect(detectRemote(text)).toBe(expected);
   });

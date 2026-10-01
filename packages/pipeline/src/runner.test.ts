@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE } from "@job-radar/shared";
+import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import type { JobSource } from "@job-radar/source-connectors";
 import { describe, expect, it } from "vitest";
 import type { CollectReport } from "./collect";
@@ -77,7 +77,7 @@ function setup(opts: { states?: SourceStatus[]; activeInDb?: string | null; coll
     markStaleRunsFailed: async () => 0,
     sourceStates: async () => opts.states ?? [state("france-travail")],
     status: async () => ({ lastRun: null, sources: [], newJobs: 0 }),
-    loadProfile: async () => DEFAULT_PROFILE,
+    loadProfile: async () => EXAMPLE_PROFILE,
   };
   const calls: Array<Parameters<Collect>[0]> = [];
   let release: () => void = () => {};

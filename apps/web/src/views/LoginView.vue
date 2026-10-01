@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
-import { currentEmail } from "../session";
+import { currentEmail, needsSetup } from "../session";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,12 +18,14 @@ async function submit() {
   try {
     const res = await api.login(email.value, password.value);
     currentEmail.value = res.user.email;
+    // Premier lancement pas terminé (CV / profil) → l'écran de bienvenue reprendra là où il en était.
+    needsSetup.value = (await api.setupStatus().catch(() => ({ needsSetup: false }))).needsSetup;
     const redirect = typeof route.query.redirect === "string" && route.query.redirect.startsWith("/") ? route.query.redirect : "/";
     await router.push(redirect);
   } catch (e) {
     if (e instanceof ApiError && e.status === 429) error.value = "Trop de tentatives. Réessaie dans une minute.";
     else if (e instanceof ApiError && e.status === 401) error.value = "Email ou mot de passe incorrect.";
-    else error.value = "Serveur injoignable. As-tu lancé « pnpm dev » ?";
+    else error.value = "Serveur injoignable : relance Job Radar avec le raccourci du bureau.";
   } finally {
     loading.value = false;
   }
@@ -36,7 +38,7 @@ async function submit() {
       <div class="head">
         <span class="brand-logo big"><Icon name="radar" :size="26" color="#fff" /></span>
         <h1>Job Radar</h1>
-        <p class="muted small">Espace privé. Connecte-toi avec l'email et le mot de passe de ton fichier .env.</p>
+        <p class="muted small">Espace privé. Connecte-toi avec l'email et le mot de passe choisis à la création de ton compte.</p>
       </div>
       <label>Email
         <div class="field"><Icon name="mail" :size="16" /><input v-model="email" type="email" autocomplete="username" required /></div>

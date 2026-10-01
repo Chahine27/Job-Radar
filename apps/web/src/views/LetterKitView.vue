@@ -113,7 +113,7 @@ async function save() {
       </label>
       <label>
         Technos que tu maîtrises vraiment (séparées par des virgules)
-        <input v-model="kit.mastered" maxlength="400" placeholder="Vue.js, TypeScript, Java Spring Boot, API REST" />
+        <input v-model="kit.mastered" maxlength="400" placeholder="Ex. : Sage, paie, relation client" />
         <span class="hint">Seules celles-ci peuvent être écrites « je maîtrise ». Pour le reste, la lettre dira « j'ai travaillé avec ». Vide = jamais « maîtrise ».</span>
       </label>
       <label>
@@ -132,7 +132,7 @@ async function save() {
       <div class="grid-2">
         <label>
           Dossier sur ton PC
-          <input v-model="kit.pdfFolder" maxlength="300" placeholder="C:\Users\…\Documents\pour postuler" />
+          <input v-model="kit.pdfFolder" maxlength="300" placeholder="C:\Users\…\Documents\Candidatures" />
           <span class="hint">Dans l'Explorateur Windows : clic sur la barre d'adresse du dossier, Ctrl + C, puis colle ici.</span>
         </label>
         <label>

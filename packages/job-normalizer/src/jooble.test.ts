@@ -6,14 +6,14 @@ const raw = (data: Record<string, unknown>) => ({ source: "jooble", sourceJobId:
 const base = {
   id: 1,
   title: "Développeur <b>Vue.js</b> H/F",
-  location: "Compiègne, Hauts-de-France",
+  location: "Villeurbanne, Auvergne-Rhône-Alpes",
   snippet: "Stack Vue.js, TypeScript et Node.js. 2 ans d&#39;expérience minimum.",
   salary: "38 000 € - 42 000 € par an",
   type: "CDI",
   link: "https://fr.jooble.org/desc/-1234567890123456789?ckey=dev",
   company: "ACME",
   updated: "2026-09-28T10:00:00.0000000",
-  _searchDepartment: "60",
+  _searchDepartment: "69",
 };
 
 describe("normalisation Jooble", () => {
@@ -24,8 +24,8 @@ describe("normalisation Jooble", () => {
       sourceJobId: "-1234567890123456789",
       title: "Développeur Vue.js H/F",
       company: "ACME",
-      city: "Compiègne",
-      department: "60",
+      city: "Villeurbanne",
+      department: "69",
       contractType: "CDI",
       salaryMin: 38000,
       salaryMax: 42000,
@@ -37,9 +37,9 @@ describe("normalisation Jooble", () => {
   });
 
   it("lieu illisible → zone de la recherche ; sans lien sûr → ignorée", () => {
-    expect(normalize(raw({ ...base, location: "Hauts-de-France" }))!.department).toBe("60");
-    const dep = normalize(raw({ ...base, location: "Oise (60)" }))!;
-    expect(dep).toMatchObject({ city: null, department: "60" });
+    expect(normalize(raw({ ...base, location: "Auvergne-Rhône-Alpes" }))!.department).toBe("69");
+    const dep = normalize(raw({ ...base, location: "Rhône (69)" }))!;
+    expect(dep).toMatchObject({ city: null, department: "69" });
     expect(normalize(raw({ ...base, link: "javascript:alert(1)" }))).toBeNull();
     expect(normalize(raw({ ...base, title: "" }))).toBeNull();
   });

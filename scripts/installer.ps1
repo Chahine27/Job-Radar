@@ -58,7 +58,7 @@ if (-not (Has winget)) {
 Ok "PC compatible"
 
 # 2. Fichier de réglages .env (en premier : rien ne marche sans lui)
-Step 2 "Réglages (.env) et ton compte"
+Step 2 "Réglages (.env)"
 if (Test-Path ".env") {
   Ok ".env déjà présent : gardé tel quel"
 } else {
@@ -70,20 +70,6 @@ if (Test-Path ".env") {
   $dbPassword = NewSecret 18
   SetKey "DATABASE_URL" "postgresql://jobradar:$dbPassword@127.0.0.1:5433/jobradar"
   SetKey "SESSION_SECRET" (NewSecret 32)
-  Write-Host ""
-  Write-Host "  Crée ton compte Job Radar (il sert seulement à te connecter au site, sur ce PC) :" -ForegroundColor Cyan
-  do { $email = (Read-Host "  Ton adresse email").Trim().ToLower() } while ($email -notmatch "^[^@\s]+@[^@\s]+\.[^@\s]+$")
-  do {
-    $p1 = [Net.NetworkCredential]::new("", (Read-Host "  Choisis un mot de passe (12 caractères minimum)" -AsSecureString)).Password
-    $p2 = [Net.NetworkCredential]::new("", (Read-Host "  Retape-le" -AsSecureString)).Password
-    $bad = $p1 -match '["\\]'
-    if ($p1.Length -lt 12) { Warn "trop court (12 caractères minimum)." }
-    elseif ($bad) { Warn 'évite les caractères " et \ dans le mot de passe.' }
-    elseif ($p1 -ne $p2) { Warn "les deux mots de passe sont différents." }
-  } while ($p1.Length -lt 12 -or $bad -or $p1 -ne $p2)
-  SetKey "SEED_USER_EMAIL" $email
-  SetKey "SEED_USER_PASSWORD" ('"' + $p1 + '"') # entre guillemets : un # ou un espace dans le mot de passe reste valable
-  SetKey "NOTIFY_EMAIL_TO" $email
   [IO.File]::WriteAllLines((Join-Path $root ".env"), $lines, (New-Object Text.UTF8Encoding $false))
   if (-not (Test-Path ".env")) { Fail "impossible d'écrire le fichier .env dans $root (dossier protégé ? Mets le projet dans Documents)." }
   Ok ".env créé (mot de passe de la base généré automatiquement)"
@@ -139,7 +125,7 @@ pnpm --filter @job-radar/db migrate:deploy
 if ($LASTEXITCODE -ne 0) { Fail "la création des tables a échoué (migrate deploy)." }
 pnpm db:generate | Out-Null
 pnpm db:seed
-if ($LASTEXITCODE -ne 0) { Fail "la création de ton compte a échoué (db:seed)." }
+if ($LASTEXITCODE -ne 0) { Fail "le remplissage de la base a échoué (db:seed)." }
 Ok "Base de données prête"
 
 # 8. Raccourci Bureau
@@ -163,6 +149,7 @@ Ok "Raccourci créé"
 Write-Host ""
 Write-Host "=== Installation terminée ===" -ForegroundColor Green
 Write-Host "Pour lancer Job Radar : double-clic sur « Job Radar » (Bureau)."
-Write-Host "Connecte-toi avec l'email et le mot de passe que tu viens de choisir."
+Write-Host "Au premier lancement, le site te demande de créer ton compte puis de déposer ton CV :"
+Write-Host "l'IA locale le lit et prépare ton profil (métiers, compétences, ville)."
 $go = Read-Host "Lancer Job Radar maintenant ? (O/n)"
 if ($go -notmatch "^[nN]") { Start-Process (Join-Path $root "Lancer Job Radar.cmd") }

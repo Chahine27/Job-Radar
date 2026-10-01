@@ -330,6 +330,9 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
           where: { id },
           select: { id: true, email: true, passwordHash: true },
         }),
+      count: () => prisma.user.count(),
+      create: (email, passwordHash) =>
+        prisma.user.create({ data: { email, passwordHash }, select: { id: true, email: true, passwordHash: true } }),
     },
     sessions: {
       async create(input) {

@@ -1,10 +1,10 @@
-import { DEFAULT_PROFILE, type Profile } from "@job-radar/shared";
+import { EXAMPLE_PROFILE, type Profile } from "@job-radar/shared";
 import { describe, expect, it } from "vitest";
 import { ACCEPTABLE, LOW_SALARY, NOT_CDI, PERFECT, TOO_FAR, TOO_SENIOR } from "./fixtures";
 import { DEFAULT_RULES } from "./rules";
 import { scoreJob, type ScoringInput } from "./score";
 
-const score = (input: ScoringInput, profile: Profile = DEFAULT_PROFILE) => scoreJob(input, profile);
+const score = (input: ScoringInput, profile: Profile = EXAMPLE_PROFILE) => scoreJob(input, profile);
 
 /**
  * Scores figés (README §32 : « le score ne doit pas changer sans modification explicite des règles »).
@@ -23,19 +23,19 @@ describe(`scores figés — règles ${DEFAULT_RULES.version}`, () => {
   });
 
   it("version des règles attendue", () => {
-    expect(DEFAULT_RULES.version).toBe("2026-09-30.5");
+    expect(DEFAULT_RULES.version).toBe("2026-10-01.1");
   });
 });
 
 describe("classement des 6 cas", () => {
   it("un salaire faible baisse le score sans le bloquer", () => {
     expect(score(LOW_SALARY).final).toBeLessThan(score(PERFECT).final);
-    expect(score(LOW_SALARY).final).toBeGreaterThanOrEqual(DEFAULT_PROFILE.minScoreForNotification);
+    expect(score(LOW_SALARY).final).toBeGreaterThanOrEqual(EXAMPLE_PROFILE.minScoreForNotification);
   });
 
   it("les critères bloquants (expérience, lieu, contrat) passent sous l'acceptable et sous le seuil de notification", () => {
     const a = score(ACCEPTABLE).final;
-    const threshold = DEFAULT_PROFILE.minScoreForNotification;
+    const threshold = EXAMPLE_PROFILE.minScoreForNotification;
     expect(score(PERFECT).final).toBeGreaterThan(a);
     expect(a).toBeGreaterThanOrEqual(threshold);
     for (const blocked of [TOO_SENIOR, TOO_FAR, NOT_CDI]) {
@@ -164,14 +164,14 @@ describe("règles détaillées", () => {
 
   it("les poids du profil changent le résultat", () => {
     const profile: Profile = {
-      ...DEFAULT_PROFILE,
+      ...EXAMPLE_PROFILE,
       scoringWeights: { technical: 1, experience: 0, contract: 0, salary: 0, location: 0, transport: 0 },
     };
     expect(score(ACCEPTABLE, profile).final).toBe(score(ACCEPTABLE).breakdown.technical);
   });
 
   it("une compétence ajoutée au profil est reconnue et fait monter le score", () => {
-    const profile: Profile = { ...DEFAULT_PROFILE, skills: [...DEFAULT_PROFILE.skills, "Quasar"] };
+    const profile: Profile = { ...EXAMPLE_PROFILE, skills: [...EXAMPLE_PROFILE.skills, "Quasar"] };
     const r = score({ ...PERFECT, title: "Développeur Quasar", description: "Front Quasar." }, profile);
     expect(r.breakdown.technical).toBe(100);
   });
@@ -236,13 +236,13 @@ describe("offres hors informatique (aucune techno + titre sans rapport)", () => 
     experienceMinYears: null,
     salaryMin: null,
     salaryMax: null,
-    department: "60",
+    department: "69",
     remoteType: "unknown",
     travelMinutes: null,
   };
 
   it("« Dessinateur » dans ta zone : plafonné à 15 % et masqué", () => {
-    const s = scoreJob(offTopic, DEFAULT_PROFILE);
+    const s = scoreJob(offTopic, EXAMPLE_PROFILE);
     expect(s.final).toBeLessThanOrEqual(DEFAULT_RULES.offTopicCap);
     expect(s.hidden).toBe(true);
     expect(s.hiddenReason).toBe("Pas un poste informatique");
@@ -250,20 +250,20 @@ describe("offres hors informatique (aucune techno + titre sans rapport)", () => 
   });
 
   it("titre de développeur avec un extrait trop court (aucune techno) : ni plafonné ni masqué", () => {
-    const s = scoreJob({ ...offTopic, title: "Développeur web (H/F)" }, DEFAULT_PROFILE);
+    const s = scoreJob({ ...offTopic, title: "Développeur web (H/F)" }, EXAMPLE_PROFILE);
     expect(s.hidden).toBe(false);
     expect(s.final).toBeGreaterThan(DEFAULT_RULES.offTopicCap);
   });
 
   it("une techno dans l'annonce suffit à ne pas être hors sujet", () => {
-    const s = scoreJob({ ...offTopic, title: "Chargé d'études", description: "Vous utiliserez Python au quotidien." }, DEFAULT_PROFILE);
+    const s = scoreJob({ ...offTopic, title: "Chargé d'études", description: "Vous utiliserez Python au quotidien." }, EXAMPLE_PROFILE);
     expect(s.hiddenReason).not.toBe("Pas un poste informatique");
   });
 });
 
 describe("critère Technique calculé sur les compétences lues par l'IA", () => {
   it("exigées = poids 1, « plus » = poids ½ ; libellés de l'IA reconnus (« Java 21 » = Java) ; détail cohérent", () => {
-    const profile: Profile = { ...DEFAULT_PROFILE, skills: ["Java", "Spring Boot", "Vue.js"] };
+    const profile: Profile = { ...EXAMPLE_PROFILE, skills: ["Java", "Spring Boot", "Vue.js"] };
     const input = { ...PERFECT, aiSkills: { required: ["Java 21", "Spring Boot", "Kafka"], bonus: ["AWS", "Vue.js"] } };
     const s = scoreJob(input, profile);
     // (2 exigées + ½ × 1 plus) / (3 + ½ × 2) = 2,5 / 4 = 63 %
@@ -275,8 +275,8 @@ describe("critère Technique calculé sur les compétences lues par l'IA", () =>
   });
 
   it("sans liste de l'IA : calcul habituel sur le texte", () => {
-    const s1 = scoreJob(PERFECT, DEFAULT_PROFILE);
-    const s2 = scoreJob({ ...PERFECT, aiSkills: { required: [], bonus: [] } }, DEFAULT_PROFILE);
+    const s1 = scoreJob(PERFECT, EXAMPLE_PROFILE);
+    const s2 = scoreJob({ ...PERFECT, aiSkills: { required: [], bonus: [] } }, EXAMPLE_PROFILE);
     expect(s2.breakdown.technical).toBe(s1.breakdown.technical);
   });
 });

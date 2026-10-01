@@ -28,7 +28,7 @@ async function searchHome() {
   homeResults.value = [];
   try {
     homeResults.value = (await api.geocode(homeQuery.value)).items;
-    if (homeResults.value.length === 0) homeSearchError.value = "Aucune adresse trouvée. Essaie « gare de Compiègne » ou une adresse complète.";
+    if (homeResults.value.length === 0) homeSearchError.value = "Aucune adresse trouvée. Essaie « gare de Lyon Part-Dieu » ou une adresse complète.";
   } catch (e) {
     homeSearchError.value = e instanceof ApiError && e.message ? e.message : "Recherche impossible.";
   }
@@ -159,7 +159,7 @@ async function save() {
         <h2><Icon name="search" :size="17" />Recherches lancées</h2>
         <p class="muted small hint">Chaque recherche est envoyée aux sources à chaque collecte.</p>
       </div>
-      <TagInput v-model="profile.searches" placeholder="Ex. Développeur Vue.js" />
+      <TagInput v-model="profile.searches" placeholder="Ex. Assistant comptable" />
     </section>
 
     <div class="grid-3">
@@ -201,7 +201,7 @@ async function save() {
       <section class="card stack">
         <h2><Icon name="pin" :size="17" />Zones de recherche</h2>
         <div v-for="(l, i) in profile.locations" :key="i" class="zone">
-          <input v-model="l.label" placeholder="Nom (ex. Oise)" aria-label="Nom de la zone" />
+          <input v-model="l.label" placeholder="Nom (ex. Rhône)" aria-label="Nom de la zone" />
           <input v-model="l.department" placeholder="Département (ex. 60)" aria-label="Département" />
           <button type="button" class="icon-btn danger" :aria-label="`Retirer ${l.label}`" @click="profile.locations.splice(i, 1)"><Icon name="trash" :size="15" /></button>
         </div>

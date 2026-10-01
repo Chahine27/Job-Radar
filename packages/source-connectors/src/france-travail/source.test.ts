@@ -52,7 +52,7 @@ describe("FranceTravailSource", () => {
     const { fetch, calls } = fakeFetch((url) =>
       url.hostname.startsWith("entreprise") ? tokenOk() : json({ resultats: offers(2) }, 206, { "content-range": "offres 0-1/2" }),
     );
-    const res = await makeSource(fetch).search({ keywords: "Développeur Vue.js", department: "60", publishedSinceDays: 7 });
+    const res = await makeSource(fetch).search({ keywords: "Développeur Vue.js", department: "69", publishedSinceDays: 7 });
     expect(res.map((r) => r.sourceJobId)).toEqual(["id-0", "id-1"]);
     expect(res[0]!.source).toBe("france-travail");
 
@@ -62,7 +62,7 @@ describe("FranceTravailSource", () => {
 
     const search = new URL(calls[1]!.url);
     expect(search.searchParams.get("motsCles")).toBe("Développeur Vue.js");
-    expect(search.searchParams.get("departement")).toBe("60");
+    expect(search.searchParams.get("departement")).toBe("69");
     expect(search.searchParams.get("publieeDepuis")).toBe("7");
     expect(search.searchParams.get("range")).toBe("0-149");
     expect((calls[1]!.init!.headers as Record<string, string>).Authorization).toBe("Bearer tok-1");

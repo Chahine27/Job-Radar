@@ -238,3 +238,34 @@ export type LetterState = { letter: StoredLetter | null; upToDate: boolean; kitR
 
 /** Offre où tu as postulé (page « Candidatures »). */
 export type Application = JobSummary & { appliedAt: string | null };
+
+/** Profil proposé par l'IA après lecture du CV (premier lancement). */
+export type CvProposal = {
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  postalCode: string | null;
+  department: string | null;
+  job: string | null;
+  searches: string[];
+  skills: string[];
+  yearsOfExperience: number | null;
+  contracts: string[];
+};
+
+/** Profil relu et validé par la personne. */
+export type SetupForm = {
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  postalCode: string | null;
+  department: string | null;
+  searches: string[];
+  skills: string[];
+  mastered: string[];
+  yearsOfExperience: number | null;
+  contracts: string[];
+  salaryTarget: number | null;
+};

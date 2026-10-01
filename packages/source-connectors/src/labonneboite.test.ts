@@ -12,11 +12,11 @@ const company = (i: number) => ({
   headcount_max: 19,
   naf: "6202A",
   naf_label: "Conseil en systèmes et logiciels informatiques",
-  location: { lat: 49.26, lon: 2.47 },
-  city: "Creil",
-  citycode: "60175",
-  postcode: "60100",
-  department_number: "60",
+  location: { lat: 45.61, lon: 4.89 },
+  city: "Vénissieux",
+  citycode: "69259",
+  postcode: "69200",
+  department_number: "69",
   hiring_potential: 42.5,
   is_high_potential: true,
 });
@@ -41,7 +41,7 @@ describe("La Bonne Boîte", () => {
         return json({ hits: 60, items: Array.from({ length: page === 1 ? 50 : 10 }, (_, i) => company(page * 100 + i)) });
       },
     });
-    const res = await c.search({ romes: ["M1805", "M1810"], point: { lat: 49.2638, lng: 2.4692, distanceKm: 30 }, maxResults: 100 });
+    const res = await c.search({ romes: ["M1805", "M1810"], point: { lat: 45.6138, lng: 4.8892, distanceKm: 30 }, maxResults: 100 });
     expect(res).toHaveLength(60);
     expect(new URLSearchParams(calls[0]!.body).get("scope")).toBe("api_labonneboitev2 search");
     const u = new URL(calls[1]!.url);
@@ -63,8 +63,8 @@ describe("La Bonne Boîte", () => {
         return url.includes("access_token") ? json({ access_token: "t", expires_in: 1499 }) : json({ hits: 0, items: [] });
       },
     });
-    await c.search({ romes: ["M1805"], departments: ["60", "75"] });
-    expect(new URL(urls[1]!).searchParams.getAll("department_number")).toEqual(["60", "75"]);
+    await c.search({ romes: ["M1805"], departments: ["69", "75"] });
+    expect(new URL(urls[1]!).searchParams.getAll("department_number")).toEqual(["69", "75"]);
   });
 
   it("lien vers la fiche publique", () => {

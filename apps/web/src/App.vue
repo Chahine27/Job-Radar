@@ -38,7 +38,7 @@ async function logout() {
 </script>
 
 <template>
-  <div v-if="currentEmail" class="shell">
+  <div v-if="currentEmail && !route.meta.bare" class="shell">
     <aside class="sidebar" :class="{ open: menuOpen }">
       <RouterLink to="/" class="brand">
         <span class="brand-logo"><Icon name="radar" :size="19" color="#fff" /></span>

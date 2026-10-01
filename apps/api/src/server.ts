@@ -1,4 +1,4 @@
-import { OllamaClient, analyzeJobWithAi, readJobWithAi, writeCoverLetter } from "@job-radar/ai";
+import { OllamaClient, analyzeJobWithAi, readCvWithAi, readJobWithAi, writeCoverLetter } from "@job-radar/ai";
 import { createPrismaClient } from "@job-radar/db";
 import {
   createEmailNotifier,
@@ -159,6 +159,7 @@ const app = await buildApp({
     analyze: (job, profile) => analyzeJobWithAi(ollama, job, profile),
     writeLetter: (job, kit, opts) => writeCoverLetter(ollama, job, kit, new Date(), opts),
     readJob: (text, hints) => readJobWithAi(ollama, text, hints),
+    readCv: (cvText) => readCvWithAi(ollama, cvText),
   },
   mailer,
   appUrl: env.APP_URL,

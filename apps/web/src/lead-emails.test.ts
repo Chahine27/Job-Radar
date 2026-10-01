@@ -4,8 +4,8 @@ import type { Lead } from "./types";
 
 const lead = (siret: string, name: string): Lead => ({
   id: siret, siret, name, officeName: null, nafLabel: "Programmation informatique", headcountMin: 10, headcountMax: 19,
-  city: "Creil", postcode: "60100", department: "60", hiringPotential: 60, isHighPotential: true, hasEmail: true,
-  contactEmail: null, address: siret.startsWith("1") ? "12 RUE DE LA GARE 60100 CREIL" : null, addressCheckedAt: null, status: "TO_CONTACT", notes: null, contactedAt: null, distanceKm: null, firstSeenAt: "2026-10-01",
+  city: "Vénissieux", postcode: "69200", department: "69", hiringPotential: 60, isHighPotential: true, hasEmail: true,
+  contactEmail: null, address: siret.startsWith("1") ? "12 RUE DE LA GARE 69200 VENISSIEUX" : null, addressCheckedAt: null, status: "TO_CONTACT", notes: null, contactedAt: null, distanceKm: null, firstSeenAt: "2026-10-01",
 });
 
 describe("emails des entreprises via une IA avec recherche web", () => {
@@ -13,9 +13,15 @@ describe("emails des entreprises via une IA avec recherche web", () => {
     const p = buildEmailPrompt([lead("11111111100011", "ALPHA LOGICIELS"), lead("22222222200022", "BETA SERVICES")]);
     expect(p).toContain('"siret": "11111111100011"');
     expect(p).toContain('"nom": "BETA SERVICES"');
-    expect(p).toContain('"ville": "60100 Creil"');
-    expect(p).toContain('"adresse": "12 RUE DE LA GARE 60100 CREIL"');
+    expect(p).toContain('"ville": "69200 Vénissieux"');
+    expect(p).toContain('"adresse": "12 RUE DE LA GARE 69200 VENISSIEUX"');
     expect(p).toMatch(/N'INVENTE RIEN/);
+    expect(p).toContain("candidature spontanée.");
+  });
+
+  it("le prompt cite le métier visé", () => {
+    const p = buildEmailPrompt([lead("11111111100011", "ALPHA LOGICIELS")], "Assistant comptable");
+    expect(p).toContain("candidature spontanée (Assistant comptable).");
   });
 
   it("lit la réponse même entourée de texte ou de ```json, et ignore les lignes sans SIRET", () => {

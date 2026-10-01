@@ -95,11 +95,11 @@ describe("AdzunaSource", () => {
         return url.includes("Java") ? json({}, 401) : json({ results: [{ id: 42, title: "Dev", redirect_url: "https://adzuna/42" }] });
       },
     });
-    const res = await src.search({ keywords: "Développeur Vue.js", department: "60", publishedSinceDays: 7 });
+    const res = await src.search({ keywords: "Développeur Vue.js", department: "69", publishedSinceDays: 7 });
     expect(res.map((r) => r.sourceJobId)).toEqual(["42"]);
     const u = new URL(urls[0]!);
     expect(u.pathname).toBe("/v1/api/jobs/fr/search/1");
-    expect(u.searchParams.get("where")).toBe("Oise");
+    expect(u.searchParams.get("where")).toBe("Rhône");
     expect(u.searchParams.get("max_days_old")).toBe("7");
     expect(u.searchParams.get("results_per_page")).toBe("50");
     const err = await src.search({ keywords: "Java" }).catch((e) => e);

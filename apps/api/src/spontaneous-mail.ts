@@ -1,7 +1,9 @@
 import type { LetterKit } from "@job-radar/shared";
 
-/** Intitulé proposé par défaut dans une candidature spontanée. */
-export const DEFAULT_SPONTANEOUS_TITLE = "Développeur full stack";
+/** Intitulé proposé par défaut dans une candidature spontanée : le premier métier recherché du profil. */
+export function defaultSpontaneousTitle(searches: string[]): string {
+  return searches.find((s) => s.trim())?.trim() ?? "Candidature spontanée";
+}
 
 /** Téléphone lu dans l'en-tête des lettres (« 06 12 34 56 78 »). */
 function phoneOf(header: string): string | null {
@@ -16,10 +18,10 @@ export function defaultMail(kit: Pick<LetterKit, "signature" | "header">, compan
   const message = [
     "Madame, Monsieur,",
     "",
-    `Je vous adresse ma candidature spontanée pour un poste de ${title.charAt(0).toLowerCase()}${title.slice(1)} en CDI chez ${company}.`,
+    `Je vous adresse ma candidature spontanée pour un poste de ${title.charAt(0).toLowerCase()}${title.slice(1)} chez ${company}.`,
     "Vous trouverez ci-joint mon CV et ma lettre de motivation.",
     "",
-    "Je serais heureux d'échanger avec vous à ce sujet.",
+    "Je reste disponible pour échanger avec vous à ce sujet.",
     "",
     "Bien cordialement,",
     who,

@@ -11,7 +11,7 @@ export const PERFECT: ScoringInput = {
   experienceMinYears: 2,
   salaryMin: 40000,
   salaryMax: 45000,
-  department: "60",
+  department: "69",
   remoteType: "hybrid",
   travelMinutes: 30,
 };
@@ -44,6 +44,6 @@ export const TOO_SENIOR: ScoringInput = {
 
 export const LOW_SALARY: ScoringInput = { ...PERFECT, salaryMin: 28000, salaryMax: 31000 };
 
-export const TOO_FAR: ScoringInput = { ...PERFECT, department: "69", travelMinutes: null };
+export const TOO_FAR: ScoringInput = { ...PERFECT, department: "13", travelMinutes: null };
 
 export const NOT_CDI: ScoringInput = { ...PERFECT, contractType: "CDD" };

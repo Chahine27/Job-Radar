@@ -14,13 +14,13 @@ describe("API Recherche d'entreprises : adresse exacte par SIRET", () => {
           results: [
             {
               siege: { siret: "41816609600069", adresse: "34 AVENUE DE L'OPERA 75002 PARIS" },
-              matching_etablissements: [{ siret: "41816609600077", adresse: "12  RUE DE LA GARE 60100 CREIL" }],
+              matching_etablissements: [{ siret: "41816609600077", adresse: "12  RUE DE LA GARE 69200 VENISSIEUX" }],
             },
           ],
         });
       },
     });
-    expect(await client.address("41816609600077")).toBe("12 RUE DE LA GARE 60100 CREIL");
+    expect(await client.address("41816609600077")).toBe("12 RUE DE LA GARE 69200 VENISSIEUX");
     expect(await client.address("41816609600069")).toBe("34 AVENUE DE L'OPERA 75002 PARIS");
     expect(urls[0]).toBe("https://recherche-entreprises.api.gouv.fr/search?q=41816609600077&page=1&per_page=1");
   });

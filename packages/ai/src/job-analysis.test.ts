@@ -14,7 +14,7 @@ const JOB = {
   salaryMax: null,
   description: "Pour l'un de nos clients, nous recherchons un développeur Java / Angular. 5 ans minimum. Kubernetes apprécié.",
 };
-const PROFILE = { skills: ["Vue.js", "TypeScript"], experienceMin: 0, experienceMax: 3, contracts: ["CDI"], locations: ["Oise (60)"] };
+const PROFILE = { skills: ["Vue.js", "TypeScript"], experienceMin: 0, experienceMax: 3, contracts: ["CDI"], locations: ["Rhône (69)"] };
 const GOOD = {
   resume: "Développeur Java / Angular en mission chez un client d'Open.",
   missions: ["Développer en Java", "Développer en Java", "Faire les interfaces Angular"],
@@ -68,10 +68,10 @@ describe("IA locale (Ollama)", () => {
   });
 
   it("extrait (Adzuna) + CV : signalés à l'IA ; niveau du titre prioritaire ; avertissement « incomplète » en tête", async () => {
-    const p = buildAnalysisPrompt({ ...JOB, abridged: true }, { ...PROFILE, cv: "Alternance chez Banquo (banque)" });
+    const p = buildAnalysisPrompt({ ...JOB, abridged: true }, { ...PROFILE, cv: "Alternance chez Nordia (banque)" });
     expect(p).toContain("EXTRAIT");
     expect(p).toContain("CV DU CANDIDAT");
-    expect(p).toContain("Banquo");
+    expect(p).toContain("Nordia");
     expect(buildAnalysisPrompt(JOB, PROFILE)).not.toMatch(/EXTRAIT|CV DU CANDIDAT/);
 
     const answer = { ...GOOD, niveau: "senior", points_attention: ["Secteur bancaire", "Annonce incomplète"] };

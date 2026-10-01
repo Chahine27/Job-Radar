@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { ensureSession } from "./session";
+import { ensureSession, hasAccount, needsSetup } from "./session";
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/login", name: "login", component: () => import("./views/LoginView.vue"), meta: { public: true } },
+    { path: "/bienvenue", name: "welcome", component: () => import("./views/WelcomeView.vue"), meta: { public: true, bare: true } },
     { path: "/", name: "jobs", component: () => import("./views/DashboardView.vue") },
     { path: "/postule", name: "applications", component: () => import("./views/ApplicationsView.vue") },
     { path: "/ajouter", name: "add-job", component: () => import("./views/ManualJobView.vue") },
@@ -20,6 +21,10 @@ export const router = createRouter({
 
 router.beforeEach(async (to) => {
   const loggedIn = await ensureSession();
+  // Premier lancement : aucun compte → on le crée ; compte créé mais CV / profil pas faits → on les termine.
+  if (!loggedIn && !hasAccount.value) return to.name === "welcome" ? true : { name: "welcome" };
+  if (loggedIn && needsSetup.value) return to.name === "welcome" ? true : { name: "welcome" };
+  if (to.name === "welcome") return loggedIn ? { name: "jobs" } : { name: "login" };
   if (!to.meta.public && !loggedIn) return { name: "login", query: { redirect: to.fullPath } };
   if (to.name === "login" && loggedIn) return { name: "jobs" };
 });

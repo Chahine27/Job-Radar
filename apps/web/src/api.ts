@@ -1,4 +1,4 @@
-import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord } from "./types";
+import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -49,6 +49,15 @@ export const api = {
     request<{ user: { email: string } }>("POST", "/api/auth/login", { email, password }),
   logout: () => request<{ ok: true }>("POST", "/api/auth/logout"),
   me: () => request<{ user: { email: string } }>("GET", "/api/auth/me"),
+
+  // Premier lancement : compte, CV, profil proposé par l'IA.
+  setupStatus: () => request<{ hasAccount: boolean; needsSetup: boolean }>("GET", "/api/setup/status"),
+  createAccount: (email: string, password: string) =>
+    request<{ user: { email: string } }>("POST", "/api/setup/account", { email, password }),
+  uploadCv: (fileName: string, data: string) =>
+    request<{ text: string; chars: number }>("POST", "/api/setup/cv-file", { fileName, data }),
+  readCv: () => request<{ proposal: CvProposal; model: string; durationMs: number }>("POST", "/api/setup/read-cv"),
+  finishSetup: (body: SetupForm) => request<ProfileRecord>("POST", "/api/setup/finish", body),
 
   getPrefs: () => request<Record<string, Record<string, unknown>>>("GET", "/api/prefs"),
   savePrefs: (page: string, value: Record<string, unknown>) => request<{ ok: true }>("PUT", `/api/prefs/${encodeURIComponent(page)}`, value),

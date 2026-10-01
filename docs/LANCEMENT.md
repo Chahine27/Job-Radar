@@ -7,10 +7,17 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
 
 1. Télécharge le projet et décompresse-le où tu veux (par exemple `Documents\jobRadar`).
 2. Double-clic sur **« Installer Job Radar.cmd »**. Il crée d'abord les réglages (`.env`, mot de passe de la base généré
-   tout seul) et ton compte, puis installe ce qui manque : Node.js, pnpm, Ollama et le modèle d'IA. Il crée ensuite la base
+   tout seul), puis installe ce qui manque : Node.js, pnpm, Ollama et le modèle d'IA. Il crée ensuite la base
    de données et le raccourci « Job Radar » sur le Bureau.
-3. Pas de Docker : la base de données est intégrée au projet (dossier `data\`), invisible, sans compte à créer.
+3. Pas de Docker : la base de données est intégrée au projet (dossier `data\`), invisible, sans compte à créer sur internet.
    Si l'installation s'arrête, corrige le point indiqué et relance l'installeur : ce qui est déjà fait est gardé.
+4. **Premier lancement** : le site s'ouvre sur l'écran « Bienvenue ».
+   - Crée ton compte (email + mot de passe de 12 caractères minimum). Il protège seulement ton espace sur ce PC.
+   - Dépose ton CV (PDF, Word .docx ou texte). Un CV scanné (image) ne contient pas de texte : colle alors son texte.
+   - L'IA locale lit ton CV (30 s à 2 min) et propose : métiers à rechercher, compétences, ville, années d'expérience, contrats.
+   - Corrige ce qui ne va pas, clique sur l'étoile des compétences que tu maîtrises vraiment, puis « C'est bon, lancer la recherche ».
+   - Si Ollama ne répond pas : ouvre l'appli Ollama puis « Réessayer », ou « Remplir à la main ».
+   Tout reste modifiable ensuite dans « Profil » et « CV & lettre ».
 
 ## 1. Après un redémarrage du PC
 
@@ -195,6 +202,6 @@ Le score, l'analyse IA et la lettre utilisent alors l'annonce complète (la coll
 
 ## 10. Lettre en PDF et candidatures spontanées par email
 
-- **PDF de la lettre** : dans « CV & lettre », section 5, colle le dossier où ranger la lettre (ex. `C:\Users\…\Documents\travail\pour postuler`). Le bouton « Enregistrer en PDF » d'une offre écrit alors `Lettre_de_motivation.pdf` dans ce dossier, en remplaçant l'ancien. Si le PDF est ouvert dans un lecteur, ferme-le d'abord.
+- **PDF de la lettre** : dans « CV & lettre », section 5, colle le dossier où ranger la lettre (ex. `C:\Users\…\Documents\Candidatures`). Le bouton « Enregistrer en PDF » d'une offre écrit alors `Lettre_de_motivation.pdf` dans ce dossier, en remplaçant l'ancien. Si le PDF est ouvert dans un lecteur, ferme-le d'abord.
 - **Candidature spontanée** : écran « Entreprises » → colle l'email de contact de l'entreprise → « Préparer la candidature ». L'IA écrit la lettre (sans rien inventer sur l'entreprise), tu la relis, puis « Envoyer » : l'email part de ton Gmail avec la lettre en PDF et ton CV PDF (chemin à indiquer dans « CV & lettre »). Rien ne part sans ton clic, et une entreprise déjà contactée demande une confirmation pour renvoyer.
 - L'envoi utilise le même compte que les notifications : `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` dans `.env` (mot de passe d'application Gmail).

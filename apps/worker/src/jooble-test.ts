@@ -16,8 +16,8 @@ try {
     console.log(`Jooble : ${health.status === "SOURCE_UNAVAILABLE" ? "non configurée" : "ERREUR"} — ${health.message}`);
     process.exitCode = 1;
   } else {
-    const r = await jooble.testCall("Développeur", "60");
-    console.log(`Jooble : OK — ${r.count} offre(s) reçue(s) pour « Développeur » dans l'Oise`);
+    const r = await jooble.testCall("Comptable", "75");
+    console.log(`Jooble : OK — ${r.count} offre(s) reçue(s) pour « Comptable » à Paris`);
     if (r.sample) console.log(`  exemple : ${r.sample.title} — ${r.sample.company ?? "?"} — ${r.sample.location ?? "?"}`);
     const { used } = await quota.get();
     console.log(`  appels utilisés : ${used} / ${JOOBLE_DEFAULTS.lifetimeLimit} (arrêt automatique à ${JOOBLE_DEFAULTS.stopAt})`);

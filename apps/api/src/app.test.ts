@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE } from "@job-radar/shared";
+import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { describe, expect, it } from "vitest";
 import { APP_URL, TEST_EMAIL, TEST_PASSWORD, createTestApp, login } from "./test-helpers";
 
@@ -124,15 +124,15 @@ describe("profil", () => {
     const cookies = await login(app);
     const res = await app.inject({ method: "GET", url: "/api/profile", cookies });
     expect(res.statusCode).toBe(200);
-    expect(res.json().profile).toEqual(DEFAULT_PROFILE);
+    expect(res.json().profile).toEqual(EXAMPLE_PROFILE);
     expect(res.json().home).toBeNull();
   });
 
   it("modifie le profil et le point de départ", async () => {
     const { app } = await createTestApp();
     const cookies = await login(app);
-    const profile = { ...DEFAULT_PROFILE, salaryTarget: 42000 };
-    const home = { label: "Gare de départ", lat: 49.4, lng: 2.8 };
+    const profile = { ...EXAMPLE_PROFILE, salaryTarget: 42000 };
+    const home = { label: "Gare de départ", lat: 45.8, lng: 5.2 };
     const put = await app.inject({ method: "PUT", url: "/api/profile", cookies, payload: { profile, home } });
     expect(put.statusCode).toBe(200);
 
@@ -149,8 +149,8 @@ describe("profil", () => {
     const { app } = await createTestApp();
     const cookies = await login(app);
     const bad = {
-      ...DEFAULT_PROFILE,
-      scoringWeights: { ...DEFAULT_PROFILE.scoringWeights, technical: 0.9 },
+      ...EXAMPLE_PROFILE,
+      scoringWeights: { ...EXAMPLE_PROFILE.scoringWeights, technical: 0.9 },
     };
     const res = await app.inject({ method: "PUT", url: "/api/profile", cookies, payload: { profile: bad } });
     expect(res.statusCode).toBe(400);
@@ -163,8 +163,8 @@ describe("recherche d'adresse", () => {
   it("renvoie des propositions, valide la saisie", async () => {
     const { app } = await createTestApp();
     const cookies = await login(app);
-    const ok = await app.inject({ method: "GET", url: "/api/geocode?q=gare%20de%20compiegne", cookies });
-    expect(ok.json().items[0]).toMatchObject({ lat: 49.4214, lng: 2.8267 });
+    const ok = await app.inject({ method: "GET", url: "/api/geocode?q=gare%20de%20villeurbanne", cookies });
+    expect(ok.json().items[0]).toMatchObject({ lat: 45.7714, lng: 5.2467 });
     expect((await app.inject({ method: "GET", url: "/api/geocode?q=a", cookies })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/api/geocode?q=gare" })).statusCode).toBe(401);
   });

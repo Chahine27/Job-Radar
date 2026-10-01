@@ -10,14 +10,14 @@ const LETTER = [
   "À Paris, le 30/09/2026",
   "Objet : Candidature au poste de Développeur Vue.js",
   "Madame, Monsieur,",
-  "Chez Banquo, j'ai créé des écrans en Vue.js « accessibles » et migré l'appli vers Vue 3 — sans régression.",
+  "Chez Nordia, j'ai créé des écrans en Vue.js « accessibles » et migré l'appli vers Vue 3 — sans régression.",
   "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
   "Alex MARTIN",
 ].join("\n\n");
 
 describe("lettre en PDF", () => {
   it("fabrique un PDF d'une page, avec les accents, sans adresse de page ni date d'impression", async () => {
-    const pdf = await renderLetterPdf(LETTER, "Lettre de motivation - Banquo");
+    const pdf = await renderLetterPdf(LETTER, "Lettre de motivation - Nordia");
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     const raw = pdf.toString("latin1");
     expect(raw.match(/\/Type \/Page\b/g)).toHaveLength(1);

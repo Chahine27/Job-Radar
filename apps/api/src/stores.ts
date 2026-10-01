@@ -18,6 +18,9 @@ export type ProfileRecord = {
 export interface UserStore {
   findByEmail(email: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
+  /** Nombre de comptes : 0 = premier lancement (création du compte depuis le site). */
+  count(): Promise<number>;
+  create(email: string, passwordHash: string): Promise<UserRecord>;
 }
 
 /** Préférences d'affichage (filtres), rangées par page. */

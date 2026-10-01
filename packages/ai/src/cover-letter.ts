@@ -47,46 +47,46 @@ const MAX_CV = 5_000;
 const MAX_EXAMPLE = 4_000;
 const MAX_RULES = 3_000;
 
-export const LETTER_SYSTEM_PROMPT = `Tu écris une lettre de motivation en français pour un candidat JUNIOR (sorti d'alternance), à partir de SON CV et d'une annonce.
+export const LETTER_SYSTEM_PROMPT = `Tu écris une lettre de motivation en français pour un candidat, à partir de SON CV et d'une annonce. Le candidat peut exercer n'importe quel métier.
 Tu réponds UNIQUEMENT avec le JSON demandé.
 
 1. VÉRITÉ (règles absolues)
-- N'invente RIEN : chaque expérience, projet, diplôme, chiffre ou technologie cité doit être écrit dans le CV (ou dans les RÈGLES DU CANDIDAT, écrites par lui). Aucun chiffre qui n'y figure pas.
+- N'invente RIEN : chaque expérience, projet, diplôme, chiffre, compétence ou outil cité doit être écrit dans le CV (ou dans les RÈGLES DU CANDIDAT, écrites par lui). Aucun chiffre qui n'y figure pas.
 - Si des RÈGLES DU CANDIDAT sont fournies, elles passent AVANT toutes les règles ci-dessous en cas de conflit (structure, longueur, phrases types).
-- Associe une technologie à un projet ou à une expérience SEULEMENT si le CV l'écrit pour CE projet (ex. : si le CV dit « Réservation de parking : Java / Spring Boot, Flutter, Docker Compose », ce projet n'est PAS un projet « microservices »).
-- Ce qui a été fait en entreprise (alternance) n'est jamais présenté comme un projet d'école, et inversement.
+- Associe une compétence ou un outil à une expérience SEULEMENT si le CV l'écrit pour CETTE expérience (ne prête pas à un poste ce qui a été fait ailleurs).
+- Une expérience professionnelle (emploi, alternance, stage) n'est jamais présentée comme un projet de formation, et inversement.
 - Sur l'entreprise, utilise seulement ce que dit l'annonce. Nom inconnu → n'en invente pas.
 
 2. NIVEAU : ni trop, ni trop peu
-- Jamais « je maîtrise », « maîtriser », « expert », « expertise », « parfaitement » : il est junior (SEULE exception : les technos listées dans « TECHNOS QU'IL MAÎTRISE », si la liste est fournie). Écris « j'ai développé », « j'ai utilisé », « j'ai pratiqué », « j'ai travaillé avec ».
-- Technologie de l'annonce ABSENTE du CV : jamais « approfondir », « consolider », « renforcer », « ma connaissance de », « j'ai de l'expérience en » pour elle. Ne LISTE JAMAIS les technologies qui lui manquent. Au plus UN manque dans toute la lettre, et seulement s'il est central dans l'annonce (dans le titre ou parmi les premières exigences) : « … que je souhaite approfondir en m'appuyant sur … (une techno PROCHE du CV) ». Sinon, n'en parle pas.
-- Technologie PRÉSENTE dans le CV (même dans « Autres » ou « Outils ») : jamais « je souhaite l'apprendre » ; dis qu'il l'a déjà pratiquée.
+- Jamais « je maîtrise », « maîtriser », « expert », « expertise », « parfaitement » (SEULE exception : ce qui est listé dans « CE QU'IL MAÎTRISE », si la liste est fournie). Écris « j'ai réalisé », « j'ai utilisé », « j'ai pratiqué », « j'ai travaillé avec ».
+- Compétence de l'annonce ABSENTE du CV : jamais « approfondir », « consolider », « renforcer », « ma connaissance de », « j'ai de l'expérience en » pour elle. Ne LISTE JAMAIS ce qui lui manque. Au plus UN manque dans toute la lettre, et seulement s'il est central dans l'annonce (dans le titre ou parmi les premières exigences) : « … que je souhaite approfondir en m'appuyant sur … (une compétence PROCHE du CV) ». Sinon, n'en parle pas.
+- Compétence PRÉSENTE dans le CV (même dans « Autres » ou « Outils ») : jamais « je souhaite l'apprendre » ; dis qu'il l'a déjà pratiquée.
 
 3. PERTINENCE (le plus important)
-- Commence par le plan « correspondances » : les 3 à 5 exigences les plus importantes de l'annonce (dans l'ordre du « profil recherché ») et, pour chacune, le fait PRÉCIS du CV qui y répond (« aucune » s'il n'y en a pas). Cherche aussi les ressemblances de métier (supervision bancaire ↔ supervision ; authentification JWT ↔ sécurité JWT ; API REST ↔ API).
+- Commence par le plan « correspondances » : les 3 à 5 exigences les plus importantes de l'annonce (dans l'ordre du « profil recherché ») et, pour chacune, le fait PRÉCIS du CV qui y répond (« aucune » s'il n'y en a pas). Cherche aussi les ressemblances de métier (même type de clientèle, même secteur, même outil sous un autre nom).
 - La lettre est écrite à partir de ces correspondances SEULEMENT. Chaque paragraphe répond à une exigence de l'annonce.
-- Pas de catalogue du CV : une technologie absente de l'annonce ne doit pas être citée, sauf si c'est la seule preuve d'une compétence demandée.
-- Les qualités (autonome, rigoureux…) se prouvent par un fait QUI LES MONTRE VRAIMENT et qui a un rapport avec le poste ; sinon ne les cite pas. Pas de lien artificiel (l'accessibilité web ne prouve pas l'autonomie).
-- Le paragraphe sur les projets d'école n'existe que s'il répond à une exigence de CETTE annonce.
+- Pas de catalogue du CV : une compétence absente de l'annonce ne doit pas être citée, sauf si c'est la seule preuve d'une compétence demandée.
+- Les qualités (autonome, rigoureux…) se prouvent par un fait QUI LES MONTRE VRAIMENT et qui a un rapport avec le poste ; sinon ne les cite pas. Pas de lien artificiel.
+- Le paragraphe sur les projets de formation n'existe que s'il répond à une exigence de CETTE annonce.
 
 4. STYLE : une lettre écrite par une personne, pas par un robot
 - Première personne, vouvoiement du recruteur, phrases courtes (25 mots maximum), un fait par phrase.
 - Écris comme il parlerait à un recruteur à l'oral : simple, précis, sans jargon RH. Relis chaque phrase : si elle pourrait figurer dans n'importe quelle lettre, remplace-la par un fait précis.
-- Varie les débuts de phrase : jamais plus de deux phrases de suite qui commencent par « J'ai ». Alterne avec le contexte (« Chez [entreprise], … », « Sur le projet [nom], … », « Côté interfaces, … »).
-- Pas de récitation chronologique du CV : chaque fait cité est relié en quelques mots à un besoin de l'annonce (« … , ce qui correspond à votre besoin de … » est interdit : dis-le simplement, par exemple « C'est ce type d'API que vous exposez en GraphQL. »).
-- Ne répète pas une même technologie plus de deux fois, ni le même verbe dans un paragraphe (« développé » trois fois).
-- Ne prétends jamais que l'offre « correspond à mon parcours » si des technologies principales lui manquent : dis ce qui est transférable.
-- Clichés interdits : « bases solides », « m'ont exposé », « je vise », « correspond à mon parcours », « je serais intéressé », « mettre à profit », « au sein de votre structure », « environnement stimulant », « je suis convaincu », « motivé », « sérieux », « applications métier complexes ».
+- Varie les débuts de phrase : jamais plus de deux phrases de suite qui commencent par « J'ai ». Alterne avec le contexte (« Chez [entreprise], … », « Sur le projet [nom], … », « Avec les clients, … »).
+- Pas de récitation chronologique du CV : chaque fait cité est relié en quelques mots à un besoin de l'annonce (« … , ce qui correspond à votre besoin de … » est interdit : dis-le simplement, par exemple « C'est le même type de clientèle que la vôtre. »).
+- Ne répète pas une même compétence plus de deux fois, ni le même verbe dans un paragraphe (« réalisé » trois fois).
+- Ne prétends jamais que l'offre « correspond à mon parcours » si des compétences principales lui manquent : dis ce qui est transférable.
+- Clichés interdits : « bases solides », « m'ont exposé », « je vise », « correspond à mon parcours », « je serais intéressé », « mettre à profit », « au sein de votre structure », « environnement stimulant », « je suis convaincu », « motivé », « sérieux », « missions variées et complexes ».
 - Pas de faux liens de cause : n'écris pas « ce qui m'a permis de », « ce qui me permet de » ni « comme en témoigne » ; décris simplement ce qu'il a fait.
-- Nomme l'entreprise (ex. « chez [entreprise] ») et le projet : « une expérience sur des applications web métier » ne dit rien.
-- Au plus 5 « j'ai » dans toute la lettre : utilise aussi « j'ai conçu », « je développais », « mon travail consistait à », « chez [entreprise], … », ou une phrase dont le sujet est le projet.
+- Nomme l'entreprise (ex. « chez [entreprise] ») et la mission : « une expérience enrichissante » ne dit rien.
+- Au plus 5 « j'ai » dans toute la lettre : utilise aussi « j'ai conçu », « je m'occupais de », « mon travail consistait à », « chez [entreprise], … », ou une phrase dont le sujet est la mission.
 - Chaque phrase apporte un fait. Pas d'importance annoncée sans preuve (« ce qui souligne », « joue un rôle clé », « ma démarche structurée ») ; pas de formule du type « Plus qu'un poste, c'est… » ; pas de listes de trois éléments par réflexe.
 - Varie la longueur des phrases : une courte quand elle suffit, une plus longue quand deux idées sont liées.
 - N'invente jamais un détail pour remplir une phrase vide : supprime-la.
 - La conclusion ne répète pas l'introduction : une phrase qui propose un échange, c'est tout.
 - Mots interdits : « passionné », « dynamique », « challenge », « valeur ajoutée », « opportunité », « je me permets », « n'hésitez pas », « je suis prêt à », « véritable », « parfaite adéquation ».
 - Pas de connecteurs en série (« De plus », « Parallèlement », « En outre ») : au plus un par lettre.
-- Ne recopie pas l'annonce (« Votre mission consiste à… »), ne répète pas le nom complet du produit. Corrige les fautes de l'annonce (« Vu.js » → « Vue.js »).
+- Ne recopie pas l'annonce (« Votre mission consiste à… »), ne répète pas le nom complet du produit. Corrige les fautes de l'annonce.
 - Annonce d'un cabinet ou d'une ESN (« nos clients », « pour notre client ») : ne dis pas ce qui l'attire chez le cabinet ; parle du projet et du client décrits.
 - LETTRE EXEMPLE : c'est SA façon d'écrire. Imite-la vraiment : même façon d'ouvrir, d'enchaîner les paragraphes et de conclure, mêmes tournures quand elles s'appliquent, même longueur. Ne reprends jamais son entreprise, son poste ni ses détails.
 - Ne recopie aucune phrase de l'annonce (sauf l'intitulé du poste) : dis avec tes mots pourquoi le poste t'intéresse.
@@ -94,7 +94,7 @@ Tu réponds UNIQUEMENT avec le JSON demandé.
 5. CONTENU
 - objet : « Candidature au poste de » + l'intitulé du poste (sans « H/F »), orthographe corrigée.
 - paragraphes : 3 à 5 paragraphes, 200 à 330 mots en tout :
-  1. qui il est (diplôme, alternance chez l'entreprise nommée) et le poste visé, avec UN élément concret de l'annonce qui l'attire ;
+  1. qui il est (formation, dernière expérience chez l'entreprise nommée) et le poste visé, avec UN élément concret de l'annonce qui l'attire ;
   2. (et 3. si utile) les preuves des correspondances, avec des faits concrets du CV ;
   4. les éventuels manques (une phrase franche) et ce qu'il apportera ;
   5. une phrase de conclusion qui propose un échange (avec le nom de l'entreprise s'il est connu).
@@ -195,7 +195,7 @@ ${kit.rules.trim().slice(0, MAX_RULES)}
 """
 `
     : "";
-  const mastered = masteredSkills(kit).size ? `TECHNOS QU'IL MAÎTRISE (les seules où « maîtrise » est permis) : ${kit.mastered}\n` : "";
+  const mastered = masteredSkills(kit).size ? `CE QU'IL MAÎTRISE (les seules compétences où « maîtrise » est permis) : ${kit.mastered}\n` : "";
   const closing = kit.closing?.trim()
     ? `DERNIER PARAGRAPHE : ajouté automatiquement (« ${kit.closing.trim().slice(0, 200)} »). N'écris PAS de conclusion ni de phrase qui propose un échange.\n`
     : "";
@@ -479,7 +479,7 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
     const after = m ? s.slice(m.index + m[0].length).split(/[,;.:]|\s(?:en m['’]appuyant|grâce|gr[aâ]ce à|avec|et j['’]ai|car)\s/i)[0] ?? "" : "";
     const claimed = extractSkills(after);
     const masteryOk = mastered.size > 0 && claimed.length > 0 && claimed.every((id) => mastered.has(id));
-    if (MASTERY.test(s) && !masteryOk) issues.push(`Pas de « maîtrise » ni « expert » (candidat junior) : « ${s.slice(0, 90)}… » → « j'ai utilisé / j'ai développé ».`);
+    if (MASTERY.test(s) && !masteryOk) issues.push(`Pas de « maîtrise » ni « expert » (seulement pour ce que tu as déclaré maîtriser) : « ${s.slice(0, 90)}… » → « j'ai utilisé / j'ai développé ».`);
     const absent = extractSkills(s).filter((id) => !inCv.has(id));
     if (absent.length && KNOWS.test(s) && !/pas encore|jamais (?:utilis|travaill|pratiqu)|n['’]ai pas/i.test(s)) {
       issues.push(`${absent.map(label).join(", ")} n'est pas dans le CV : ne prétends pas le connaître (« ${s.slice(0, 90)}… »). Une seule phrase franche : pas encore utilisé, envie de s'y former.`);
@@ -542,10 +542,10 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   for (const s of copiedFromJob(body, jobText.split("\n").slice(1).join("\n"), title).slice(0, 2)) {
     issues.push(`Phrase recopiée de l'annonce : dis-le avec tes mots (« ${s}… »).`);
   }
-  // L'entreprise d'alternance doit être nommée.
+  // La dernière entreprise doit être nommée.
   const employers = entities.filter((e) => e.kind === "entreprise");
   if (employers.length && !employers.some((e) => body.toLowerCase().includes(e.name.toLowerCase()))) {
-    issues.push(`Nomme l'entreprise d'alternance (${employers.map((e) => e.name).join(", ")}) : « une expérience en alternance » seule ne dit rien.`);
+    issues.push(`Nomme l'entreprise (${employers.map((e) => e.name).join(", ")}) : « une expérience » seule ne dit rien.`);
   }
   const jai = body.match(/(?<![\p{L}])j['’]ai(?![\p{L}])/giu)?.length ?? 0;
   // 5 pour une lettre courte, un de plus par tranche de ~55 mots au-delà de 275 (lettre de 350 mots → 6).

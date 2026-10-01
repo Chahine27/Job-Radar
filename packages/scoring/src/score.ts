@@ -1,4 +1,4 @@
-import type { Profile, RemoteType } from "@job-radar/shared";
+import { neighborDepartments, type Profile, type RemoteType } from "@job-radar/shared";
 import { extractSkills, getSkill, resolveSkill } from "@job-radar/skills";
 import { DEFAULT_RULES, type ScoringRules } from "./rules";
 import { contractFromTitle, detectNonDevRole, detectSeniority, looksLikeItTitle, normalizeContract, type Seniority } from "./signals";
@@ -229,7 +229,8 @@ function scoreLocation(input: ScoringInput, profile: Profile, rules: ScoringRule
   if (!dept) return { score: 50, reasons: [], warnings: ["Lieu de travail non précisé"] };
   const target = profile.locations.find((l) => l.department === dept);
   if (target) return { score: 100, reasons: [`Dans ta zone : ${target.label}`], warnings: [] };
-  if (rules.nearbyDepartments.includes(dept)) {
+  // « Proche » : un département voisin d'une zone du profil (ou listé dans les règles).
+  if (rules.nearbyDepartments.includes(dept) || profile.locations.some((l) => neighborDepartments(l.department).includes(dept))) {
     return { score: 60, reasons: [], warnings: [`Département ${dept}, proche de ta zone`] };
   }
   return { score: 15, reasons: [], warnings: [`Département ${dept}, hors de ta zone`] };

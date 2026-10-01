@@ -15,8 +15,8 @@ if (health.status !== "OK") {
 }
 console.log("   ✔ Jeton obtenu");
 
-console.log("2) Recherche test : « Développeur » dans l'Oise (60), 31 derniers jours…");
-const raws = await source.search({ keywords: "Développeur", department: "60", publishedSinceDays: 31, maxResults: 10 });
+console.log("2) Recherche test : « Comptable » à Paris (75), 31 derniers jours…");
+const raws = await source.search({ keywords: "Comptable", department: "75", publishedSinceDays: 31, maxResults: 10 });
 console.log(`   ✔ ${raws.length} offre(s) reçue(s)\n`);
 
 for (const raw of raws.slice(0, 10)) {

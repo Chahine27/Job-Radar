@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE } from "@job-radar/shared";
+import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { describe, expect, it } from "vitest";
 import { createEmailNotifier } from "./email";
 import { emailHtml, emailSubject, escapeHtml, pushPayload } from "./format";
@@ -10,7 +10,7 @@ const ALERT: JobAlert = {
   jobId: "j1",
   title: "Développeur Vue.js <script>",
   company: "Atelier",
-  place: "Compiègne (60)",
+  place: "Villeurbanne (69)",
   score: 91,
   contract: "CDI",
   salary: "40k–45k €",
@@ -108,14 +108,14 @@ function job(id: string, extra: Partial<CandidateJob> = {}): CandidateJob {
     id,
     title: "Développeur Vue.js",
     company: "Atelier",
-    city: "Compiègne",
+    city: "Villeurbanne",
     description: "Vue 3, TypeScript, Node.js",
     technologies: [],
     contractType: "CDI",
     experienceMinYrs: 2,
     salaryMin: 40000,
     salaryMax: 45000,
-    department: "60",
+    department: "69",
     remoteType: "hybrid",
     travelMinutes: null,
     ...extra,
@@ -156,7 +156,7 @@ function fakeNotifier(channel: Channel, fail = false) {
 }
 
 const run = (repo: NotifyRepo, notifiers: Notifier[]) =>
-  notifyNewMatches({ repo, notifiers, profile: DEFAULT_PROFILE, since: new Date(0), appUrl: "http://localhost:5173" });
+  notifyNewMatches({ repo, notifiers, profile: EXAMPLE_PROFILE, since: new Date(0), appUrl: "http://localhost:5173" });
 
 describe("notifyNewMatches", () => {
   it("n'annonce que les offres au-dessus du seuil, non masquées, meilleures d'abord", async () => {

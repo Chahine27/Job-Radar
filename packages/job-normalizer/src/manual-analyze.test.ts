@@ -78,12 +78,12 @@ Chez Kolecto, nous cherchons un développeur fullstack. CDI. Rémunération : 45
   it("formules classiques d'une annonce", () => {
     const a = analyzeJobText(`Acme recrute !
 Nous recrutons un Développeur Vue.js (H/F) pour renforcer notre équipe.
-Localisation : Compiègne (60)
+Localisation : Villeurbanne (69)
 Type de contrat : Stage de 6 mois
 Salaire : 38k€ - 42k€`);
     expect(a.title).toBe("Développeur Vue.js (H/F)");
     expect(a.company).toBe("Acme");
-    expect(a.location).toBe("Compiègne (60)");
+    expect(a.location).toBe("Villeurbanne (69)");
     expect(a.salaryMin).toBe(38000);
   });
 

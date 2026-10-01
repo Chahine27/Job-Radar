@@ -43,9 +43,9 @@ async function main() {
   // de droits (scopes) et d'adresses, et on garde la première qui répond 200.
   const scopes = ["api_labonneboitev2 search", "api_labonneboitev2 search office", "api_labonneboitev2"];
   const paths = [
-    "/search?rome=M1805&citycode=60175&distance=30&page=1&page_size=3",
-    "/search/count?rome=M1805&citycode=60175&distance=30",
-    "/recherche?rome=M1805&citycode=60175&distance=30",
+    "/search?rome=M1203&citycode=75056&distance=30&page=1&page_size=3",
+    "/search/count?rome=M1203&citycode=75056&distance=30",
+    "/recherche?rome=M1203&citycode=75056&distance=30",
   ];
   for (const scope of scopes) {
     const t = await token(scope);

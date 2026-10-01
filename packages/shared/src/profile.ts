@@ -18,7 +18,7 @@ export type ScoringWeights = z.infer<typeof ScoringWeightsSchema>;
 
 export const LocationTargetSchema = z.object({
   label: z.string().min(1),
-  /** Code département, ex. "60" pour l'Oise. */
+  /** Code département, ex. "69" pour le Rhône. */
   department: z.string().regex(/^(\d{2}|2A|2B|\d{3})$/),
 });
 
@@ -28,8 +28,8 @@ export const PreferredTechSchema = z.object({
   weight: z.number().min(0).max(1),
 });
 
-/** Compétences maîtrisées par défaut (README §2). Modifiable depuis l'interface. */
-export const DEFAULT_SKILLS = [
+/** Compétences d'un profil d'EXEMPLE (développeur fictif) : tests et démonstration seulement. */
+export const EXAMPLE_SKILLS = [
   "Vue.js",
   "JavaScript",
   "TypeScript",
@@ -55,21 +55,21 @@ export const DEFAULT_SKILLS = [
 export const ProfileSchema = z
   .object({
     /** Ce que tu maîtrises : sert au pourcentage technique. */
-    skills: z.array(z.string().trim().min(1)).min(1).default(DEFAULT_SKILLS),
+    skills: z.array(z.string().trim().min(1)).default([]),
     contracts: z.array(z.string().min(1)).min(1),
     experienceMin: z.number().int().min(0),
     experienceMax: z.number().int().min(0),
     salaryTarget: z.number().int().positive().nullable(),
     salaryMinimum: z.number().int().positive().nullable(),
-    locations: z.array(LocationTargetSchema).min(1),
+    locations: z.array(LocationTargetSchema),
     /** Ce que tu préfères : sert aux recherches et à départager deux offres de même score. */
-    preferredTechs: z.array(PreferredTechSchema).min(1),
-    searches: z.array(z.string().min(2)).min(1),
+    preferredTechs: z.array(PreferredTechSchema),
+    searches: z.array(z.string().min(2)),
     scoringWeights: ScoringWeightsSchema,
     /** Candidatures spontanées (La Bonne Boîte) : métiers ROME et rayon autour du point de départ. */
     spontaneous: z
       .object({
-        romes: z.array(z.string().regex(/^[A-N]\d{4}$/, "Code ROME invalide (ex. M1805)")).min(1).max(5),
+        romes: z.array(z.string().regex(/^[A-N]\d{4}$/, "Code ROME invalide (ex. K2112)")).max(5),
         distanceKm: z.number().int().min(5).max(100),
         /** Zone propre aux candidatures spontanées (indépendante du point de départ des offres). */
         place: z
@@ -78,7 +78,9 @@ export const ProfileSchema = z
           .default(null),
         departments: z.array(z.string().regex(/^(\d{2}|2A|2B|\d{3})$/, "Code département invalide (ex. 60)")).max(10).default([]),
       })
-      .default({ romes: ["M1805"], distanceKm: 30, place: null, departments: [] }),
+      .default({ romes: [], distanceKm: 30, place: null, departments: [] }),
+    /** false tant que le premier lancement (compte, CV, profil validé) n'est pas terminé. */
+    setupDone: z.boolean().default(true),
     minScoreForAnalysis: z.number().int().min(0).max(100),
     minScoreForNotification: z.number().int().min(0).max(100),
   })
@@ -88,16 +90,19 @@ export const ProfileSchema = z
   });
 export type Profile = z.infer<typeof ProfileSchema>;
 
-/** Profil par défaut tiré du README (§2, §3, §17). Modifiable ensuite depuis l'interface. */
-export const DEFAULT_PROFILE: Profile = {
-  skills: DEFAULT_SKILLS,
+/**
+ * Profil d'EXEMPLE (développeur fictif, Île-de-France) : sert aux tests et à la démonstration.
+ * Un vrai utilisateur part du profil vierge DEFAULT_PROFILE, rempli au premier lancement à partir de son CV.
+ */
+export const EXAMPLE_PROFILE: Profile = {
+  skills: EXAMPLE_SKILLS,
   contracts: ["CDI"],
   experienceMin: 1,
   experienceMax: 3,
   salaryTarget: 40000,
   salaryMinimum: 38000,
   locations: [
-    { label: "Oise", department: "60" },
+    { label: "Zone A", department: "69" },
     { label: "Paris", department: "75" },
   ],
   preferredTechs: [
@@ -130,4 +135,23 @@ export const DEFAULT_PROFILE: Profile = {
   spontaneous: { romes: ["M1805"], distanceKm: 30, place: null, departments: [] },
   minScoreForAnalysis: 55,
   minScoreForNotification: 70,
+  setupDone: true,
+};
+
+/** Profil vierge d'un nouvel utilisateur : rempli au premier lancement (CV lu par l'IA, puis validé). */
+export const DEFAULT_PROFILE: Profile = {
+  skills: [],
+  contracts: ["CDI"],
+  experienceMin: 0,
+  experienceMax: 5,
+  salaryTarget: null,
+  salaryMinimum: null,
+  locations: [],
+  preferredTechs: [],
+  searches: [],
+  scoringWeights: EXAMPLE_PROFILE.scoringWeights,
+  spontaneous: { romes: [], distanceKm: 30, place: null, departments: [] },
+  minScoreForAnalysis: 55,
+  minScoreForNotification: 70,
+  setupDone: false,
 };

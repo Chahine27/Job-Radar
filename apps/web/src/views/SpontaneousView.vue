@@ -152,7 +152,7 @@ async function send() {
       <h2><span class="step">1</span>La lettre</h2>
       <label class="title">
         Poste proposé
-        <input v-model="title" maxlength="120" placeholder="Développeur full stack" />
+        <input v-model="title" maxlength="120" placeholder="Ex. Assistant comptable" />
       </label>
 
       <div v-if="!state.kitReady" class="empty">

@@ -14,7 +14,7 @@ const KIT = {
   header: "Alex Martin\n75011 Paris",
   city: "Paris",
   signature: "Alex MARTIN",
-  cvText: "Développeur Full Stack. Alternance chez Banquo : Vue.js, TypeScript, Java Spring Boot, PostgreSQL. ".repeat(4),
+  cvText: "Développeur Full Stack. Alternance chez Nordia : Vue.js, TypeScript, Java Spring Boot, PostgreSQL. ".repeat(4),
   letterExample: "Ce qui m'attire chez Alarmex, c'est la sécurité.",
 };
 
@@ -56,8 +56,8 @@ describe("lettre de motivation", () => {
     expect((await req("POST", "/api/jobs/j-vue/letter")).json().cached).toBe(true);
     expect(aiCalls).toHaveLength(1);
 
-    const edited = (await req("PUT", "/api/jobs/j-vue/letter", { content: "Ma lettre corrigée, chez Banquo." })).json();
-    expect(edited.letter).toMatchObject({ content: "Ma lettre corrigée, chez Banquo.", edited: true });
+    const edited = (await req("PUT", "/api/jobs/j-vue/letter", { content: "Ma lettre corrigée, chez Nordia." })).json();
+    expect(edited.letter).toMatchObject({ content: "Ma lettre corrigée, chez Nordia.", edited: true });
     expect(edited.warnings).toEqual([]);
     expect(edited.upToDate).toBe(true);
 

@@ -11,6 +11,6 @@ for (const source of [franceTravailFromEnv(), adzunaFromEnv()]) {
     console.log(`${health.status === "SOURCE_UNAVAILABLE" ? "non configurée" : "ERREUR"} — ${health.message}`);
     continue;
   }
-  const raws = await source.search({ keywords: "Développeur", department: "60", publishedSinceDays: 31, maxResults: 5 });
+  const raws = await source.search({ keywords: "Développeur", department: "69", publishedSinceDays: 31, maxResults: 5 });
   console.log(`OK — ${raws.length} offre(s) de test reçue(s)`);
 }

@@ -565,7 +565,7 @@ const manualUrl = (j: JobSummary) => j.sources.find((s) => s.source === "manual"
 
       <label>
         <span>Titre du poste <span class="req">*</span> <span v-if="detected.has('title')" class="auto">{{ autoLabel }}</span></span>
-        <input v-model="form.title" placeholder="Développeur Frontend Vue.js (H/F)" :class="{ bad: errors.title, missing: analysis && !form.title }" required @input="touch('title')" />
+        <input v-model="form.title" placeholder="Intitulé du poste, ex. Assistant comptable (H/F)" :class="{ bad: errors.title, missing: analysis && !form.title }" required @input="touch('title')" />
         <span v-if="errors.title" class="err">{{ errors.title }}</span>
       </label>
 
@@ -576,7 +576,7 @@ const manualUrl = (j: JobSummary) => j.sources.find((s) => s.source === "manual"
         </label>
         <label>
           <span>Lieu <span v-if="detected.has('location')" class="auto">{{ autoLabel }}</span></span>
-          <div class="field"><Icon name="pin" :size="16" /><input v-model="form.location" placeholder="Creil, ou Oise (60)" @input="touch('location')" /></div>
+          <div class="field"><Icon name="pin" :size="16" /><input v-model="form.location" placeholder="Ville, ou département, ex. Lyon ou Rhône (69)" @input="touch('location')" /></div>
         </label>
       </div>
 

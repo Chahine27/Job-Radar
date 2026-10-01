@@ -76,7 +76,7 @@ export async function geocode(
     return toResults(cities);
   }
   // Adresses (BAN) ET lieux nommés (gares…), puis on garde les meilleurs scores :
-  // « gare de Creil » doit donner la gare de Creil, pas une « rue de la Gare » ailleurs en France.
+  // « gare de Versailles » doit donner la gare, pas une « rue de la Gare » ailleurs en France.
   const [addresses, pois] = await Promise.all([
     search(fetch, q, "address", Math.max(limit, 5), false),
     search(fetch, q, "poi", Math.max(limit, 5), false).catch(() => [] as Feature[]),

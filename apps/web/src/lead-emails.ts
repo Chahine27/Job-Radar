@@ -8,7 +8,8 @@ export const MAX_PROMPT_COMPANIES = 10;
  * Prompt à coller dans une IA qui sait chercher sur internet (ChatGPT, Claude, Perplexity…).
  * Le SIRET sert de clé : Job Radar range chaque email dans la bonne entreprise au retour.
  */
-export function buildEmailPrompt(leads: Lead[]): string {
+/** `job` : le métier visé (premier métier recherché du profil). */
+export function buildEmailPrompt(leads: Lead[], job?: string | null): string {
   const companies = leads.slice(0, MAX_PROMPT_COMPANIES).map((l) => ({
     siret: l.siret,
     nom: l.name,
@@ -18,7 +19,7 @@ export function buildEmailPrompt(leads: Lead[]): string {
     secteur: l.nafLabel || undefined,
   }));
   return `Fais une recherche sur internet pour trouver l'adresse email de contact OU de recrutement de chacune de ces entreprises françaises.
-Je veux leur envoyer une candidature spontanée (développeur, CDI).
+Je veux leur envoyer une candidature spontanée${job?.trim() ? ` (${job.trim()})` : ""}.
 
 Règles :
 - Cherche sur le site officiel de l'entreprise (pages Contact, Recrutement, Carrières, Mentions légales), puis sur des annuaires professionnels sérieux.

@@ -1,12 +1,12 @@
 /**
  * Test du calcul de trajet — n'écrit RIEN en base.
- *   pnpm travel:test "gare de Compiègne"
+ *   pnpm travel:test "gare de Versailles Chantiers"
  * Calcule le trajet depuis cette adresse jusqu'à Paris Gare du Nord et La Défense.
  */
 import { PrimRoutingService, geocode } from "@job-radar/routing";
 import "./env";
 
-const query = process.argv.slice(2).join(" ").trim() || "Gare de Compiègne";
+const query = process.argv.slice(2).join(" ").trim() || "Gare de Versailles Chantiers";
 const routing = new PrimRoutingService({ apiKey: process.env.PRIM_API_KEY?.trim() });
 
 async function main() {
@@ -15,7 +15,7 @@ async function main() {
     return 1;
   }
   const raw: unknown[] = [];
-  // Coordonnées directes possibles : pnpm travel:test "49.2635,2.4686"
+  // Coordonnées directes possibles : pnpm travel:test "45.6135,4.8886"
   const m = query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)\s*$/);
   const candidates = m
     ? [{ lat: Number(m[1]), lng: Number(m[2]), label: "coordonnées saisies", precision: "address" as const }]

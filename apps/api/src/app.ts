@@ -14,6 +14,7 @@ import type { Mailer, Notifier } from "@job-radar/notifications";
 import { jobRoutes } from "./routes/jobs";
 import { type Geocoder, profileRoutes } from "./routes/profile";
 import { prefsRoutes } from "./routes/prefs";
+import { setupRoutes } from "./routes/setup";
 import type { Stores } from "./stores";
 
 export type AppOptions = {
@@ -86,6 +87,7 @@ export async function buildApp(opts: AppOptions) {
   app.get("/api/health", async () => ({ status: "ok" }));
 
   await app.register(authRoutes, { stores: opts.stores, secureCookie: opts.secureCookie });
+  await app.register(setupRoutes, { stores: opts.stores, secureCookie: opts.secureCookie, ...(opts.geocoder ? { geocoder: opts.geocoder } : {}) });
   await app.register(prefsRoutes, { stores: opts.stores });
   await app.register(profileRoutes, { stores: opts.stores, ...(opts.geocoder ? { geocoder: opts.geocoder } : {}) });
   // Un seul service : le cache des scores est partagé, et l'avis de l'IA corrige les scores trop optimistes.
