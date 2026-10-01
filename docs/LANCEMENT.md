@@ -113,15 +113,17 @@ Le message sous le trajet (page de l'offre) donne la raison.
 **Le port 5173 ou 3000 est déjà utilisé**
 → Un ancien `pnpm dev` tourne encore dans un autre terminal : ferme-le.
 
-## 6. Extension « Envoyer à Job Radar » (Chrome ou Edge)
+## 6. Extension « Envoyer à Job Radar » (Chrome, Edge ou Opera)
 
 Un clic sur une offre (LinkedIn, Indeed, HelloWork, Welcome to the Jungle…) l'ouvre dans Job Radar, déjà remplie.
 
 **Installation (une seule fois)**
-1. Dans Job Radar, clique sur **Installer l'extension** (sur la page Offres ou dans le menu), puis choisis Chrome ou Edge. Tu peux aussi ouvrir `chrome://extensions` (ou `edge://extensions` dans Edge).
-2. Active le **Mode développeur** (interrupteur en haut à droite, ou en bas à gauche dans Edge).
+1. Dans Job Radar, clique sur **Installer l'extension** (sur la page Offres ou dans le menu). La page détecte Chrome, Edge ou Opera et propose d'ouvrir la page d'extensions correspondante. Opera GX est détecté comme Opera.
+2. Active le **Mode développeur** sur la page des extensions.
 3. Clique sur **Charger l'extension non empaquetée** et choisis le dossier `jobRadar/extension`.
 4. Épingle l'icône Job Radar (pièce de puzzle → punaise) pour l'avoir toujours sous la main.
+
+Firefox n'est pas encore compatible avec l'extension actuelle : celle-ci utilise un service worker Manifest V3 non pris en charge par Firefox. La page d'installation l'indique si Firefox est détecté.
 
 **Utilisation**
 1. `pnpm dev` doit tourner.
@@ -136,7 +138,7 @@ Un clic sur une offre (LinkedIn, Indeed, HelloWork, Welcome to the Jungle…) l'
 
 Astuce : si une page est mal lue, sélectionne le texte de l'annonce à la souris avant de cliquer : seule la sélection est envoyée.
 L'extension ne lit la page que quand tu cliques, et n'envoie rien ailleurs que vers ton Job Radar.
-Après une mise à jour du dossier `extension`, clique sur la flèche « Recharger » de l'extension dans `chrome://extensions`.
+Après une mise à jour du dossier `extension`, clique sur la flèche « Recharger » de l'extension dans la page de gestion des extensions du navigateur.
 
 ## 7. Activer Jooble (plus d'offres)
 
