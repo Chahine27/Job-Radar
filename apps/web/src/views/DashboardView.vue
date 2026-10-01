@@ -7,6 +7,7 @@ import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
 import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, timeAgo, timeUntil } from "../format";
 import { usePrefs } from "../prefs";
+import { useExtensionInstalled } from "../composables/useExtensionInstalled";
 import type { AutoCheckStatus, CollectionStatus, JobSummary } from "../types";
 
 type Filters = Required<Omit<JobQuery, "q" | "limit" | "offset">> & { q: string };
@@ -28,6 +29,7 @@ const jobs = ref<JobSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const threshold = ref(70);
+const extensionInstalled = useExtensionInstalled();
 
 const PAGE_SIZE = 10;
 const total = ref(0);
@@ -251,7 +253,7 @@ function place(job: JobSummary) {
       <template v-else>{{ lastRunText }}</template>
     </p>
     <template #actions>
-      <RouterLink to="/extension" class="btn">
+      <RouterLink v-if="!extensionInstalled" to="/extension" class="btn">
         <Icon name="external" :size="16" />Installer l'extension
       </RouterLink>
       <button type="button" class="primary" :disabled="running" @click="refreshNow">

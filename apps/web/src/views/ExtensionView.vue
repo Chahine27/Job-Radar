@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
+import { useExtensionInstalled } from "../composables/useExtensionInstalled";
 
 type Browser = "chrome" | "edge" | "firefox" | "opera" | "unknown";
 type InstallableBrowser = "chrome" | "edge" | "opera";
@@ -15,6 +16,7 @@ function detectBrowser(userAgent: string): Browser {
 }
 
 const browser = detectBrowser(navigator.userAgent);
+const extensionInstalled = useExtensionInstalled();
 const browserNames: Record<Browser, string> = {
   chrome: "Chrome",
   edge: "Edge",
@@ -52,13 +54,16 @@ async function copyExtensionsAddress(targetBrowser: InstallableBrowser) {
   <div class="stack">
     <section class="card stack">
       <h2><Icon name="info" :size="18" />{{ browser === "firefox" ? "Firefox détecté" : `Installation pour ${browserName}` }}</h2>
+      <p v-if="extensionInstalled" class="success" role="status">
+        <Icon name="check" :size="16" />L'extension Job Radar est installée et détectée dans ce navigateur.
+      </p>
       <template v-if="browser === 'firefox'">
         <p class="info">
           L'extension actuelle n'est pas compatible avec Firefox : son script d'arrière-plan utilise un service worker
           Manifest V3. Job Radar reste utilisable sans l'extension.
         </p>
       </template>
-      <template v-else>
+      <template v-else-if="!extensionInstalled">
         <p class="muted">
           Job Radar ne peut pas ouvrir directement cette page interne ni sélectionner le dossier à ta place. Copie son
           adresse, colle-la dans la barre d'adresse de {{ browserName }}, puis appuie sur Entrée.
@@ -97,7 +102,7 @@ async function copyExtensionsAddress(targetBrowser: InstallableBrowser) {
       </template>
     </section>
 
-    <section v-if="browser !== 'firefox'" class="card stack">
+    <section v-if="browser !== 'firefox' && !extensionInstalled" class="card stack">
       <h2>Charger le dossier de l'extension dans {{ browserName }}</h2>
       <ol class="install-steps">
         <li>Active le <strong>Mode développeur</strong> sur la page des extensions.</li>

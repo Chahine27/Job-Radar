@@ -125,6 +125,7 @@ Un clic sur une offre (LinkedIn, Indeed, HelloWork, Welcome to the Jungle…) l'
 5. Épingle l'icône Job Radar (pièce de puzzle → punaise) pour l'avoir toujours sous la main.
 
 L'installation doit être confirmée par l'utilisateur : une page web ne peut pas installer une extension locale ni sélectionner un dossier sur l'ordinateur. Firefox n'est pas encore compatible avec le script d'arrière-plan Manifest V3 de l'extension. La page d'installation l'indique si Firefox est détecté.
+Une fois l'extension chargée, Job Radar la détecte automatiquement sur la page Offres et masque le bouton d'installation. Si tu viens de l'ajouter, recharge la page Job Radar.
 
 **Utilisation**
 1. `pnpm dev` doit tourner.
@@ -140,6 +141,7 @@ L'installation doit être confirmée par l'utilisateur : une page web ne peut pa
 Astuce : si une page est mal lue, sélectionne le texte de l'annonce à la souris avant de cliquer : seule la sélection est envoyée.
 L'extension ne lit la page que quand tu cliques, et n'envoie rien ailleurs que vers ton Job Radar.
 Après une mise à jour du dossier `extension`, clique sur la flèche « Recharger » de l'extension dans la page de gestion des extensions du navigateur.
+Recharge ensuite la page Job Radar : si l'extension est active, elle sera détectée et le bouton d'installation disparaîtra.
 
 ## 7. Activer Jooble (plus d'offres)
 
