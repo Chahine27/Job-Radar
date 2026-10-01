@@ -1,4 +1,4 @@
-﻿# Lance Job Radar en un double-clic : Ollama (IA), mises à jour, base de données (intégrée, sans Docker), puis « pnpm dev ».
+﻿# Lance Job Radar en un double-clic : mise à jour du programme, Ollama (IA), modules, base de données (intégrée, sans Docker), puis « pnpm dev ».
 # Appelé par « Lancer Job Radar.cmd » à la racine du projet. Fermer cette fenêtre (ou Ctrl + C) arrête l'appli.
 # « Continue » : avec « Stop », Windows PowerShell 5 s'arrête dès qu'un programme écrit sur sa sortie d'erreur.
 $ErrorActionPreference = "Continue"
@@ -28,6 +28,19 @@ if (Responds $url) {
 
 if (-not (Test-Path ".env")) { Fail "le fichier .env est introuvable dans $(Get-Location)." }
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) { Fail "pnpm est introuvable. Installe Node.js puis pnpm (voir docs/LANCEMENT.md)." }
+
+# 0 bis. Mise à jour automatique : dernière version publiée sur GitHub (« Releases »). Ne bloque jamais le lancement.
+if (-not $env:JOBRADAR_UPDATED) {
+  Step "Recherche de mise à jour"
+  node scripts\update.mjs
+  if ($LASTEXITCODE -eq 10) {
+    # Nouvelle version installée : on relance le lanceur à jour (il installe les modules et met la base à jour).
+    Write-Host "Redémarrage avec la nouvelle version..." -ForegroundColor Green
+    $env:JOBRADAR_UPDATED = "1"
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "lancer.ps1")
+    exit $LASTEXITCODE
+  }
+}
 
 # 1. Ollama (IA locale) : lancé s'il ne tourne pas. Pas bloquant : l'appli marche sans.
 Step "IA locale (Ollama)"

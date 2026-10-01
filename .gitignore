@@ -12,3 +12,7 @@ coverage/
 # Captures d'écran envoyées par Claude (pas du code)
 Claude outputs/
 CLAUDE.md
+
+# Mise à jour automatique (écrits chez chaque utilisateur)
+.update-version
+.update-manifest.json

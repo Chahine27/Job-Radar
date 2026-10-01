@@ -63,6 +63,7 @@ Il faut **au moins une source d'offres** (France Travail, Adzuna ou Jooble) pour
 ## Au quotidien
 
 - Lance Job Radar avec le raccourci du Bureau. Tant qu'il est ouvert, les offres sont collectées toutes seules.
+- **Mises à jour automatiques** : à chaque lancement, la dernière version publiée est installée toute seule (tes données sont gardées).
 - Page **Offres** : les offres triées par note. Ouvre une offre pour voir le détail, l'avis de l'IA et écrire la lettre.
 - Page **Entreprises** : les entreprises qui recrutent près de chez toi, pour une candidature spontanée.
 - Tout reste modifiable dans **Profil** et **CV & lettre**.
@@ -90,7 +91,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 6. ✅ Codes métier (ROME) proposés au premier lancement (France Travail ROMEO, ou IA locale contrôlée par la liste officielle) : la page « Entreprises » marche dès le départ.
 7. ✅ Nettoyage avant publication : textes et exemples neutres pour tous les métiers, offres de démo variées.
 8. ✅ Temps de trajet partout en France : en voiture (IGN, sans clé), en transports en commun en Île-de-France (PRIM).
-9. ⏳ Tests complets avec des profils variés.
+9. ✅ Mises à jour automatiques au lancement (dernière « Release » GitHub), sans git ni téléchargement à la main.
+10. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

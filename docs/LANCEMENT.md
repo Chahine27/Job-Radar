@@ -31,7 +31,7 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
 ## 1. Après un redémarrage du PC
 
 **Le plus simple : double-clic sur « Lancer Job Radar.cmd »** (à la racine de `jobRadar`), ou sur le raccourci « Job Radar » du Bureau.
-Il démarre la base de données (en arrière-plan, invisible), Ollama, installe les mises à jour (`pnpm install` si besoin,
+Il vérifie d'abord s'il existe une nouvelle version de Job Radar et l'installe toute seule (voir « 3. Mises à jour »). Il démarre ensuite la base de données (en arrière-plan, invisible), Ollama, installe les mises à jour (`pnpm install` si besoin,
 migrations de la base), lance `pnpm dev` et ouvre http://localhost:5173 tout seul. Si Job Radar tourne déjà, il ouvre juste le site.
 Pour créer le raccourci du Bureau (une seule fois) : clic droit sur `scripts\creer-raccourci.ps1` → « Exécuter avec PowerShell ».
 
@@ -73,13 +73,20 @@ Pour tout arrêter : `Ctrl + C` dans le terminal. La base lancée par le lanceur
 Si une offre vient de plusieurs sources, elle n'expire que si **toutes** disent qu'elle a disparu.
 Les offres que tu as sauvegardées, auxquelles tu as postulé ou que tu as écartées ne sont jamais touchées.
 
-## 3. Après avoir récupéré une nouvelle version du code
+## 3. Mises à jour
 
-```
-pnpm install
-pnpm db:migrate
-```
-Puis relance `pnpm dev`.
+**Rien à faire** : à chaque lancement, Job Radar regarde sur GitHub si une nouvelle version a été publiée. Si oui, il la télécharge,
+remplace les fichiers du programme, puis redémarre (modules et base de données mis à jour). Ton `.env`, ta base (`data\`) et tes réglages ne sont jamais touchés.
+Sans internet, ou si GitHub ne répond pas, Job Radar démarre simplement la version actuelle.
+Après une mise à jour du dossier `extension`, recharge l'extension dans le navigateur (flèche « Recharger » sur la page des extensions).
+
+Dossier récupéré avec `git clone` (développeurs) : pas de mise à jour automatique. Fais `git pull`, puis `pnpm install` et `pnpm db:migrate`.
+
+**Publier une nouvelle version (pour le responsable du projet)**
+1. Dans `package.json` (à la racine), augmente `"version"` (ex. `1.0.0` → `1.1.0`). Commit et push.
+2. Sur GitHub : **Releases** → **Draft a new release** → **Choose a tag** : tape `v1.1.0` (la même version, avec un « v ») → titre, et la liste des nouveautés dans la description (elle s'affiche chez les utilisateurs) → **Publish release**.
+3. Chaque utilisateur la reçoit à son prochain lancement. Les brouillons et les « pre-release » ne sont pas distribués.
+Le dépôt utilisé est écrit dans `package.json` (`jobRadar.updateRepo`).
 
 ## 4. Vérifier que tout marche
 

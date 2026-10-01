@@ -1,5 +1,6 @@
 {
   "name": "job-radar",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.6.0",
@@ -35,5 +36,8 @@
     "@types/node": "26.6.3",
     "typescript": "7.0.2",
     "vitest": "5.0.2"
+  },
+  "jobRadar": {
+    "updateRepo": "Chahine27/Job-Radar"
   }
 }
