@@ -88,8 +88,9 @@ export const SETTING_CARDS: SettingCard[] = [
   },
   {
     id: "prim",
-    title: "Temps de trajet (PRIM)",
-    purpose: "Calcule le temps de trajet en transports en commun jusqu'à chaque offre. Île-de-France seulement pour l'instant. Gratuit.",
+    title: "Transports en Île-de-France (PRIM)",
+    purpose:
+      "Facultatif. Sans rien faire, le temps de trajet est déjà calculé en voiture partout en France (IGN). Avec cette clé gratuite, il est calculé en transports en commun pour les trajets en Île-de-France.",
     link: { href: "https://prim.iledefrance-mobilites.fr", label: "prim.iledefrance-mobilites.fr" },
     steps: [
       "Crée un compte gratuit sur PRIM (Île-de-France Mobilités), puis connecte-toi.",

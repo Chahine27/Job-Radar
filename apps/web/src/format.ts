@@ -114,3 +114,10 @@ export function linkLabel(source: string, url: string): string {
   if (source === "manual") return originLabel(url) ?? "le site d'origine";
   return SOURCE_LABELS[source] ?? source;
 }
+
+/** Temps de trajet affiché, avec le moyen de transport qui a servi au calcul. */
+export function travelLabel(minutes: number | null, mode: "transit" | "car" | null | undefined): string {
+  if (minutes === null) return "non calculé";
+  const how = mode === "transit" ? " en transports" : mode === "car" ? " en voiture" : "";
+  return `≈ ${minutes} min${how}`;
+}

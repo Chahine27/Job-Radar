@@ -8,7 +8,7 @@ import {
   notifyNewMatches,
 } from "@job-radar/notifications";
 import { CollectionRunner, createPrismaRunRepo, expireJobs, prismaCollect, prismaJoobleQuota } from "@job-radar/pipeline";
-import { PrimRoutingService, ensureTravelTimes, geocode } from "@job-radar/routing";
+import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, ensureTravelTimes, geocode, inIdf } from "@job-radar/routing";
 import { scoreJob, scoringInputFromJob } from "@job-radar/scoring";
 import { ProfileSchema } from "@job-radar/shared";
 import {
@@ -40,6 +40,9 @@ const e = process.env;
  * Services qui dépendent des clés de .env. Reconstruits quand une clé change dans la page « Réglages » :
  * le reste de l'appli passe par des relais (live.ts) et voit tout de suite les nouvelles valeurs.
  */
+/** Itinéraire en voiture (IGN, France entière, sans clé) : un seul pour garder sa limite d'appels. */
+const ignCar = new IgnRoutingService();
+
 function buildKeyed() {
   const smtp = smtpFrom(e);
   const joobleKey = e.JOOBLE_API_KEY?.trim() || undefined;
@@ -56,7 +59,11 @@ function buildKeyed() {
     }),
     // Candidatures spontanées : envoyées depuis le même compte SMTP (Gmail), seulement après ton clic « Envoyer ».
     mailer: createMailer(smtp),
-    routing: new PrimRoutingService({ apiKey: e.PRIM_API_KEY?.trim() }),
+    // Transports en commun en Île-de-France (PRIM, si la clé est là), sinon voiture partout en France (IGN).
+    routing: new FallbackRoutingService([
+      { service: new PrimRoutingService({ apiKey: e.PRIM_API_KEY?.trim() }), covers: (o, d) => inIdf(o) && inIdf(d) },
+      { service: ignCar },
+    ]),
     franceTravail: new FranceTravailSource(ftCreds),
     adzuna: new AdzunaSource({ appId: e.ADZUNA_APP_ID?.trim(), appKey: e.ADZUNA_APP_KEY?.trim() }),
     jooble: new JoobleSource({ apiKey: joobleKey, quota: joobleQuota }),
@@ -176,7 +183,7 @@ const app = await buildApp({
     const job = await prisma.job.findUnique({ where: { id: jobId }, select: { remoteType: true, travel: { select: { minutes: true } } } });
     if (!job || job.remoteType === "remote") return null;
     if (job.travel?.minutes != null) return null;
-    if (job.travel) return "aucun itinéraire en transports trouvé depuis ton point de départ";
+    if (job.travel) return "aucun itinéraire trouvé depuis ton point de départ";
     return report.skipped ?? "lieu de l'offre inconnu ou hors zone";
   },
   sourcesConfigured: () => keyed.configured,
@@ -220,7 +227,7 @@ log = (msg) => app.log.info(msg);
 await app.listen({ host: env.API_HOST, port: env.API_PORT });
 
 const on = notifiers.filter((n) => n.isConfigured()).map((n) => n.channel);
-app.log.info(`Temps de trajet : ${routing.isConfigured() ? "PRIM configuré" : "non configuré (clé PRIM dans Réglages)"}`);
+app.log.info(`Temps de trajet : ${routing.name.includes("prim") ? "transports en commun en Île-de-France (PRIM), voiture ailleurs (IGN)" : "voiture (IGN) ; clé PRIM dans Réglages pour les transports en Île-de-France"}`);
 app.log.info(`Notifications configurées : ${on.length ? on.join(", ") : "aucune (voir Réglages)"}`);
 
 if (env.SCHEDULER_ENABLED) {

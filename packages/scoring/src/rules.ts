@@ -29,7 +29,7 @@ export type ScoringRules = {
 export type CapPart = "technical" | "experience" | "contract" | "salary" | "location" | "transport";
 
 export const DEFAULT_RULES: ScoringRules = {
-  version: "2026-10-01.2",
+  version: "2026-10-01.3",
   neutral: 60,
   nearbyDepartments: [],
   hideNonMatchingContract: true,

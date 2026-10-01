@@ -64,6 +64,8 @@ export type JobRow = {
   firstSeenAt: Date;
   status: JobStatus;
   travelMinutes: number | null;
+  /** Comment le trajet a été calculé : transports en commun (PRIM) ou voiture (IGN). */
+  travelMode?: "transit" | "car" | null;
   sources: Array<{ source: string; url: string }>;
   /** Date où l'annonce complète a été collée (la description est alors l'annonce complète). */
   fullTextAt: Date | null;

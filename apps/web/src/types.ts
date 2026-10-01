@@ -45,6 +45,8 @@ export type JobDetail = JobSummary & {
   /** Adresse du lieu de travail (trajet calculé jusqu'à elle). */
   address: string | null;
   travelMinutes: number | null;
+  /** « transit » = transports en commun (PRIM), « car » = voiture (IGN). */
+  travelMode?: "transit" | "car" | null;
   reasons: string[];
   warnings: string[];
   rulesVersion: string;

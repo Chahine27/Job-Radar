@@ -46,6 +46,8 @@ export type JobDetail = JobSummary & {
   experienceText: string | null;
   address: string | null;
   travelMinutes: number | null;
+  /** « transit » = transports en commun (PRIM), « car » = voiture (IGN). */
+  travelMode: "transit" | "car" | null;
   reasons: string[];
   warnings: string[];
   rulesVersion: string;
@@ -244,6 +246,7 @@ export function createJobService(stores: Stores, rules: ScoringRules = DEFAULT_R
         experienceText: scored.experienceText,
         address: job.address,
         travelMinutes: job.travelMinutes,
+        travelMode: job.travelMode ?? null,
         reasons: s.reasons,
         warnings: [...aiWarning, ...s.warnings],
         rulesVersion: s.rulesVersion,

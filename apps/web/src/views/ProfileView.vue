@@ -202,7 +202,7 @@ async function save() {
         <h2><Icon name="pin" :size="17" />Zones de recherche</h2>
         <div v-for="(l, i) in profile.locations" :key="i" class="zone">
           <input v-model="l.label" placeholder="Nom (ex. Rhône)" aria-label="Nom de la zone" />
-          <input v-model="l.department" placeholder="Département (ex. 60)" aria-label="Département" />
+          <input v-model="l.department" placeholder="Département (ex. 69)" aria-label="Département" />
           <button type="button" class="icon-btn danger" :aria-label="`Retirer ${l.label}`" @click="profile.locations.splice(i, 1)"><Icon name="trash" :size="15" /></button>
         </div>
         <div><button type="button" class="small" @click="addLocation"><Icon name="plus" :size="14" />Ajouter une zone</button></div>
@@ -235,7 +235,7 @@ async function save() {
         <div>
           <h2><Icon name="home" :size="17" />Point de départ (privé)</h2>
           <p class="muted small hint">
-            Sert au temps de trajet en transports. Reste uniquement dans ta base locale. Pense à cliquer sur « Enregistrer » en haut.
+            Sert au temps de trajet (en transports en Île-de-France, en voiture ailleurs). Reste uniquement dans ta base locale. Pense à cliquer sur « Enregistrer » en haut.
           </p>
         </div>
         <div v-if="home.label" class="home">

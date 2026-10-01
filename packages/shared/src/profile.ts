@@ -70,7 +70,7 @@ export const ProfileSchema = z
           .object({ label: z.string().trim().min(1).max(200), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
           .nullable()
           .default(null),
-        departments: z.array(z.string().regex(/^(\d{2}|2A|2B|\d{3})$/, "Code département invalide (ex. 60)")).max(10).default([]),
+        departments: z.array(z.string().regex(/^(\d{2}|2A|2B|\d{3})$/, "Code département invalide (ex. 69)")).max(10).default([]),
       })
       .default({ romes: [], distanceKm: 30, place: null, departments: [] }),
     /** false tant que le premier lancement (compte, CV, profil validé) n'est pas terminé. */

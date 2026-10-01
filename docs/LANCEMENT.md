@@ -23,7 +23,7 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
    - Si Ollama ne répond pas : ouvre l'appli Ollama puis « Réessayer », ou « Remplir à la main ».
    - Le dernier écran propose d'aller dans **Réglages** pour ajouter les clés des sites d'offres.
    Tout reste modifiable ensuite dans « Profil » et « CV & lettre ».
-5. **Réglages** (menu à gauche) : une carte par service — France Travail, Adzuna, Jooble, Email (Gmail), Temps de trajet.
+5. **Réglages** (menu à gauche) : une carte par service — France Travail, Adzuna, Jooble, Email (Gmail), Transports en Île-de-France.
    Chaque carte explique à quoi sert le service et comment obtenir la clé gratuite (« Comment obtenir la clé ? »).
    Colle la clé, clique **Enregistrer** (pris en compte tout de suite, sans relancer), puis **Tester**.
    Il faut au moins France Travail, Adzuna ou Jooble pour recevoir des offres. Tu n'as jamais besoin d'ouvrir le fichier `.env`.
@@ -89,7 +89,7 @@ Puis relance `pnpm dev`.
 | `pnpm test:int`    | Les tests avec une vraie base (la base doit tourner). Utilise une base à part, `jobradar_test` : tes vraies données ne sont pas touchées |
 | `pnpm ft:test`     | Tes identifiants France Travail fonctionnent                          |
 | `pnpm sources:test`| Chaque source (France Travail, Adzuna, pages carrières) répond         |
-| `pnpm travel:test` | Le calcul du temps de trajet (Géoplateforme + PRIM) répond             |
+| `pnpm travel:test` | Le calcul du temps de trajet répond (voiture IGN, + transports PRIM si la clé est là) |
 | `pnpm lbb:test`    | La Bonne Boîte (candidatures spontanées) répond                       |
 | `pnpm jooble:test` | Ta clé Jooble marche (fait **1 vrai appel**, compté dans les 500)      |
 | `pnpm setup:push`  | Génère les clés pour les notifications dans le navigateur (à faire une fois) |
@@ -104,8 +104,9 @@ Puis relance `pnpm dev`.
 → La base ou le client Prisma n'est pas à jour : `pnpm db:migrate`, puis relance `pnpm dev`.
 
 **Le trajet affiche « non calculé »**
-→ Réglages → carte « Temps de trajet » → **Tester**, et vérifie ton adresse de départ dans le profil.
-Le calcul ne marche pour l'instant qu'en Île-de-France.
+→ Vérifie ton adresse de départ dans « Profil ». Le trajet est calculé **en voiture partout en France** (IGN, sans clé)
+et **en transports en commun en Île-de-France** si tu as ajouté la clé PRIM (Réglages). La page de l'offre dit « en voiture » ou « en transports ».
+Si le lieu de l'offre est inconnu ou loin de toute route, aucune durée n'est inventée : `pnpm travel:test "ton adresse"` pour vérifier.
 Le message sous le trajet (page de l'offre) donne la raison.
 
 **Aucune nouvelle offre**

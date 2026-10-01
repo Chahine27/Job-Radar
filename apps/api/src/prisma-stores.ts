@@ -1,16 +1,17 @@
 import { Prisma, type PrismaClient } from "@job-radar/db";
 import { buildManualJob, removeManualJob, saveManualJob } from "@job-radar/pipeline";
+import { travelModeOf } from "@job-radar/routing";
 import { LetterKitSchema, ProfileSchema } from "@job-radar/shared";
 import type { FullTextInfo, HomeLocation, JobRow, ProfileRecord, Stores } from "./stores";
 
 const jobInclude = {
   sources: { select: { source: true, sourceUrl: true } },
-  travel: { select: { minutes: true } },
+  travel: { select: { minutes: true, provider: true } },
 } as const;
 
-type JobWithRelations = Omit<JobRow, "sources" | "travelMinutes"> & {
+type JobWithRelations = Omit<JobRow, "sources" | "travelMinutes" | "travelMode"> & {
   sources: Array<{ source: string; sourceUrl: string }>;
-  travel: { minutes: number | null } | null;
+  travel: { minutes: number | null; provider: string | null } | null;
   fullText: string | null;
   fullExperienceYrs: number | null;
   fullInfo: unknown;
@@ -22,6 +23,7 @@ function toJobRow(j: JobWithRelations): JobRow {
     ...rest,
     sources: sources.map((s) => ({ source: s.source, url: s.sourceUrl })),
     travelMinutes: travel?.minutes ?? null,
+    travelMode: travel?.minutes != null ? travelModeOf(travel.provider) : null,
   };
   if (fullText && j.fullTextAt) {
     // Annonce complète collée : elle remplace l'extrait (score et IA recalculés grâce au contentHash).

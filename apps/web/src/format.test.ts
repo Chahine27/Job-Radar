@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { formatSalary, safeUrl, scoreTone, timeAgo } from "./format";
+import { formatSalary, safeUrl, scoreTone, timeAgo, travelLabel } from "./format";
 
 describe("format", () => {
+  it("travelLabel : dit si le trajet est en transports ou en voiture", () => {
+    expect(travelLabel(25, "transit")).toBe("≈ 25 min en transports");
+    expect(travelLabel(40, "car")).toBe("≈ 40 min en voiture");
+    expect(travelLabel(12, null)).toBe("≈ 12 min");
+    expect(travelLabel(null, "car")).toBe("non calculé");
+  });
+
   it("formatSalary", () => {
     expect(formatSalary(40000, 45000)).toBe("40k–45k €");
     expect(formatSalary(null, 42000)).toBe("42k €");

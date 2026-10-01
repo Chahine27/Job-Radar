@@ -2,7 +2,7 @@ import type { PrismaClient } from "@job-radar/db";
 import { geocode } from "./geocode";
 import type { Point, RoutingService } from "./types";
 
-/** Au-delà, on arrête pour la journée (PRIM : 1 000 appels/jour pour un nouveau compte). */
+/** Au-delà, on arrête pour la journée (PRIM : 1 000 appels/jour pour un nouveau compte ; IGN : pas de quota journalier annoncé). */
 export const DAILY_ROUTE_BUDGET = 800;
 
 const round = (n: number, d: number) => n.toFixed(d);
@@ -97,9 +97,11 @@ export async function ensureTravelTimes(opts: {
 
     const key = routeKeyOf(routing.name, origin, dest);
     let minutes: number | null;
+    let provider = routing.name;
     const cached = await prisma.travelCache.findUnique({ where: { key } });
     if (cached) {
       minutes = cached.minutes;
+      provider = cached.provider ?? routing.name;
       report.fromCache++;
     } else {
       if (calls >= (opts.maxRoutes ?? 20) || usedToday >= DAILY_ROUTE_BUDGET) {
@@ -107,7 +109,8 @@ export async function ensureTravelTimes(opts: {
         break;
       }
       try {
-        minutes = (await routing.estimateTravelTime(origin, dest)).minutes;
+        // Le calculateur qui a vraiment répondu (PRIM en transports, IGN en voiture…).
+        ({ minutes, provider } = await routing.estimateTravelTime(origin, dest));
       } catch (err) {
         report.skipped = err instanceof Error ? err.message : String(err);
         log(`Trajets : ${report.skipped}`);
@@ -116,14 +119,14 @@ export async function ensureTravelTimes(opts: {
       calls++;
       usedToday++;
       report.computed++;
-      await prisma.travelCache.create({ data: { key, minutes } });
+      await prisma.travelCache.create({ data: { key, minutes, provider } });
     }
 
     const precision = job.locationPrecision === "address" ? "address" : "city_centroid";
     await prisma.travelEstimate.upsert({
       where: { jobId: job.id },
-      create: { jobId: job.id, minutes, provider: routing.name, precision, originKey },
-      update: { minutes, provider: routing.name, precision, originKey, computedAt: new Date() },
+      create: { jobId: job.id, minutes, provider, precision, originKey },
+      update: { minutes, provider, precision, originKey, computedAt: new Date() },
     });
   }
   if (report.computed || report.fromCache) {
@@ -147,7 +150,7 @@ export async function cachedTravelMinutes(
   if (cached) return cached.minutes;
   const usedToday = await prisma.travelCache.count({ where: { createdAt: { gte: new Date(Date.now() - 86_400_000) } } });
   if (usedToday >= DAILY_ROUTE_BUDGET) return undefined;
-  const { minutes } = await routing.estimateTravelTime(origin, dest);
-  await prisma.travelCache.create({ data: { key, minutes } });
+  const { minutes, provider } = await routing.estimateTravelTime(origin, dest);
+  await prisma.travelCache.create({ data: { key, minutes, provider } });
   return minutes;
 }

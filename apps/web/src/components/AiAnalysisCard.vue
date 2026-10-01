@@ -115,7 +115,7 @@ const when = computed(() =>
       <div v-if="!a" class="empty">
         <p class="muted small">
           L'IA lit l'annonce pour toi : ce qu'on attend vraiment, les compétences exigées et les « plus »,
-          les pièges (ESN, niveau caché…). Tout se passe sur ton PC, rien n'est envoyé sur Internet.
+          les pièges (recrutement pour un client, niveau caché…). Tout se passe sur ton PC, rien n'est envoyé sur Internet.
         </p>
         <button type="button" class="primary" @click="run(false)"><Icon name="sparkle" :size="16" />Analyser avec l'IA</button>
       </div>

@@ -112,7 +112,7 @@ async function save() {
         <span class="hint">L'IA les suit en priorité, avant ses règles générales. Ce que tu écris ici compte comme vrai, au même titre que ton CV.</span>
       </label>
       <label>
-        Technos que tu maîtrises vraiment (séparées par des virgules)
+        Compétences et outils que tu maîtrises vraiment (séparés par des virgules)
         <input v-model="kit.mastered" maxlength="400" placeholder="Ex. : Sage, paie, relation client" />
         <span class="hint">Seules celles-ci peuvent être écrites « je maîtrise ». Pour le reste, la lettre dira « j'ai travaillé avec ». Vide = jamais « maîtrise ».</span>
       </label>

@@ -338,6 +338,8 @@ model TravelCache {
   /// origine arrondie + destination arrondie + fournisseur
   key       String   @id
   minutes   Int?
+  /// calculateur qui a répondu (« prim-idfm » = transports en commun, « ign-car » = voiture)
+  provider  String?
   createdAt DateTime @default(now())
 }
 

@@ -1,19 +1,18 @@
 /**
  * Test du calcul de trajet — n'écrit RIEN en base.
  *   pnpm travel:test "gare de Versailles Chantiers"
- * Calcule le trajet depuis cette adresse jusqu'à Paris Gare du Nord et La Défense.
+ * Calcule le trajet depuis cette adresse jusqu'à quelques lieux, comme l'appli :
+ * transports en commun en Île-de-France (PRIM, si la clé est là), sinon voiture (IGN, sans clé).
  */
-import { PrimRoutingService, geocode } from "@job-radar/routing";
+import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, geocode, inIdf, travelModeOf } from "@job-radar/routing";
 import "./env";
 
 const query = process.argv.slice(2).join(" ").trim() || "Gare de Versailles Chantiers";
-const routing = new PrimRoutingService({ apiKey: process.env.PRIM_API_KEY?.trim() });
+const prim = new PrimRoutingService({ apiKey: process.env.PRIM_API_KEY?.trim() });
+const routing = new FallbackRoutingService([{ service: prim, covers: (o, d) => inIdf(o) && inIdf(d) }, { service: new IgnRoutingService() }]);
 
 async function main() {
-  if (!routing.isConfigured()) {
-    console.error("✗ PRIM_API_KEY absente de .env");
-    return 1;
-  }
+  if (!prim.isConfigured()) console.log("(Pas de clé PRIM : trajets en voiture seulement.)");
   const raw: unknown[] = [];
   // Coordonnées directes possibles : pnpm travel:test "45.6135,4.8886"
   const m = query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)\s*$/);
@@ -34,7 +33,8 @@ async function main() {
   console.log(`Départ : ${home.label} (${home.lat.toFixed(4)}, ${home.lng.toFixed(4)})`);
   for (const t of targets) {
     const r = await routing.estimateTravelTime(home, t);
-    console.log(`  → ${t.name} : ${r.minutes === null ? `aucun itinéraire trouvé${r.reason ? ` (${r.reason})` : ""}` : `${r.minutes} min`}`);
+    const how = travelModeOf(r.provider) === "transit" ? "en transports" : "en voiture";
+    console.log(`  → ${t.name} : ${r.minutes === null ? `aucun itinéraire trouvé${r.reason ? ` (${r.reason})` : ""}` : `${r.minutes} min ${how}`}`);
   }
   return 0;
 }
@@ -43,6 +43,7 @@ const targets = [
   { name: "Paris Gare du Nord", lat: 48.8809, lng: 2.3553 },
   { name: "La Défense", lat: 48.8918, lng: 2.2378 },
   { name: "Paris 13e (Bibliothèque F. Mitterrand)", lat: 48.8298, lng: 2.3764 },
+  { name: "Lyon Part-Dieu", lat: 45.7606, lng: 4.8592 },
 ];
 // process.exitCode plutôt que process.exit() : évite un plantage de Node sous Windows.
 process.exitCode = await main();

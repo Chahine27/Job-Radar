@@ -6,7 +6,7 @@ import CoverLetterCard from "../components/CoverLetterCard.vue";
 import Icon from "../components/Icon.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { BREAKDOWN_LABELS, SOURCE_LABELS, REMOTE_LABELS, STATUS_LABELS, formatSalary, linkLabel, safeUrl, scoreTone, timeAgo } from "../format";
+import { BREAKDOWN_LABELS, SOURCE_LABELS, REMOTE_LABELS, STATUS_LABELS, formatSalary, linkLabel, safeUrl, scoreTone, timeAgo, travelLabel } from "../format";
 import type { JobDetail, JobStatus } from "../types";
 
 const props = defineProps<{ id: string }>();
@@ -118,8 +118,8 @@ const bars = computed(() =>
           <span class="chip"><Icon name="euro" :size="13" />{{ formatSalary(job.salaryMin, job.salaryMax) ?? "Salaire non communiqué" }}</span>
           <span v-if="REMOTE_LABELS[job.remoteType]" class="chip"><Icon name="home" :size="13" />{{ REMOTE_LABELS[job.remoteType] }}</span>
           <span class="chip"><Icon name="star" :size="13" />Expérience : {{ job.experienceText ?? "non précisée" }}</span>
-          <span class="chip" :title="job.travelIssue ?? ''">
-            <Icon name="train" :size="13" />Trajet : {{ job.travelMinutes !== null ? `≈ ${job.travelMinutes} min` : "non calculé" }}
+          <span class="chip" :title="job.travelIssue ?? (job.travelMode === 'car' ? 'Calcul en voiture : © IGN — Géoplateforme' : '')">
+            <Icon name="train" :size="13" />Trajet : {{ travelLabel(job.travelMinutes, job.travelMode) }}
           </span>
         </div>
       </div>

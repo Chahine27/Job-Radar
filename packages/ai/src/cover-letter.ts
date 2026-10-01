@@ -5,7 +5,7 @@ import type { AnalysisJobInput } from "./job-analysis";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les lettres existantes seront signalées « à refaire ». */
-export const LETTER_PROMPT_VERSION = "2026-10-01.2";
+export const LETTER_PROMPT_VERSION = "2026-10-01.3";
 
 /** Ce que l'IA écrit : l'objet et le corps. L'en-tête, « Madame, Monsieur » et la politesse sont ajoutés par le code. */
 export const LetterDraftSchema = z.object({
@@ -87,7 +87,7 @@ Tu réponds UNIQUEMENT avec le JSON demandé.
 - Mots interdits : « passionné », « dynamique », « challenge », « valeur ajoutée », « opportunité », « je me permets », « n'hésitez pas », « je suis prêt à », « véritable », « parfaite adéquation ».
 - Pas de connecteurs en série (« De plus », « Parallèlement », « En outre ») : au plus un par lettre.
 - Ne recopie pas l'annonce (« Votre mission consiste à… »), ne répète pas le nom complet du produit. Corrige les fautes de l'annonce.
-- Annonce d'un cabinet ou d'une ESN (« nos clients », « pour notre client ») : ne dis pas ce qui l'attire chez le cabinet ; parle du projet et du client décrits.
+- Annonce d'un intermédiaire (cabinet de recrutement, agence d'intérim, société de services : « nos clients », « pour notre client ») : ne dis pas ce qui l'attire chez l'intermédiaire ; parle du poste et de l'employeur décrits.
 - LETTRE EXEMPLE : c'est SA façon d'écrire. Imite-la vraiment : même façon d'ouvrir, d'enchaîner les paragraphes et de conclure, mêmes tournures quand elles s'appliquent, même longueur. Ne reprends jamais son entreprise, son poste ni ses détails.
 - Ne recopie aucune phrase de l'annonce (sauf l'intitulé du poste) : dis avec tes mots pourquoi le poste t'intéresse.
 
@@ -133,9 +133,9 @@ export function strengthsAndGaps(
   const ordered = [...job].sort((a, b) => pos(a) - pos(b));
   const lines = cvText.split(/\n+/).map((l) => l.trim()).filter((l) => l.length > 3);
   const proofOf = (id: string) => {
-    // La ligne la plus « concrète » (expérience ou projet) plutôt que la liste de compétences.
+    // La ligne la plus « concrète » (expérience ou projet) plutôt qu'une rubrique « Compétences », « Logiciels », « Langues »…
     const hits = lines.filter((l) => extractSkills(l, extraSkills).includes(id));
-    const concrete = hits.find((l) => !/^(-\s*)?(frontend|backend|mobile|architecture|devops|autres|outils|accessibilit|comp[ée]tences)\b/i.test(l));
+    const concrete = hits.find((l) => !/^(-\s*)?(comp[ée]tences|savoir[- ]faire|logiciels|outils|langues|permis|qualit[ée]s|centres d.int[ée]r[êe]t|autres|frontend|backend|mobile|architecture|devops|accessibilit)\b/i.test(l));
     return (concrete ?? hits[0] ?? "").slice(0, 160);
   };
   return {
