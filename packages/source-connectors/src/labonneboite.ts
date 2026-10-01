@@ -67,6 +67,12 @@ export class LaBonneBoiteClient {
     return Boolean(this.opts.clientId && this.opts.clientSecret);
   }
 
+  /** Vérifie les identifiants et le droit « La Bonne Boîte » (demande un jeton, sans recherche). */
+  async healthCheck(): Promise<void> {
+    this.token = null;
+    await this.getToken();
+  }
+
   private async getToken(): Promise<string> {
     const now = this.opts.now?.() ?? Date.now();
     if (this.token && this.token.expiresAt - 60_000 > now) return this.token.value;

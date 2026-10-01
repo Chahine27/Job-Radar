@@ -22,7 +22,11 @@ import {
   RechercheEntreprisesClient,
 } from "@job-radar/source-connectors";
 import { buildApp } from "./app";
-import { loadEnv } from "./env";
+import { updateEnvFile } from "./env-file";
+import { ENV_PATH, loadEnv } from "./env";
+import { liveMailer, liveNotifier, liveRouting, liveSource, smtpFrom, testService } from "./live";
+import type { SettingsService } from "./routes/settings";
+import { SETTING_KEYS } from "./settings-keys";
 import { createPrismaStores } from "./prisma-stores";
 
 const env = loadEnv();
@@ -31,18 +35,57 @@ const prisma = createPrismaClient(env.DATABASE_URL);
 let log: (msg: string) => void = (msg) => console.log(msg);
 const e = process.env;
 
-const notifiers = [
-  createEmailNotifier({
-    host: e.SMTP_HOST?.trim(),
-    port: e.SMTP_PORT ? Number(e.SMTP_PORT) : undefined,
-    user: e.SMTP_USER?.trim(),
-    password: e.SMTP_PASSWORD?.replace(/\s/g, ""), // mot de passe d'application Gmail souvent collé avec des espaces
-    from: e.SMTP_FROM?.trim(),
-    to: async () => {
-      const s = await prisma.notificationSettings.findUnique({ where: { id: "singleton" } });
-      return s?.emailTo || e.NOTIFY_EMAIL_TO?.trim() || null;
+/**
+ * Services qui dépendent des clés de .env. Reconstruits quand une clé change dans la page « Réglages » :
+ * le reste de l'appli passe par des relais (live.ts) et voit tout de suite les nouvelles valeurs.
+ */
+function buildKeyed() {
+  const smtp = smtpFrom(e);
+  const joobleKey = e.JOOBLE_API_KEY?.trim() || undefined;
+  const joobleQuota = prismaJoobleQuota(prisma, joobleKey);
+  const ftCreds = { clientId: e.FRANCE_TRAVAIL_CLIENT_ID?.trim(), clientSecret: e.FRANCE_TRAVAIL_CLIENT_SECRET?.trim() };
+  return {
+    email: createEmailNotifier({
+      ...smtp,
+      from: e.SMTP_FROM?.trim(),
+      to: async () => {
+        const s = await prisma.notificationSettings.findUnique({ where: { id: "singleton" } });
+        return s?.emailTo || e.NOTIFY_EMAIL_TO?.trim() || null;
+      },
+    }),
+    // Candidatures spontanées : envoyées depuis le même compte SMTP (Gmail), seulement après ton clic « Envoyer ».
+    mailer: createMailer(smtp),
+    routing: new PrimRoutingService({ apiKey: e.PRIM_API_KEY?.trim() }),
+    franceTravail: new FranceTravailSource(ftCreds),
+    adzuna: new AdzunaSource({ appId: e.ADZUNA_APP_ID?.trim(), appKey: e.ADZUNA_APP_KEY?.trim() }),
+    jooble: new JoobleSource({ apiKey: joobleKey, quota: joobleQuota }),
+    joobleQuota,
+    lbb: new LaBonneBoiteClient(ftCreds),
+    configured: {
+      "france-travail": Boolean(ftCreds.clientId && ftCreds.clientSecret),
+      adzuna: Boolean(e.ADZUNA_APP_ID?.trim() && e.ADZUNA_APP_KEY?.trim()),
+      jooble: Boolean(joobleKey),
     },
-  }),
+  };
+}
+let keyed = buildKeyed();
+
+const settings: SettingsService = {
+  values: () => Object.fromEntries(SETTING_KEYS.map((k) => [k, e[k]])),
+  async save(updates) {
+    await updateEnvFile(ENV_PATH, updates);
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) e[k] = v;
+      else delete e[k];
+    }
+    keyed = buildKeyed();
+    log(`Réglages enregistrés : ${Object.keys(updates).join(", ")}`);
+  },
+  test: (service) => testService(service, settings.values(), { joobleQuota: (key) => prismaJoobleQuota(prisma, key) }),
+};
+
+const notifiers = [
+  liveNotifier(() => keyed.email),
   createWebPushNotifier({
     publicKey: e.VAPID_PUBLIC_KEY?.trim(),
     privateKey: e.VAPID_PRIVATE_KEY?.trim(),
@@ -57,35 +100,22 @@ const notifiers = [
     },
   }),
 ];
-// Candidatures spontanées : envoyées depuis le même compte SMTP (Gmail), seulement après ton clic « Envoyer ».
-const mailer = createMailer({
-  host: e.SMTP_HOST?.trim(),
-  port: e.SMTP_PORT ? Number(e.SMTP_PORT) : undefined,
-  user: e.SMTP_USER?.trim(),
-  password: e.SMTP_PASSWORD?.replace(/\s/g, ""),
-});
+const mailer = liveMailer(() => keyed.mailer);
 const notifyRepo = createPrismaNotifyRepo(prisma);
-const routing = new PrimRoutingService({ apiKey: e.PRIM_API_KEY?.trim() });
-const franceTravail = new FranceTravailSource({
-  clientId: e.FRANCE_TRAVAIL_CLIENT_ID?.trim(),
-  clientSecret: e.FRANCE_TRAVAIL_CLIENT_SECRET?.trim(),
-});
+const routing = liveRouting(() => keyed.routing);
 /** Vérification des offres expirées : au plus toutes les 6 heures. */
 let lastExpiryAt = 0;
 // IA locale (Ollama, gratuite, sur ce PC). Réglages facultatifs : OLLAMA_URL, OLLAMA_MODEL.
 const ollama = new OllamaClient({ baseUrl: e.OLLAMA_URL, model: e.OLLAMA_MODEL });
-const joobleKey = e.JOOBLE_API_KEY?.trim();
-const joobleQuota = prismaJoobleQuota(prisma, joobleKey);
 const sirene = new RechercheEntreprisesClient();
-const lbb = new LaBonneBoiteClient({ clientId: e.FRANCE_TRAVAIL_CLIENT_ID?.trim(), clientSecret: e.FRANCE_TRAVAIL_CLIENT_SECRET?.trim() });
 
 const runner = new CollectionRunner({
   log: (msg) => log(msg),
   repo: createPrismaRunRepo(prisma),
   sources: [
-    franceTravail,
-    new AdzunaSource({ appId: e.ADZUNA_APP_ID?.trim(), appKey: e.ADZUNA_APP_KEY?.trim() }),
-    new JoobleSource({ apiKey: joobleKey, quota: joobleQuota }),
+    liveSource(() => keyed.franceTravail),
+    liveSource(() => keyed.adzuna),
+    liveSource(() => keyed.jooble),
     new CompanyCareersSource({
       companies: async () =>
         (await prisma.companyTarget.findMany()).map((c) => ({ ...c, ats: c.ats as AtsKind })),
@@ -96,7 +126,7 @@ const runner = new CollectionRunner({
   onFinished: async (report) => {
     if (Date.now() - lastExpiryAt > 6 * 3600_000) {
       lastExpiryAt = Date.now();
-      await expireJobs({ prisma, ftIsOnline: (id) => franceTravail.isStillOnline(id), log: (m) => log(m) }).catch((err) =>
+      await expireJobs({ prisma, ftIsOnline: (id) => keyed.franceTravail.isStillOnline(id), log: (m) => log(m) }).catch((err) =>
         log(`Expiration : ${String(err)}`),
       );
     }
@@ -133,7 +163,8 @@ const app = await buildApp({
   notifiers,
   vapidPublicKey: e.VAPID_PUBLIC_KEY?.trim() || null,
   geocoder: (q) => geocode(q, { limit: 5 }),
-  ...(lbb.isConfigured() ? { searchCompanies: (p: Parameters<LaBonneBoiteClient["search"]>[0]) => lbb.search(p) } : {}),
+  searchCompanies: (p) => keyed.lbb.search(p),
+  companiesConfigured: () => keyed.lbb.isConfigured(),
   // Adresse exacte des entreprises (API publique de l'État, sans clé).
   findAddress: (siret: string) => sirene.address(siret),
   // Trajet calculé à l'ouverture d'une offre (1 appel au plus, puis mis en cache).
@@ -146,13 +177,9 @@ const app = await buildApp({
     if (job.travel) return "aucun itinéraire en transports trouvé depuis ton point de départ";
     return report.skipped ?? "lieu de l'offre inconnu ou hors zone";
   },
-  sourcesConfigured: {
-    "france-travail": Boolean(e.FRANCE_TRAVAIL_CLIENT_ID?.trim() && e.FRANCE_TRAVAIL_CLIENT_SECRET?.trim()),
-    adzuna: Boolean(e.ADZUNA_APP_ID?.trim() && e.ADZUNA_APP_KEY?.trim()),
-    jooble: Boolean(joobleKey),
-  },
+  sourcesConfigured: () => keyed.configured,
   // Compteur Jooble affiché sur la page Sources (500 appels à vie par clé gratuite).
-  sourceQuotas: async () => ({ jooble: { used: (await joobleQuota.get()).used, limit: JOOBLE_DEFAULTS.lifetimeLimit } }),
+  sourceQuotas: async () => ({ jooble: { used: (await keyed.joobleQuota.get()).used, limit: JOOBLE_DEFAULTS.lifetimeLimit } }),
   ai: {
     model: ollama.model,
     status: () => ollama.status(),
@@ -162,6 +189,7 @@ const app = await buildApp({
     readCv: (cvText) => readCvWithAi(ollama, cvText),
   },
   mailer,
+  settings,
   appUrl: env.APP_URL,
   secureCookie: env.NODE_ENV === "production",
   logger:
@@ -185,8 +213,8 @@ log = (msg) => app.log.info(msg);
 await app.listen({ host: env.API_HOST, port: env.API_PORT });
 
 const on = notifiers.filter((n) => n.isConfigured()).map((n) => n.channel);
-app.log.info(`Temps de trajet : ${routing.isConfigured() ? "PRIM configuré" : "non configuré (PRIM_API_KEY dans .env)"}`);
-app.log.info(`Notifications configurées : ${on.length ? on.join(", ") : "aucune (voir .env)"}`);
+app.log.info(`Temps de trajet : ${routing.isConfigured() ? "PRIM configuré" : "non configuré (clé PRIM dans Réglages)"}`);
+app.log.info(`Notifications configurées : ${on.length ? on.join(", ") : "aucune (voir Réglages)"}`);
 
 if (env.SCHEDULER_ENABLED) {
   await runner.startScheduler(60_000);

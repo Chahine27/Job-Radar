@@ -211,7 +211,7 @@ const searchUrl = (l: Lead) =>
   <div class="stack">
     <LeadZoneCard @apply="refresh" />
 
-    <p v-if="!configured" class="alert"><Icon name="alert" :size="16" />Identifiants France Travail absents de .env.</p>
+    <p v-if="!configured" class="alert"><Icon name="alert" :size="16" />Identifiants France Travail absents : <RouterLink to="/reglages#france-travail">ajoute-les dans Réglages</RouterLink>.</p>
     <p v-if="message" :class="message.ok ? 'success' : 'alert'" role="status">
       <Icon :name="message.ok ? 'check' : 'alert'" :size="16" />{{ message.text }}
     </p>

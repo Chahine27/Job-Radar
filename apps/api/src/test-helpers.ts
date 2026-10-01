@@ -3,6 +3,7 @@ import { EXAMPLE_PROFILE, type LetterKit, type Profile } from "@job-radar/shared
 import type { Mailer, Notifier, OutgoingMail } from "@job-radar/notifications";
 import { buildManualJob } from "@job-radar/pipeline";
 import { buildApp } from "./app";
+import type { SettingsService } from "./routes/settings";
 import type {
   HomeLocation,
   LeadRow,
@@ -397,8 +398,19 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
   /** Faux envoi d'email : garde les messages « envoyés ». */
   const sentMails: OutgoingMail[] = [];
   const mailer: Mailer = { isConfigured: () => true, address: () => "alex.martin@example.com", send: async (m) => void sentMails.push(m) };
+  /** Faux .env de la page Réglages (valeurs inventées) et services testés. */
+  const settingsValues: Record<string, string | undefined> = { SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", FRANCE_TRAVAIL_CLIENT_ID: "PAR_app_test_0123456789abcdef" };
+  const settingsTests: string[] = [];
+  const settings: SettingsService = {
+    values: () => ({ ...settingsValues }),
+    save: async (updates) => {
+      for (const [k, v] of Object.entries(updates)) settingsValues[k] = v || undefined;
+    },
+    test: async (service) => (settingsTests.push(service), { ok: true, message: `${service} répond` }),
+  };
   const app = await buildApp({
     mailer,
+    settings,
     stores: mem.stores,
     appUrl: APP_URL,
     secureCookie: false,
@@ -502,7 +514,7 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
     geocoder: async (q: string) =>
       q.includes("introuvable") ? [] : [{ label: "Place de la Gare 69100 Villeurbanne", lat: 45.7714, lng: 5.2467, precision: "address" }],
   });
-  return { app, collector, tests, travelRequests, lbbSearches, aiCalls, aiState, sentMails, ...mem };
+  return { app, collector, tests, travelRequests, lbbSearches, aiCalls, aiState, sentMails, settingsValues, settingsTests, ...mem };
 }
 
 export async function login(app: Awaited<ReturnType<typeof buildApp>>) {

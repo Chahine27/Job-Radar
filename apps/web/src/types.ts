@@ -269,3 +269,10 @@ export type SetupForm = {
   contracts: string[];
   salaryTarget: number | null;
 };
+
+/** Page « Réglages » : état des clés (jamais une clé secrète en entier). */
+export type SettingKeyState = { filled: boolean; secret: boolean; display: string };
+export type SettingsState = {
+  keys: Record<string, SettingKeyState>;
+  services: Record<string, { configured: boolean }>;
+};

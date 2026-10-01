@@ -80,9 +80,9 @@ const test = (channel: "email" | "webpush") =>
         <div class="channel stack">
           <label class="switch"><input v-model="s.emailEnabled" type="checkbox" /><Icon name="mail" :size="16" /> Par email</label>
           <p v-if="!s.emailConfigured" class="small warn-text">
-            Email non configuré : remplis SMTP_HOST, SMTP_USER et SMTP_PASSWORD dans .env, puis relance « pnpm dev ».
+            Email non configuré : remplis la carte « Email » dans <RouterLink to="/reglages#email">Réglages</RouterLink>.
           </p>
-          <label>Adresse de réception <input v-model="emailTo" type="email" placeholder="Par défaut : NOTIFY_EMAIL_TO du .env" /></label>
+          <label>Adresse de réception <input v-model="emailTo" type="email" placeholder="Par défaut : l'adresse des Réglages" /></label>
         </div>
 
         <div class="channel stack">

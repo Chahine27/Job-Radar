@@ -17,7 +17,12 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
    - L'IA locale lit ton CV (30 s à 2 min) et propose : métiers à rechercher, compétences, ville, années d'expérience, contrats.
    - Corrige ce qui ne va pas, clique sur l'étoile des compétences que tu maîtrises vraiment, puis « C'est bon, lancer la recherche ».
    - Si Ollama ne répond pas : ouvre l'appli Ollama puis « Réessayer », ou « Remplir à la main ».
+   - Le dernier écran propose d'aller dans **Réglages** pour ajouter les clés des sites d'offres.
    Tout reste modifiable ensuite dans « Profil » et « CV & lettre ».
+5. **Réglages** (menu à gauche) : une carte par service — France Travail, Adzuna, Jooble, Email (Gmail), Temps de trajet.
+   Chaque carte explique à quoi sert le service et comment obtenir la clé gratuite (« Comment obtenir la clé ? »).
+   Colle la clé, clique **Enregistrer** (pris en compte tout de suite, sans relancer), puis **Tester**.
+   Il faut au moins France Travail, Adzuna ou Jooble pour recevoir des offres. Tu n'as jamais besoin d'ouvrir le fichier `.env`.
 
 ## 1. Après un redémarrage du PC
 
@@ -95,17 +100,18 @@ Puis relance `pnpm dev`.
 → La base ou le client Prisma n'est pas à jour : `pnpm db:migrate`, puis relance `pnpm dev`.
 
 **Le trajet affiche « non calculé »**
-→ Vérifie `PRIM_API_KEY` dans `.env` et ton adresse de départ dans le profil, puis `pnpm travel:test`.
+→ Réglages → carte « Temps de trajet » → **Tester**, et vérifie ton adresse de départ dans le profil.
+Le calcul ne marche pour l'instant qu'en Île-de-France.
 Le message sous le trajet (page de l'offre) donne la raison.
 
 **Aucune nouvelle offre**
-→ `pnpm sources:test` pour voir quelle source ne répond pas. Une source en panne n'empêche pas les autres.
+→ Réglages : clique **Tester** sur chaque source. Une source en panne n'empêche pas les autres.
 
-**France Travail répond 401 ou 403**
-→ Identifiants faux ou scope manquant sur francetravail.io. Lance `pnpm ft:test`.
+**France Travail refuse les identifiants**
+→ Réglages → carte France Travail → **Tester** : le message dit si l'identifiant est faux ou si une API manque à ton application.
 
 **Pas d'e-mail reçu**
-→ Vérifie les lignes `SMTP_…` et `NOTIFY_EMAIL_TO` dans `.env`. Avec Gmail, il faut un « mot de passe d'application ».
+→ Réglages → carte Email → **Tester**. Avec Gmail, il faut un « mot de passe d'application », pas ton mot de passe habituel.
 
 **Git dit « index.lock: File exists »**
 → `rm -f .git/index.lock` puis recommence.
@@ -147,11 +153,11 @@ Recharge ensuite la page Job Radar : si l'extension est active, elle sera détec
 
 Jooble regroupe les offres de nombreux sites d'emploi français.
 
-1. Va sur https://fr.jooble.org/api/about et remplis le formulaire (pour « Site web », mets par exemple ton GitHub).
+1. Va sur https://fr.jooble.org/api/about et remplis le formulaire (pour « Site web », mets par exemple ta page LinkedIn).
    ⚠️ Prends bien la clé sur **fr**.jooble.org : une clé d'un autre pays ne donne pas les offres françaises.
-2. Colle la clé reçue dans `.env` : `JOOBLE_API_KEY=ta-cle`
-3. `pnpm db:migrate` (une seule fois), puis `pnpm jooble:test`.
-4. Relance `pnpm dev`, puis page **Sources** → coche **Active** sur Jooble.
+2. Réglages → carte **Jooble** : colle la clé reçue par email, puis **Enregistrer**.
+   (Le bouton **Tester** fait un vrai appel, compté dans les 500.)
+3. Page **Sources** → coche **Active** sur Jooble.
 
 **Important :** la clé gratuite donne **500 appels au total** (pas par jour). L'appli économise :
 une seule recherche par zone (toutes tes recherches regroupées), une collecte par jour au plus,
@@ -161,6 +167,8 @@ Quand il est épuisé : demande une nouvelle clé, le compteur repart de zéro t
 ## 8. Le fichier `.env`
 
 Il contient tes mots de passe et clés d'API. Il ne doit **jamais** être commité.
+Tu n'as pas besoin de l'ouvrir : la page **Réglages** l'écrit pour toi (les autres lignes et les commentaires sont gardés,
+et l'ancienne version est copiée dans `.env.bak` avant chaque enregistrement).
 Le modèle est `.env.example` : chaque ligne y est expliquée.
 
 ## 9. L'IA locale (Ollama) — gratuite, rien ne sort de ton PC
@@ -209,4 +217,4 @@ Le score, l'analyse IA et la lettre utilisent alors l'annonce complète (la coll
 
 - **PDF de la lettre** : dans « CV & lettre », section 5, colle le dossier où ranger la lettre (ex. `C:\Users\…\Documents\Candidatures`). Le bouton « Enregistrer en PDF » d'une offre écrit alors `Lettre_de_motivation.pdf` dans ce dossier, en remplaçant l'ancien. Si le PDF est ouvert dans un lecteur, ferme-le d'abord.
 - **Candidature spontanée** : écran « Entreprises » → colle l'email de contact de l'entreprise → « Préparer la candidature ». L'IA écrit la lettre (sans rien inventer sur l'entreprise), tu la relis, puis « Envoyer » : l'email part de ton Gmail avec la lettre en PDF et ton CV PDF (chemin à indiquer dans « CV & lettre »). Rien ne part sans ton clic, et une entreprise déjà contactée demande une confirmation pour renvoyer.
-- L'envoi utilise le même compte que les notifications : `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` dans `.env` (mot de passe d'application Gmail).
+- L'envoi utilise le même compte que les notifications : carte **Email** de la page Réglages (mot de passe d'application Gmail).

@@ -8,6 +8,7 @@ import SourceLogo from "../components/SourceLogo.vue";
 import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, timeAgo, timeUntil } from "../format";
 import { usePrefs } from "../prefs";
 import { useExtensionInstalled } from "../composables/useExtensionInstalled";
+import { anyJobSourceConfigured } from "../settings-guide";
 import type { AutoCheckStatus, CollectionStatus, JobSummary } from "../types";
 
 type Filters = Required<Omit<JobQuery, "q" | "limit" | "offset">> & { q: string };
@@ -204,12 +205,16 @@ const lastRunText = computed(() => {
   return `Dernière collecte : ${when} (${how}) — ${res}`;
 });
 
+/** Aucune clé de source d'offres : bandeau vers la page Réglages. */
+const noSourceKey = ref(false);
+
 onMounted(async () => {
   await load();
   await loadStatus();
   if (collection.value?.running) fastPoll = setInterval(loadStatus, 2000);
   slowPoll = setInterval(loadStatus, 30_000);
   api.getProfile().then((p) => (threshold.value = p.profile.minScoreForNotification)).catch(() => {});
+  api.settingsKeys().then((s) => (noSourceKey.value = !anyJobSourceConfigured(s))).catch(() => {});
 });
 
 onUnmounted(() => {
@@ -265,6 +270,10 @@ function place(job: JobSummary) {
   </PageHeader>
 
   <div class="stack">
+    <p v-if="noSourceKey" class="info" role="status">
+      <Icon name="info" :size="16" />Ajoute au moins une clé pour recevoir des offres.
+      <RouterLink to="/reglages"><strong>Aller dans Réglages</strong></RouterLink>
+    </p>
     <div v-if="collection?.sources.some((x) => x.enabled)" class="sources-strip" role="radiogroup" aria-label="Afficher les offres de">
       <button
         type="button"

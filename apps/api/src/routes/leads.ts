@@ -9,6 +9,8 @@ export type LeadsOptions = {
   stores: Stores;
   /** Recherche La Bonne Boîte (absent = non configuré). */
   searchCompanies?: (params: LbbSearch) => Promise<LbbCompany[]>;
+  /** Identifiants France Travail présents en ce moment (modifiables dans les Réglages). Absent = toujours oui. */
+  companiesConfigured?: () => boolean;
   /** Adresse exacte d'un établissement par SIRET (API Recherche d'entreprises). Absent = pas de recherche. */
   findAddress?: (siret: string) => Promise<string | null>;
 };
@@ -48,6 +50,7 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
 export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
   const { stores } = opts;
   app.addHook("preHandler", requireAuth);
+  const canSearch = () => Boolean(opts.searchCompanies) && (opts.companiesConfigured?.() ?? true);
 
   /** Complète en arrière-plan l'adresse exacte des entreprises (100 par passage, ~5 par seconde). */
   let filling: Promise<void> | null = null;
@@ -117,7 +120,7 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
       addressesPending,
       total: inZone.length,
       lastRefreshAt: await stores.leads.lastRefreshAt(),
-      configured: Boolean(opts.searchCompanies),
+      configured: canSearch(),
     };
   });
 
@@ -125,7 +128,9 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
     "/api/leads/refresh",
     { config: { rateLimit: { max: 3, timeWindow: "1 minute" } } },
     async (request, reply) => {
-      if (!opts.searchCompanies) return reply.code(409).send({ error: "NOT_CONFIGURED", message: "Identifiants France Travail absents de .env." });
+      if (!opts.searchCompanies || !canSearch()) {
+        return reply.code(409).send({ error: "NOT_CONFIGURED", message: "Identifiants France Travail absents : ajoute-les dans Réglages." });
+      }
       const rec = await stores.profiles.get(request.userId!);
       if (!rec) return reply.code(404).send({ error: "PROFILE_NOT_FOUND" });
       const { romes, distanceKm, place, departments } = rec.profile.spontaneous;

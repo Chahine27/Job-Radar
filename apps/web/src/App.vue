@@ -20,6 +20,7 @@ const NAV: Array<{ to: string; label: string; icon: IconName }> = [
   { to: "/extension", label: "Extension navigateur", icon: "external" },
   { to: "/candidature", label: "CV & lettre", icon: "file" },
   { to: "/profil", label: "Profil", icon: "user" },
+  { to: "/reglages", label: "Réglages", icon: "sliders" },
 ];
 const THEMES: Array<{ mode: ThemeMode; label: string; icon: IconName }> = [
   { mode: "auto", label: "Auto", icon: "monitor" },

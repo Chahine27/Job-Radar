@@ -14,6 +14,7 @@ import type { Mailer, Notifier } from "@job-radar/notifications";
 import { jobRoutes } from "./routes/jobs";
 import { type Geocoder, profileRoutes } from "./routes/profile";
 import { prefsRoutes } from "./routes/prefs";
+import { type SettingsService, settingsRoutes } from "./routes/settings";
 import { setupRoutes } from "./routes/setup";
 import type { Stores } from "./stores";
 
@@ -28,19 +29,22 @@ export type AppOptions = {
   collector?: Collector;
   notifiers?: Notifier[];
   vapidPublicKey?: string | null;
-  /** Identifiants présents dans .env, par source (affichage page Sources). */
-  sourcesConfigured?: Record<string, boolean>;
+  /** Identifiants présents dans .env, par source (affichage page Sources). Fonction = valeur à jour. */
+  sourcesConfigured?: Record<string, boolean> | (() => Record<string, boolean>);
   /** Appels utilisés / limite, pour les sources à quota (Jooble). */
   sourceQuotas?: () => Promise<Record<string, { used: number; limit: number }>>;
   geocoder?: Geocoder;
   /** Calcule le trajet d'une offre si besoin (à son ouverture). */
   ensureTravel?: (jobId: string) => Promise<string | null>;
   searchCompanies?: LeadsOptions["searchCompanies"];
+  companiesConfigured?: LeadsOptions["companiesConfigured"];
   findAddress?: LeadsOptions["findAddress"];
   /** IA locale (Ollama) : résumé et analyse des offres. */
   ai?: AiService;
   /** Envoi des candidatures spontanées par email (compte SMTP de .env). */
   mailer?: Mailer;
+  /** Page « Réglages » : clés de .env et tests des services. Absent → routes non exposées. */
+  settings?: SettingsService;
 };
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -103,7 +107,9 @@ export async function buildApp(opts: AppOptions) {
     stores: opts.stores,
     ...(opts.searchCompanies ? { searchCompanies: opts.searchCompanies } : {}),
     ...(opts.findAddress ? { findAddress: opts.findAddress } : {}),
+    ...(opts.companiesConfigured ? { companiesConfigured: opts.companiesConfigured } : {}),
   });
+  if (opts.settings) await app.register(settingsRoutes, { settings: opts.settings });
   await app.register(sourceRoutes, { stores: opts.stores, configured: opts.sourcesConfigured ?? {}, quotas: opts.sourceQuotas });
   await app.register(notificationRoutes, {
     stores: opts.stores,

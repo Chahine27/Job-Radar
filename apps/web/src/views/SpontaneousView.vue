@@ -66,7 +66,7 @@ const checks = computed(() => {
     { ok: !!letter.value.trim(), text: "Lettre écrite et relue" },
     { ok: emailOk.value, text: "Email de contact de l'entreprise" },
     { ok: s.cvPdf.found, text: s.cvPdf.found ? `CV joint : ${cvName.value}` : "CV PDF : indique son chemin dans « CV & lettre »" },
-    { ok: s.mail.configured, text: s.mail.configured ? `Envoi depuis ${s.mail.from}` : "Envoi d'email : SMTP à remplir dans .env" },
+    { ok: s.mail.configured, text: s.mail.configured ? `Envoi depuis ${s.mail.from}` : "Envoi d'email : à configurer dans Réglages (carte Email)" },
   ];
 });
 const ready = computed(() => checks.value.every((c) => c.ok) && subject.value.trim().length > 2 && message.value.trim().length > 9);

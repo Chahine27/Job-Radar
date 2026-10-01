@@ -461,7 +461,7 @@ export async function aiRoutes(
     const ctx = await applicationContext(request.userId!, params.data.id);
     if (!ctx) return reply.code(404).send({ error: "LEAD_NOT_FOUND" });
     if (!opts.mailer?.isConfigured()) {
-      return reply.code(503).send({ error: "MAIL_NOT_CONFIGURED", message: "Envoi d'email non configuré : remplis SMTP_HOST, SMTP_USER et SMTP_PASSWORD dans .env." });
+      return reply.code(503).send({ error: "MAIL_NOT_CONFIGURED", message: "Envoi d'email non configuré : remplis la carte « Email » dans Réglages." });
     }
     const kit = ctx.kit ?? EMPTY_LETTER_KIT;
     const cvPath = cleanPath(kit.cvPdfPath ?? "");

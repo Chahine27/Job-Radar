@@ -19,6 +19,27 @@ export type Mailer = {
 
 type Transport = (msg: { from: string; to: string; subject: string; text: string; attachments: MailAttachment[] }) => Promise<unknown>;
 
+export type SmtpConfig = { host?: string | undefined; port?: number | undefined; user?: string | undefined; password?: string | undefined };
+
+/** Bouton « Tester » des Réglages : se connecte au serveur d'envoi et s'identifie, sans envoyer d'email. */
+export async function verifySmtp(cfg: SmtpConfig): Promise<void> {
+  if (!cfg.host || !cfg.user || !cfg.password) throw new Error("Serveur, adresse ou mot de passe manquant.");
+  const port = cfg.port ?? 587;
+  const tr = nodemailer.createTransport({
+    host: cfg.host,
+    port,
+    secure: port === 465,
+    auth: { user: cfg.user, pass: cfg.password },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+  });
+  try {
+    await tr.verify();
+  } finally {
+    tr.close();
+  }
+}
+
 /**
  * Envoi d'emails en ton nom (candidatures spontanées), par le même compte SMTP que les notifications (Gmail).
  * Avec Gmail, le message apparaît aussi dans « Messages envoyés ».

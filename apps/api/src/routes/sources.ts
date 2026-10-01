@@ -14,8 +14,8 @@ export const SOURCE_LABELS: Record<string, string> = {
 
 export type SourcesOptions = {
   stores: Stores;
-  /** Identifiants présents dans .env, par source. */
-  configured: Record<string, boolean>;
+  /** Identifiants présents dans .env, par source. Fonction = relue à chaque appel (Réglages). */
+  configured: Record<string, boolean> | (() => Record<string, boolean>);
   /** Appels utilisés / limite, pour les sources à quota (Jooble). */
   quotas?: () => Promise<Record<string, { used: number; limit: number }>>;
 };
@@ -43,13 +43,14 @@ export async function sourceRoutes(app: FastifyInstance, opts: SourcesOptions) {
     const calls = await callsPerRun(request.userId!);
     const companies = await stores.companies.list();
     const quotas = (await opts.quotas?.().catch(() => null)) ?? {};
+    const configured = typeof opts.configured === "function" ? opts.configured() : opts.configured;
     return {
       items: (await stores.sources.list()).map((s) => ({
         ...s,
         quota: quotas[s.source] ?? null,
         label: SOURCE_LABELS[s.source] ?? s.source,
         minIntervalMinutes: minIntervalFor(s.source, calls),
-        configured: s.source === "company-careers" ? companies.some((c) => c.enabled) : (opts.configured[s.source] ?? false),
+        configured: s.source === "company-careers" ? companies.some((c) => c.enabled) : (configured[s.source] ?? false),
       })),
     };
   });

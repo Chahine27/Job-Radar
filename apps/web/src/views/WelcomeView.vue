@@ -15,7 +15,7 @@ import type { CvProposal, SetupForm } from "../types";
  * 3. relire et corriger ce qu'elle propose, puis valider.
  */
 const router = useRouter();
-type Step = "account" | "cv" | "reading" | "review";
+type Step = "account" | "cv" | "reading" | "review" | "done";
 const step = ref<Step>(currentEmail.value ? "cv" : "account");
 const error = ref<string | null>(null);
 const busy = ref(false);
@@ -25,7 +25,9 @@ const STEPS: Array<{ key: Step; label: string }> = [
   { key: "cv", label: "Ton CV" },
   { key: "review", label: "Ton profil" },
 ];
-const stepIndex = computed(() => (step.value === "reading" ? 1 : STEPS.findIndex((s) => s.key === step.value)));
+const stepIndex = computed(() =>
+  step.value === "reading" ? 1 : step.value === "done" ? STEPS.length : STEPS.findIndex((s) => s.key === step.value),
+);
 
 // ───────────── 1. Compte ─────────────
 const email = ref("");
@@ -218,7 +220,8 @@ async function finish() {
       mastered: form.value.mastered.filter((m) => form.value.skills.includes(m)),
     });
     needsSetup.value = false;
-    await router.push({ name: "jobs" });
+    // Dernier écran : proposer d'ajouter les clés des sources d'offres (page Réglages).
+    step.value = "done";
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
   } finally {
@@ -298,6 +301,20 @@ async function finish() {
             <button type="button" class="ghost" @click="step = 'cv'">Changer de CV</button>
           </div>
         </template>
+      </section>
+
+      <!-- 4. Terminé : ajouter les clés -->
+      <section v-else-if="step === 'done'" class="card stack pad center">
+        <Icon name="check" :size="30" />
+        <h2>Ton profil est prêt</h2>
+        <p class="muted">
+          Dernière chose : pour recevoir des offres, ajoute au moins une clé gratuite (France Travail, Adzuna ou Jooble).
+          La page Réglages t'explique comment faire, étape par étape.
+        </p>
+        <div class="row center">
+          <button type="button" class="ghost" @click="router.push({ name: 'jobs' })">Plus tard, voir les offres</button>
+          <button type="button" class="primary" @click="router.push({ name: 'settings' })">Aller dans Réglages</button>
+        </div>
       </section>
 
       <!-- 3. Profil -->
@@ -404,6 +421,7 @@ async function finish() {
 .card h2, .card h3 { margin: 0; display: flex; align-items: center; gap: 0.45rem; }
 .card p { margin: 0; }
 .center { justify-items: center; text-align: center; }
+.row.center { justify-content: center; }
 .steps { list-style: none; display: flex; justify-content: center; gap: 1.2rem; padding: 0; margin: 0; flex-wrap: wrap; }
 .steps li { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.9rem; }
 .steps li.now { color: var(--accent); font-weight: 600; }

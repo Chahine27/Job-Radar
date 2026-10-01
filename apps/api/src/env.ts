@@ -2,7 +2,10 @@ import path from "node:path";
 import { config } from "dotenv";
 import { z } from "zod";
 
-config({ path: path.resolve(import.meta.dirname, "../../../.env"), quiet: true });
+/** Fichier .env à la racine du projet (modifié aussi par la page « Réglages »). */
+export const ENV_PATH = path.resolve(import.meta.dirname, "../../../.env");
+
+config({ path: ENV_PATH, quiet: true });
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

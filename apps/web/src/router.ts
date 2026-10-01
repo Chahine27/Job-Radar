@@ -3,6 +3,8 @@ import { ensureSession, hasAccount, needsSetup } from "./session";
 
 export const router = createRouter({
   history: createWebHistory(),
+  // Lien vers une carte précise (ex. /reglages#email).
+  scrollBehavior: (to) => (to.hash ? { el: to.hash } : undefined),
   routes: [
     { path: "/login", name: "login", component: () => import("./views/LoginView.vue"), meta: { public: true } },
     { path: "/bienvenue", name: "welcome", component: () => import("./views/WelcomeView.vue"), meta: { public: true, bare: true } },
@@ -15,6 +17,7 @@ export const router = createRouter({
     { path: "/sources", name: "sources", component: () => import("./views/SourcesView.vue") },
     { path: "/extension", name: "extension", component: () => import("./views/ExtensionView.vue") },
     { path: "/candidature", name: "letter-kit", component: () => import("./views/LetterKitView.vue") },
+    { path: "/reglages", name: "settings", component: () => import("./views/SettingsView.vue") },
     { path: "/profil", name: "profile", component: () => import("./views/ProfileView.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],

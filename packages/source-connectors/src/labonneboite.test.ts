@@ -28,6 +28,23 @@ describe("La Bonne Boîte", () => {
     await expect(c.search({ romes: ["M1805"] })).rejects.toBeInstanceOf(SourceUnavailableError);
   });
 
+  it("test des identifiants : demande un jeton neuf, sans recherche", async () => {
+    const urls: string[] = [];
+    let status = 200;
+    const c = new LaBonneBoiteClient({
+      clientId: "id",
+      clientSecret: "secret",
+      sleep: async () => {},
+      fetch: async (url) => (urls.push(url), status === 200 ? json({ access_token: "tok", expires_in: 1499 }) : json({ error: "invalid_scope" }, status)),
+    });
+    await c.healthCheck();
+    await c.healthCheck();
+    expect(urls).toHaveLength(2);
+    expect(urls.every((u) => u.includes("access_token"))).toBe(true);
+    status = 400;
+    await expect(c.healthCheck()).rejects.toThrow("HTTP 400");
+  });
+
   it("droits « api_labonneboitev2 search », adresse /recherche, autour du domicile, pagination", async () => {
     const calls: Array<{ url: string; body?: string }> = [];
     const c = new LaBonneBoiteClient({

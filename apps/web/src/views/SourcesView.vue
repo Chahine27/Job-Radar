@@ -17,10 +17,10 @@ const busy = ref(false);
 
 const ATS_LABELS: Record<string, string> = { greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", recruitee: "Recruitee" };
 const HELP: Record<string, string> = {
-  "france-travail": "Identifiants FRANCE_TRAVAIL_CLIENT_ID / SECRET dans .env.",
-  adzuna: "Crée une clé gratuite sur developer.adzuna.com, puis ADZUNA_APP_ID / ADZUNA_APP_KEY dans .env. Quota : 250 appels par jour.",
+  "france-travail": "Identifiants à ajouter dans Réglages (gratuit).",
+  adzuna: "Clé gratuite à ajouter dans Réglages. Quota : 250 appels par jour.",
   "company-careers": "Ajoute des entreprises ci-dessous.",
-  jooble: "Crée une clé gratuite sur fr.jooble.org/api/about, puis JOOBLE_API_KEY dans .env. Une collecte par jour au plus.",
+  jooble: "Clé gratuite à ajouter dans Réglages. Une collecte par jour au plus.",
 };
 
 async function load() {

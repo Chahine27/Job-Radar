@@ -29,6 +29,8 @@ Tout reste chez toi : la base de données (intégrée, sans Docker ni compte) et
 2. Double-clic sur **« Installer Job Radar.cmd »** et suis les étapes (15 à 30 minutes la première fois).
 3. Ensuite, lance Job Radar avec le raccourci **« Job Radar »** du Bureau.
 4. Au premier lancement, le site te fait créer ton compte puis déposer ton CV : l'IA de ton PC le lit et prépare ton profil, que tu relis.
+5. Menu **Réglages** : ajoute les clés gratuites des sites d'offres (France Travail, Adzuna, Jooble), de ton email et du temps de trajet.
+   Chaque carte explique comment obtenir la clé, avec un bouton **Tester**.
 
 Détails et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMENT.md).
 
@@ -38,7 +40,7 @@ Détails et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMENT.md).
 2. ✅ Installeur Windows (Node, Ollama, modèle d'IA, base de données intégrée sans Docker, raccourci).
 3. ✅ Premier lancement guidé : création du compte, dépôt du CV, profil construit par l'IA puis validé par toi.
 4. ✅ Moteur généraliste : compétences tirées du CV, sans filtre ni pénalité réservés aux métiers de l'informatique.
-5. ⏳ Assistant des clés (France Travail, Adzuna, Jooble, trajets, Gmail) directement dans le site.
+5. ✅ Page « Réglages » : clés France Travail, Adzuna, Jooble, Gmail et trajets directement dans le site, avec un bouton Tester, sans redémarrer.
 6. ⏳ Mode d'emploi et tests avec des profils variés.
 
 ## Données et vie privée

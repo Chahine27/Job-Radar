@@ -1,4 +1,4 @@
-import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm } from "./types";
+import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -58,6 +58,11 @@ export const api = {
     request<{ text: string; chars: number }>("POST", "/api/setup/cv-file", { fileName, data }),
   readCv: () => request<{ proposal: CvProposal; model: string; durationMs: number }>("POST", "/api/setup/read-cv"),
   finishSetup: (body: SetupForm) => request<ProfileRecord>("POST", "/api/setup/finish", body),
+
+  // Réglages : clés des services (écrites dans .env par le serveur).
+  settingsKeys: () => request<SettingsState>("GET", "/api/settings/keys"),
+  saveSettingsKeys: (values: Record<string, string>) => request<SettingsState>("PUT", "/api/settings/keys", values),
+  testSetting: (service: string) => request<{ ok: boolean; message: string }>("POST", `/api/settings/test/${encodeURIComponent(service)}`),
 
   getPrefs: () => request<Record<string, Record<string, unknown>>>("GET", "/api/prefs"),
   savePrefs: (page: string, value: Record<string, unknown>) => request<{ ok: true }>("PUT", `/api/prefs/${encodeURIComponent(page)}`, value),
