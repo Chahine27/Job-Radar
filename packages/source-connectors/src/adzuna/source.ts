@@ -98,7 +98,7 @@ export class AdzunaSource implements JobSource {
 
   async healthCheck(): Promise<SourceHealth> {
     try {
-      await this.search({ keywords: "développeur", maxResults: 1 });
+      await this.search({ keywords: "emploi", maxResults: 1 });
       return { status: "OK" };
     } catch (err) {
       if (err instanceof SourceUnavailableError) return { status: "SOURCE_UNAVAILABLE", message: err.message };

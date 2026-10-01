@@ -23,11 +23,12 @@ describe("parseCareersInput", () => {
 });
 
 describe("isTechTitle", () => {
-  it("garde les postes tech, écarte les autres", () => {
+  it("garde les postes pertinents pour un moteur d'offres généraliste, pas seulement les postes tech", () => {
     expect(isTechTitle("Développeur Front-end Vue.js")).toBe(true);
     expect(isTechTitle("Senior Software Engineer")).toBe(true);
-    expect(isTechTitle("Account Executive")).toBe(false);
-    expect(isTechTitle("Chargé de recrutement")).toBe(false);
+    expect(isTechTitle("Account Executive")).toBe(true);
+    expect(isTechTitle("Chargé de recrutement")).toBe(true);
+    expect(isTechTitle("   ")).toBe(false);
   });
 });
 
@@ -59,11 +60,12 @@ describe("CompanyCareersSource", () => {
     return json({}, 500);
   };
 
-  it("récupère chaque entreprise, filtre les postes non tech, isole les erreurs", async () => {
+  it("récupère chaque entreprise et garde aussi les postes non tech, tout en isolant les erreurs", async () => {
     const src = new CompanyCareersSource({ companies: async () => companies, fetch, ...noWait });
     const { jobs, errors } = await src.fetchAll();
     expect(jobs.map((j) => j.sourceJobId)).toEqual([
       "greenhouse:acme:1",
+      "greenhouse:acme:2",
       "lever:mirakl:l1",
       "ashby:alan:a1",
       "recruitee:lucca:9",

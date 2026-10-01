@@ -117,7 +117,7 @@ export class JoobleSource implements JobSource {
 
   /**
    * Toutes les recherches du profil en un minimum d'appels : une par zone,
-   * avec les mots-clés regroupés (« Développeur Vue.js, Développeur frontend »).
+   * avec les mots-clés regroupés (« gestionnaire, commercial, technicien, chargé de clientèle »).
    */
   async searchAll(queries: SearchParams[]): Promise<{ jobs: RawJob[]; errors: string[]; skipped?: string }> {
     this.key();

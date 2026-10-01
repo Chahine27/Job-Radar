@@ -44,7 +44,7 @@ Tu réponds UNIQUEMENT avec le JSON demandé. N'invente RIEN : une information a
 
 - nom_complet, email, telephone : recopiés tels qu'écrits dans le CV.
 - ville, code_postal : l'adresse du candidat (pas celle d'un employeur).
-- metier : le métier principal visé ou exercé, en quelques mots (« Assistant comptable », « Aide-soignante », « Développeur web »).
+- metier : le métier principal visé ou exercé, en quelques mots (ex. « Assistant comptable », « Aide-soignante », « Chargé de clientèle »).
 - intitules_recherche : 3 à 6 intitulés de poste à taper dans un moteur de recherche d'offres pour CE candidat, du plus proche au plus large
   (ex. pour une assistante comptable : « Assistant comptable », « Comptable », « Aide comptable », « Gestionnaire paie »).
   Pas d'intitulé de niveau supérieur à son expérience (pas de « Responsable » pour un débutant).

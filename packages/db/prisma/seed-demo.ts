@@ -31,13 +31,13 @@ type Demo = {
 
 const DEMOS: Demo[] = [
   {
-    key: "vue-node-villeurbanne",
-    title: "Développeur Full Stack Vue.js / Node.js H/F",
+    key: "gestion-commerciale-villeurbanne",
+    title: "Chargé de clientèle B2B",
     company: "Atelier Numérique",
     description:
-      "Au sein d'une équipe produit de 6 personnes, vous développerez notre application métier en Vue 3 et TypeScript, " +
-      "avec un backend Node.js exposant une API REST sur PostgreSQL. Déploiement Docker, GitLab CI.\n\n" +
-      "Profil : 2 ans d'expérience, débutant motivé accepté. 2 jours de télétravail par semaine.",
+      "Vous accompagnez les clients sur leur suivi de commande, la relance commerciale et la qualité de service. " +
+      "Rôle varié avec gestion des dossiers, relation client et coordination interne.\n\n" +
+      "Profil : 2 ans d'expérience, poste plus orienté gestion et relation client avec télétravail 2 jours par semaine.",
     contractType: "CDI",
     experienceText: "2 ans",
     experienceMinYrs: 2,
@@ -51,12 +51,12 @@ const DEMOS: Demo[] = [
     daysAgo: 0,
   },
   {
-    key: "java-spring-paris",
-    title: "Développeur Java Spring Boot",
+    key: "gestion-admin-paris",
+    title: "Gestionnaire administratif",
     company: "Banque Horizon",
     description:
-      "Maintenance et évolution d'applications métier en Java 17 / Spring Boot, front Angular. " +
-      "Méthodes agiles, revue de code, tests JUnit. 3 ans d'expérience souhaités.",
+      "Pilotage des dossiers administratifs, suivi des pièces, coordination avec les services internes et gestion des demandes clients. " +
+      "Bonne rigueur, sens du détail et capacité à gérer plusieurs sujets en parallèle.",
     contractType: "CDI",
     experienceText: "3 ans",
     experienceMinYrs: 3,
@@ -70,11 +70,11 @@ const DEMOS: Demo[] = [
     daysAgo: 1,
   },
   {
-    key: "react-ts-venissieux",
-    title: "Développeur Front-End React / TypeScript",
+    key: "assistance-comptabilite-venissieux",
+    title: "Assistant comptable",
     company: "LogiNord",
     description:
-      "Création d'interfaces en React et TypeScript, consommation d'API REST, tests Jest. Junior accepté.",
+      "Saisie comptable, suivi des factures, relances fournisseurs et préparation de documents pour la comptabilité. Junior accepté.",
     contractType: "CDI",
     experienceText: "Débutant accepté",
     experienceMinYrs: 0,
@@ -88,10 +88,10 @@ const DEMOS: Demo[] = [
     daysAgo: 2,
   },
   {
-    key: "dotnet-lyon",
-    title: "Développeur .NET / C# H/F",
+    key: "support-rh-lyon",
+    title: "Assistant RH",
     company: "Rhône Services",
-    description: "Développement d'API en C# .NET 8, SQL Server, Azure DevOps. Clean Architecture appréciée.",
+    description: "Suivi administratif des dossiers RH, gestion des absences, préparation des documents et appui aux équipes. Sens du service et rigueur.",
     contractType: "CDI",
     experienceText: "1 an",
     experienceMinYrs: 1,
@@ -105,10 +105,10 @@ const DEMOS: Demo[] = [
     daysAgo: 3,
   },
   {
-    key: "senior-react-paris",
-    title: "Développeur Senior React",
+    key: "commercial-vente-paris",
+    title: "Commercial terrain",
     company: "ScaleUp Paris",
-    description: "Vous avez 7 ans d'expérience minimum en React, TypeScript et GraphQL.",
+    description: "Prospection, développement du portefeuille clients et suivi des ventes. 7 ans d'expérience minimum dans un environnement commercial B2B.",
     contractType: "CDI",
     experienceText: "7 ans",
     experienceMinYrs: 7,
@@ -122,10 +122,10 @@ const DEMOS: Demo[] = [
     daysAgo: 1,
   },
   {
-    key: "vue-cdd-bron",
-    title: "Développeur Vue.js (CDD 6 mois)",
+    key: "logistique-bron",
+    title: "Coordinateur logistique",
     company: "Mairie Numérique",
-    description: "Refonte d'un portail en Vue 3 / Vuetify. CDD de 6 mois.",
+    description: "Organisation des livraisons, suivi des stocks et coordination avec les fournisseurs. Poste à temps plein, 1 an d'expérience souhaité.",
     contractType: "CDD",
     experienceText: "1 an",
     experienceMinYrs: 1,
@@ -139,10 +139,10 @@ const DEMOS: Demo[] = [
     daysAgo: 0,
   },
   {
-    key: "python-lyon",
-    title: "Développeur Python Django",
+    key: "finance-lyon",
+    title: "Assistant comptable / paie",
     company: "DataRhône",
-    description: "API en Python / Django, PostgreSQL, Kubernetes. 2 ans d'expérience.",
+    description: "Saisie comptable, suivi des paies et préparation des documents de fin de mois. 2 ans d'expérience.",
     contractType: "CDI",
     experienceText: "2 ans",
     experienceMinYrs: 2,
@@ -156,10 +156,10 @@ const DEMOS: Demo[] = [
     daysAgo: 4,
   },
   {
-    key: "fullstack-remote",
-    title: "Développeur Full Stack TypeScript (100 % télétravail)",
+    key: "support-remote",
+    title: "Chargé de support client (100 % télétravail)",
     company: "RemoteFirst",
-    description: "Stack Vue.js, NestJS, PostgreSQL, Docker. Télétravail complet. 2 à 4 ans d'expérience.",
+    description: "Accompagnement client, gestion des demandes, suivi administratif et satisfaction client. Télétravail complet. 2 à 4 ans d'expérience.",
     contractType: "CDI",
     experienceText: "2 à 4 ans",
     experienceMinYrs: 2,

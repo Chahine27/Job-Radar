@@ -98,7 +98,7 @@ function segments(line: string): string[] {
 }
 
 const ROLE =
-  /\b(developpeu(r|se)|developer|dev|engineer|ingenieur|programmeu(r|se)|full ?stack|front ?end|back ?end|frontend|backend|devops|integrat(eur|rice)|architecte|tech ?lead|data|web|mobile|logiciel|software|stagiaire|stage|alternance|alternant)\b|\b[hf] ?\/ ?[hf]\b/;
+  /\b(assistant|assistante|charg[eé] de|gestionnaire|commercial|commerciale|conseiller|conseill[èe]re|coordinateur|coordonnatrice|responsable|technicien|technicienne|chef(fe)?|manager|adjoint|adjointe|secr[ée]taire|comptable|vendeur|vendeuse|support|agent|agent de|logisticien|logisticienne|consultant|consultante|ing[ée]nieur|developpeu(r|se)|developer|dev|engineer|programmeu(r|se)|full ?stack|front ?end|back ?end|frontend|backend|devops|integrat(eur|rice)|architecte|tech ?lead|data|web|mobile|logiciel|software|stagiaire|stage|alternance|alternant)\b|\b[hf] ?\/ ?[hf]\b/;
 const SECTION = /^(qui sommes[- ]nous|notre|nos|votre|vos|pourquoi|ce que|le poste|la mission|les missions|missions|profil|avantages|process|a propos|description|about)\b/;
 
 /** Première ligne courte qui ressemble à un intitulé de poste (souvent la 1ʳᵉ ligne d'un copier-coller). */
@@ -115,7 +115,7 @@ function findTitle(lines: string[]): string | null {
   const text = lines.join("\n");
   const art = "(?:un|une|un\\(e\\)|un·e|un\\.e)";
   const roleWord =
-    "(?:[Dd][ée]veloppeu(?:r|se)|[Ii]ng[ée]nieur(?:e)?|[Dd]ev(?:eloper)?\\b|[Aa]rchitecte|[Ii]nt[ée]grat(?:eur|rice)|[Ff]ull ?[Ss]tack|[Tt]ech ?[Ll]ead|[Ll]ead [Dd]ev)";
+    "(?:[Aa]djoint(?:e)?|[Aa]ssistant(?:e)?|[Cc]harg(?:é|e) de|[Cc]ommercial(?:e)?|[Cc]onseiller(?:e)?|[Cc]oordinateur(?:rice)?|[Gg]estionnaire|[Rr]esponsable|[Tt]echnicien(?:ne)?|[Ii]ng[ée]nieur(?:e)?|[Dd][ée]veloppeu(?:r|se)|[Dd]ev(?:eloper)?\\b|[Aa]rchitecte|[Ii]nt[ée]grat(?:eur|rice)|[Ff]ull ?[Ss]tack|[Tt]ech ?[Ll]ead|[Ll]ead [Dd]ev)";
   const hf = "\\(\\s*[hf]\\s*\\/\\s*[hf]\\s*\\)";
   const m =
     text.match(/(?:intitul[ée] du poste|titre du poste|poste)\s*:\s*([^\n]{5,100})/i) ??

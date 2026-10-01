@@ -4,12 +4,13 @@ import { ATS_FETCHERS, type AtsPosting, type CompanyTarget } from "./ats";
 
 export const CAREERS_SOURCE = "company-careers";
 
-/** Ne garde que les postes techniques (une grande entreprise publie aussi des postes RH, ventes…). */
-const TECH_TITLE =
-  /(develop|dévelop|\bdev\b|engineer|ingenieur|ingénieur|full[\s-]?stack|front|back[\s-]?end|software|logiciel|\bweb\b|mobile|devops|\bsre\b|tech lead|programm|integrat|intégrat|\bqa\b|\bdata\b)/i;
+/** Les sources d'entreprise peuvent publier n'importe quel type de poste. On n'impose plus un filtre strictement technique. */
+const JOB_TITLE = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
 
 export function isTechTitle(title: string): boolean {
-  return TECH_TITLE.test(title);
+  const t = title.trim();
+  if (!t || t.length < 2 || t.length > 200 || !JOB_TITLE.test(t)) return false;
+  return true;
 }
 
 /**
