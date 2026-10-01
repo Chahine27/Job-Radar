@@ -218,7 +218,7 @@ export function indeedOffer(pane, mainText) {
   const firstReal = lines.findIndex((l) => l.length >= 5 && !INDEED_META.test(l) && !INDEED_APPLY.test(l));
   const title = firstReal >= 0 ? lines[firstReal] : null;
   const company = lines.slice(firstReal + 1, firstReal + 4).find((l) => l.length >= 2 && !INDEED_META.test(l) && !INDEED_APPLY.test(l)) ?? null;
-  // « CGI · 3.5 » (entreprise + note sur la même ligne) → « CGI »
+  // « Cegora · 3.5 » (entreprise + note sur la même ligne) → « Cegora »
   return { title, company: company ? company.replace(/\s*·.*$/, "").trim() || null : null, text: lines.join("\n") };
 }
 

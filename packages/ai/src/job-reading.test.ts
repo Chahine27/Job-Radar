@@ -65,7 +65,7 @@ describe("lecture d'une annonce par l'IA", () => {
   it("anti-invention : salaire, entreprise, compétence ou expérience absents du texte sont jetés", async () => {
     const invented = {
       ...GOOD,
-      entreprise: "Capgemini",
+      entreprise: "Sogetra",
       salaire_min: 45000,
       salaire_max: 50000,
       salaire_periode: "annuel",
@@ -97,7 +97,7 @@ describe("lecture d'une annonce par l'IA", () => {
 
   it("utilitaires : libellé et montant retrouvés dans le texte", () => {
     expect(appearsIn("Développeur Fullstack (H/F)", "DEVELOPPEUR FULLSTACK - Paris")).toBe(true);
-    expect(appearsIn("Capgemini", PAGE)).toBe(false);
+    expect(appearsIn("Sogetra", PAGE)).toBe(false);
     expect(amountIn(45000, "Salaire : 45 000 € par an")).toBe(true);
     expect(amountIn(45000, "45k€ brut")).toBe(true);
     expect(amountIn(45500, "45,5 K€")).toBe(true);

@@ -265,24 +265,6 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
         return (await this.list()).find((r) => r.source === source) ?? null;
       },
     },
-    companies: {
-      list: () => prisma.companyTarget.findMany({ orderBy: { name: "asc" } }),
-      async add(data) {
-        try {
-          return await prisma.companyTarget.create({ data });
-        } catch (err) {
-          if ((err as { code?: string }).code === "P2002") return null;
-          throw err;
-        }
-      },
-      async setEnabled(id, enabled) {
-        const r = await prisma.companyTarget.updateMany({ where: { id }, data: { enabled } });
-        return r.count ? prisma.companyTarget.findUnique({ where: { id } }) : null;
-      },
-      async remove(id) {
-        return (await prisma.companyTarget.deleteMany({ where: { id } })).count > 0;
-      },
-    },
     notifications: {
       async getSettings() {
         const row = await prisma.notificationSettings.findUnique({ where: { id: "singleton" } });

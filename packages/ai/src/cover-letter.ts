@@ -321,7 +321,7 @@ export function checkLetter(letter: string, kit: LetterKit, jobText: string, job
   if (kit.letterExample) {
     const known = `${kit.cvText}\n${jobText}\n${kit.header}\n${kit.signature}\n${kit.city}`.toLowerCase();
     const seen = new Set<string>();
-    // Mot avec majuscule au milieu d'une phrase (« chez Protectline », « votre CTO ») : sûrement un nom propre.
+    // Mot avec majuscule au milieu d'une phrase (« chez Veillis », « votre CTO ») : sûrement un nom propre.
     for (const m of kit.letterExample.matchAll(/(?<=[\p{Ll}'’] )(\p{Lu}[\p{L}\p{N}-]{2,})/gu)) {
       const word = m[1]!;
       if (seen.has(word) || known.includes(word.toLowerCase())) continue;
@@ -542,9 +542,9 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   const used = new Set(extractSkills(body, extraSkills));
   const forgotten = strengths.slice(0, 5).filter((x) => !used.has(x.id)).map((x) => `${x.skill} (CV : « ${x.proof.slice(0, 80)} »)`);
   if (forgotten.length >= 2) issues.push(`Atouts demandés par l'annonce et prouvés par le CV mais absents de la lettre : ${forgotten.slice(0, 3).join(" ; ")}.`);
-  // Technologie du CV attribuée au mauvais projet / à la mauvaise entreprise (ex. « microservices … projet parking »).
+  // Technologie du CV attribuée au mauvais projet / à la mauvaise entreprise (ex. « microservices … projet salles »).
   const entities = cvEntities(kit.cvText, extraSkills);
-  // Découpage en propositions (« …PostgreSQL et j'ai utilisé SQL sur Doc Chez Vous » = deux faits distincts).
+  // Découpage en propositions (« …PostgreSQL et j'ai utilisé SQL sur Agenda Santé » = deux faits distincts).
   const clauses = sentences.flatMap((x) => x.split(/;|\s(?:et|puis|mais)\s+(?=j['’]|je\s|nous\s)/i));
   for (const s of clauses) {
     const named = entities.filter((e) => s.toLowerCase().includes(e.name.toLowerCase()));

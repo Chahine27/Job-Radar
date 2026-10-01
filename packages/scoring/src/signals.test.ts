@@ -113,7 +113,7 @@ describe("contractFromTitle", () => {
 
 describe("expérience : l'ancienneté de l'entreprise n'est pas l'expérience demandée", () => {
   it("ignore « expérience de plus de 20 ans en la matière » (entreprise)", () => {
-    const text = "Disposant d'une expérience de plus de 20 ans en la matière, Protectline… Vous avez une expérience de 3 ans dans un poste similaire.";
+    const text = "Disposant d'une expérience de plus de 20 ans en la matière, Veillis… Vous avez une expérience de 3 ans dans un poste similaire.";
     expect(parseExperienceYears(text)).toEqual({ min: 3, max: null });
   });
 });

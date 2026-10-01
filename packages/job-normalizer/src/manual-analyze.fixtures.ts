@@ -1,6 +1,6 @@
-/** Vraies annonces publiques (29/09/2026), raccourcies en fin de page, pour régler la lecture automatique. */
+/** Annonces réelles (29/09/2026), noms d'entreprises remplacés par des noms inventés, raccourcies en fin de page, pour régler la lecture automatique. */
 
-export const HELLOWORK_STABILIS = `Développeur Java 21 - Spring Boot - Kafka - Finance H/F[Stabilis IT](https://www.hellowork.com/fr-fr/entreprises/fly-it-163827.html)
+export const HELLOWORK_NORDIA = `Développeur Java 21 - Spring Boot - Kafka - Finance H/F[Nordia Conseil](https://www.hellowork.com/fr-fr/entreprises/nordia-conseil-100001.html)
 Super recruteur
 
 * Paris - 75
@@ -37,8 +37,8 @@ Le profil recherché
 * Kafka (Confluent), applications conteneurisées, Jenkins, Maven, Datadog.
 * Services AWS ; GitLab apprécié.
 
-Bienvenue chez Stabilis IT
-Stabilis IT est une ESN à taille humaine, basée à Genève, qui place ses consultants sur des projets structurants chez de grands comptes et des acteurs publics en France.
+Bienvenue chez Nordia Conseil
+Nordia Conseil est une ESN à taille humaine, basée à Genève, qui place ses consultants sur des projets structurants chez de grands comptes et des acteurs publics en France.
 
 * Un vrai CDI : entre deux missions, vous restez salarié.
 * Une prime d'assiduité versée chaque mois en mission.
@@ -70,20 +70,20 @@ Recherches similaires
 * [Offre emploi Développeur Java](https://www.hellowork.com/fr-fr/emploi/metier_developpeur-java-jee.html)
 Analyser mon CVRésumer l'offre`;
 
-export const LINKEDIN_FELPS = `À propos de l’offre d’emploi
+export const LINKEDIN_ALTIS = `À propos de l’offre d’emploi
 
-Bienvenue chez Felps Group 👋 Une communauté d'experts passionnés, alliant leurs compétences pour propulser votre entreprise vers de nouveaux sommets. 🚀
+Bienvenue chez Altis Group 👋 Une communauté d'experts passionnés, alliant leurs compétences pour propulser votre entreprise vers de nouveaux sommets. 🚀
 
-🔒 Notre Expertise : Felps Group est une alliance de "Pure Players" composée de quatre Squads distinctes : Telecom, IT, Cybersécurité et Conduite du changement.
+🔒 Notre Expertise : Altis Group est une alliance de "Pure Players" composée de quatre Squads distinctes : Telecom, IT, Cybersécurité et Conduite du changement.
 
-👉🏼Chez Felps Group, nous croyons en la force de la diversité et de l'inclusion.
+👉🏼Chez Altis Group, nous croyons en la force de la diversité et de l'inclusion.
 
 Pour l'un de nos clients, nous recherchons un Développeur React senior (plus de 5 ans d'expérience) pour une mission à Paris 15e, avec un démarrage le 19 octobre. Vous êtes à l'aise avec TypeScript, la gestion d'état et les bonnes pratiques front (tests, performance, qualité de code). Envoyez votre CV et votre disponibilité avant le 6 octobre !`;
 
-export const LINKEDIN_WORLDGRID = `À propos de l’offre d’emploi
+export const LINKEDIN_VOLTANE = `À propos de l’offre d’emploi
 
-Worldgrid est un acteur majeur de la transition énergétique. Nous accompagnons les grands acteurs du secteur dans la transformation de leurs systèmes énergétiques grâce à des solutions technologiques innovantes.
-Rejoindre Worldgrid, c’est participer à des projets structurants pour la transformation du système énergétique et évoluer dans un environnement technologique exigeant.
+Voltane est un acteur majeur de la transition énergétique. Nous accompagnons les grands acteurs du secteur dans la transformation de leurs systèmes énergétiques grâce à des solutions technologiques innovantes.
+Rejoindre Voltane, c’est participer à des projets structurants pour la transformation du système énergétique et évoluer dans un environnement technologique exigeant.
 
 
 Description du poste
@@ -110,8 +110,8 @@ Compétences attendues
 • Maîtrise de Vu.JS / TypeScript
 • Bonne connaissance des bases de données SQL`;
 
-export const HELLOWORK_ALCADIA = `
-Développeur Full Stack Confirmé H/F[Alcadia Entreprises](https://www.hellowork.com/fr-fr/entreprises/alcadia-entreprises-181695.html)
+export const HELLOWORK_BELLERIVE = `
+Développeur Full Stack Confirmé H/F[Bellerive Entreprises](https://www.hellowork.com/fr-fr/entreprises/bellerive-entreprises-100002.html)
 Super recruteur
 
 * Paris - 75
@@ -141,8 +141,8 @@ Dans le cadre du développement des activités de notre client, nous recherchons
 Voir moins
 Le profil recherché
 De formation supérieure en informatique (Bac +3 à Bac +5), vous justifiez d'une expérience significative en développement Full Stack.
-Bienvenue chez Alcadia Entreprises
-Société d'ingénierie, créée à Lyon en 1998, ALCADIA est un partenaire majeur des acteurs et donneurs d'ordre des secteurs du nucléaire et du spatial.
+Bienvenue chez Bellerive Entreprises
+Société d'ingénierie, créée à Lyon en 1998, BELLERIVE est un partenaire majeur des acteurs et donneurs d'ordre des secteurs du nucléaire et du spatial.
 Publiée le 29/09/2026 - Réf : 4366599/30413527 224-S PARIS
 Envoyez votre candidature
 dès maintenant !
@@ -158,8 +158,8 @@ Télétravail partiel
 Voir l’offre
 `;
 
-export const HELLOWORK_ELAP = `
-Developpeur PHP - Paris H/F[ELAP](https://www.hellowork.com/fr-fr/entreprises/elap-140877.html)
+export const HELLOWORK_KOVAL = `
+Developpeur PHP - Paris H/F[KOVAL](https://www.hellowork.com/fr-fr/entreprises/koval-100003.html)
 
 * Paris - 75
 * CDI
@@ -188,7 +188,7 @@ Le profil recherché
 Votre profil
 Nous recherchons une Développeuse ou un Développeur PHP souhaitant rejoindre une équipe de Recherche et Développement. Le poste est ouvert aux jeunes diplômés comme aux candidats disposant d'une première expérience.
 
-Bienvenue chez ELAP
+Bienvenue chez KOVAL
 ESABORA, désormais membre du Groupe Élap, conçoit et édite des solutions logicielles destinées aux organisations publiques.
 ESABORA réunit une équipe de 14 personnes.
 
@@ -214,9 +214,9 @@ Télétravail partiel
 Voir l’offre
 `;
 
-export const INDEED_PROTECTLINE = `
+export const INDEED_VEILLIS = `
 Développeur Full Stack confirmé - Noisy le Grand - H/F
-[PROTECTLINE](https://fr.indeed.com/cmp/Protectline-2?campaignid=mobvjcmp&from=mobviewjob)
+[VEILLIS](https://fr.indeed.com/cmp/Veillis-2?campaignid=mobvjcmp&from=mobviewjob)
 •
 93160 Noisy-le-Grand • Télétravail partiel
 •
@@ -228,10 +228,10 @@ Prise en charge du transport quotidien, RTT, Travail à domicile occasionnel, Pa
 CDI
 Trouvé sur Télétravail partiel in 1 Place Jean Baptiste Clement, 93160 Noisy-le-Grand
 Description du poste
-Protectline est un spécialiste de la Télésurveillance des Biens (TSB). Disposant d'une expérience de plus de 20 ans en la matière, elle est depuis décembre 2018 au service de la sécurité des clients d'Orange et de Groupama, qui sont coactionnaires de Protectline
+Veillis est un spécialiste de la Télésurveillance des Biens (TSB). Disposant d'une expérience de plus de 20 ans en la matière, elle est depuis décembre 2018 au service de la sécurité des clients de deux grands groupes, qui sont coactionnaires de Veillis
 Entreprise certifiée "Great Place to Work" en 2026.
 Au sein du Domaine SI en charge des applicatifs métiers, vous rejoindrez une équipe pluridisciplinaire en charge d’un périmètre constitué de briques open source (KeyCloak, WSO2, Camunda), de micro-frontends, micro-services déployées sur le cloud AWS.
-A ce titre, Protectline recherche un Développeur FullStack confirmé pour :
+A ce titre, Veillis recherche un Développeur FullStack confirmé pour :
 - Concevoir, développer et tester les nouvelles fonctionnalités à partir des user stories rédigées par le Product Owner,
 De Formation Ingénieur en Informatique (Bac+5) avec une expérience de 10 ans dans un poste similaire.
 
@@ -254,8 +254,8 @@ Expérience:
 Lieu du poste : Télétravail hybride (93160 Noisy-le-Grand)
 `;
 
-export const WTTJ_OPEN = `
-[Open](https://www.welcometothejungle.com/fr/companies/open)
+export const WTTJ_ORBIS = `
+[Orbis](https://www.welcometothejungle.com/fr/companies/orbis)
 Développeur Java Full Stack (H/F)
 Résumé du poste
 CDI
@@ -269,13 +269,13 @@ Méthode Agile
 Java
 React
 Angular
-[Postuler](https://open.wd103.myworkdayjobs.com/OPEN/job/Levallois-Perret/Dveloppeur-Java-Full-Stack--H-F-_R13485)
+[Postuler](https://orbis.wd103.myworkdayjobs.com/ORBIS/job/Levallois-Perret/Dveloppeur-Java-Full-Stack--H-F-_R13485)
 Sauvegarder
 il y a 18 heures
 Partager
-[Open](https://www.welcometothejungle.com/fr/companies/open)
+[Orbis](https://www.welcometothejungle.com/fr/companies/orbis)
 Cette offre vous tente ?
-[Postuler](https://open.wd103.myworkdayjobs.com/OPEN/job/Levallois-Perret/Dveloppeur-Java-Full-Stack--H-F-_R13485)
+[Postuler](https://orbis.wd103.myworkdayjobs.com/ORBIS/job/Levallois-Perret/Dveloppeur-Java-Full-Stack--H-F-_R13485)
 Sauvegarder
 Questions et réponses sur l'offre
 Le télétravail est-il possible pour ce poste ?
@@ -292,5 +292,5 @@ Dans le cadre de l’acquisition de nouveaux marchés, nous recherchons des Conc
 
 * Un management de proximité : un manager à l’écoute et un Chargé Ressources Humaines dédié qui vous accompagnent tout au long de votre carrière chez OPEN.
 Code Rec : SHA22809
-Qu’attendez-vous pour être Open ?
+Qu’attendez-vous pour être Orbis ?
 `;

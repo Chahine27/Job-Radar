@@ -12,9 +12,7 @@ import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, ensureTr
 import { scoreJob, scoringInputFromJob } from "@job-radar/scoring";
 import { ProfileSchema } from "@job-radar/shared";
 import {
-  type AtsKind,
   AdzunaSource,
-  CompanyCareersSource,
   FranceTravailSource,
   JOOBLE_DEFAULTS,
   JoobleSource,
@@ -125,10 +123,6 @@ const runner = new CollectionRunner({
     liveSource(() => keyed.franceTravail),
     liveSource(() => keyed.adzuna),
     liveSource(() => keyed.jooble),
-    new CompanyCareersSource({
-      companies: async () =>
-        (await prisma.companyTarget.findMany()).map((c) => ({ ...c, ats: c.ats as AtsKind })),
-    }),
   ],
   collect: prismaCollect(prisma, env.CRON_INTERVAL_MINUTES),
   // Après chaque collecte : annonce les nouvelles offres compatibles.

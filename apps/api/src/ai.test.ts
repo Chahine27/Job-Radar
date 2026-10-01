@@ -179,7 +179,7 @@ describe("offres Adzuna / Jooble (simple extrait)", () => {
       id: "j-adz",
       contentHash: "j-adz",
       title: "Développeur junior Vue.js / Java F/H",
-      company: "TALAN",
+      company: "TERRALIS",
       sources: [{ source: "adzuna", url: "https://www.adzuna.fr/land/ad/5412345678?se=abc&v=XYZ" }],
       fullTextAt: null,
     });
@@ -206,7 +206,7 @@ describe("offres Adzuna / Jooble (simple extrait)", () => {
     const { req } = await withAdzuna();
     const byId = (await req("POST", "/api/jobs/find-abridged", { url: "https://www.adzuna.fr/details/5412345678?utm=x" })).json();
     expect(byId.job).toMatchObject({ id: "j-adz", sources: ["adzuna"] });
-    const byTitle = (await req("POST", "/api/jobs/find-abridged", { title: "DÉVELOPPEUR JUNIOR VUE.JS / JAVA (H/F)", company: "Talan" })).json();
+    const byTitle = (await req("POST", "/api/jobs/find-abridged", { title: "DÉVELOPPEUR JUNIOR VUE.JS / JAVA (H/F)", company: "Terralis" })).json();
     expect(byTitle.job?.id).toBe("j-adz");
     const none = (await req("POST", "/api/jobs/find-abridged", { url: "https://www.adzuna.fr/details/999999999", title: "Autre", company: "X" })).json();
     expect(none.job).toBeNull();

@@ -13,7 +13,7 @@ aucun abonnement.
 
 ## Ce que fait Job Radar
 
-- **Collecte les offres** toute seule : France Travail (et ses partenaires), Adzuna, Jooble, pages carrières d'entreprises.
+- **Collecte les offres** toute seule : France Travail (et ses partenaires), Adzuna, Jooble.
 - **Ajoute une offre vue ailleurs** (LinkedIn, Indeed, HelloWork…) en un clic avec l'extension du navigateur.
 - **Note chaque offre** par rapport à ton profil (compétences, expérience, contrat, salaire, lieu, temps de trajet) et explique la note.
 - **Fait relire les meilleures offres par l'IA** de ton PC, qui lit l'annonce complète et signale les pièges.

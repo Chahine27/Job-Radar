@@ -15,7 +15,7 @@ describe("extension — lecture de la page d'une offre", () => {
         {
           "@type": "JobPosting",
           title: "Développeur Java Full Stack (H/F)",
-          hiringOrganization: { "@type": "Organization", name: "Open" },
+          hiringOrganization: { "@type": "Organization", name: "Orbis" },
           jobLocation: { address: { addressLocality: "Levallois-Perret", postalCode: "92300" } },
           employmentType: "CDI",
           baseSalary: { currency: "EUR", value: { minValue: 45000, maxValue: 55000, unitText: "YEAR" } },
@@ -26,7 +26,7 @@ describe("extension — lecture de la page d'une offre", () => {
     const p = buildPayload({ ...base, jsonLd: ["{ pas du json", jsonLd] });
     expect(p.hints).toEqual({
       title: "Développeur Java Full Stack (H/F)",
-      company: "Open",
+      company: "Orbis",
       location: "Levallois-Perret (92)",
       contractType: "CDI",
       salaryMin: 45000,
@@ -39,13 +39,13 @@ describe("extension — lecture de la page d'une offre", () => {
     const p = buildPayload({
       ...base,
       host: "www.linkedin.com",
-      pageTitle: "(3) Développeur Fullstack TypeScript | Kolecto | LinkedIn",
+      pageTitle: "(3) Développeur Fullstack TypeScript | Lumea | LinkedIn",
       descriptionText: LONG,
       mainText: "Autres offres qui pourraient vous intéresser… (ne doit pas être pris)",
     });
     expect(p.hints.title).toBe("Développeur Fullstack TypeScript");
-    expect(p.hints.company).toBe("Kolecto");
-    expect(p.text.startsWith("Développeur Fullstack TypeScript\nKolecto")).toBe(true);
+    expect(p.hints.company).toBe("Lumea");
+    expect(p.text.startsWith("Développeur Fullstack TypeScript\nLumea")).toBe(true);
     expect(p.text).not.toContain("Autres offres");
   });
 
@@ -68,13 +68,13 @@ describe("extension — lecture de la page d'une offre", () => {
     expect(htmlToText("a<br>b&nbsp;c &#233;")).toBe("a\nb c é");
   });
 
-  it("HelloWork (CGI) : description complète de la fiche + haut de page (lieu, contrat, télétravail)", () => {
+  it("HelloWork (Cegora) : description complète de la fiche + haut de page (lieu, contrat, télétravail)", () => {
     const description =
       "<p>Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H</p><p>Description de poste</p><p>Nous rejoindre, c'est intégrer une communauté technique animée.</p><ul><li>Maîtrise de JavaScript, idéalement Node.js</li><li>La connaissance de Playwright est indispensable</li></ul><p>Flexibilité grâce à notre accord télétravail (jusqu'à 3 jours de télétravail par semaine).</p>";
     const jsonLd = JSON.stringify({
       "@type": "JobPosting",
       title: "Développeur Javascript - Automaticien de Tests Playwright H/F",
-      hiringOrganization: { name: "CGI" },
+      hiringOrganization: { name: "Cegora" },
       jobLocation: { address: { postalCode: "75000", addressRegion: "Île-de-France" } },
       employmentType: "FULL_TIME",
       description,
@@ -84,7 +84,7 @@ describe("extension — lecture de la page d'une offre", () => {
       "L'entreprise",
       "Postuler",
       "Développeur Javascript - Automaticien de Tests Playwright H/F",
-      "CGI",
+      "Cegora",
       "Paris - 75 · CDI",
       "Estimation Hellowork → 37 900 - 65 000 € / an",
       "ESN",
@@ -118,33 +118,33 @@ describe("extension — lecture de la page d'une offre", () => {
 describe("Indeed : liste des offres + offre affichée à droite", () => {
   const indeed = { ...base, host: "fr.indeed.com", url: "https://fr.indeed.com/jobs?q=d%C3%A9veloppeur&l=Paris&vjk=0a1b2c3d4e5f6a7b" };
 
-  it("texte de toute la page : seulement l'offre affichée (CGI), sans la liste ni le pied de page", () => {
+  it("texte de toute la page : seulement l'offre affichée (Cegora), sans la liste ni le pied de page", () => {
     const p = buildPayload({ ...indeed, mainText: INDEED_SEARCH_PAGE });
     expect(p.hints.title).toBe("Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H");
-    expect(p.hints.company).toBe("CGI");
+    expect(p.hints.company).toBe("Cegora");
     expect(p.url).toBe("https://fr.indeed.com/viewjob?jk=0a1b2c3d4e5f6a7b");
-    expect(p.text.startsWith("Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H\nCGI")).toBe(true);
+    expect(p.text.startsWith("Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H\nCegora")).toBe(true);
     expect(p.text).toContain("La connaissance de Playwright est indispensable");
-    expect(p.text).not.toMatch(/Assystem|BNP Paribas|Webnet|Trier par|Hiring Lab|Signaler l'offre|développeur web junior/);
+    expect(p.text).not.toMatch(/Ingénova|Banque Horizon|Webnova|Trier par|Hiring Lab|Signaler l'offre|développeur web junior/);
 
     const a = analyzeJobText(p.text);
     expect(a.title).toBe("Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H");
-    expect(a.company).toBe("CGI");
+    expect(a.company).toBe("Cegora");
     expect(a.location).toMatch(/^Paris/);
     expect(a.contractType).toBe("CDI");
     expect(a.skills).toEqual(expect.arrayContaining(["JavaScript", "Node.js", "Playwright"]));
   });
 
   it("panneau repéré dans la page : utilisé tel quel (entreprise au nom long)", () => {
-    const pane = "Développeur Full Stack Senior / Expert – Java & Kafka (H/F)\nECM - Engineering Conception Maintenance\n75017 Paris\nCDI\nPostuler maintenant\nDescription du poste\n" + LONG + "\nSignaler l'offre\nHiring Lab";
+    const pane = "Développeur Full Stack Senior / Expert – Java & Kafka (H/F)\nMéca Conception\n75017 Paris\nCDI\nPostuler maintenant\nDescription du poste\n" + LONG + "\nSignaler l'offre\nHiring Lab";
     const p = buildPayload({ ...indeed, paneText: pane, mainText: INDEED_SEARCH_PAGE });
-    expect(p.hints).toMatchObject({ title: "Développeur Full Stack Senior / Expert – Java & Kafka (H/F)", company: "ECM - Engineering Conception Maintenance" });
+    expect(p.hints).toMatchObject({ title: "Développeur Full Stack Senior / Expert – Java & Kafka (H/F)", company: "Méca Conception" });
     expect(p.text).not.toContain("Hiring Lab");
   });
 
   it("panneau avec « entreprise · note » sur une ligne", () => {
-    const pane = "Développeur(euse) JavaScript F/H\nCGI · 3.5\nParis (75)\nCDI\nPostuler maintenant\nDescription du poste\n" + LONG;
-    expect(buildPayload({ ...indeed, paneText: pane }).hints.company).toBe("CGI");
+    const pane = "Développeur(euse) JavaScript F/H\nCegora · 3.5\nParis (75)\nCDI\nPostuler maintenant\nDescription du poste\n" + LONG;
+    expect(buildPayload({ ...indeed, paneText: pane }).hints.company).toBe("Cegora");
   });
 
   it("adresse de l'offre : numéro « vjk » ou « jk », sinon adresse inchangée", () => {
@@ -154,7 +154,7 @@ describe("Indeed : liste des offres + offre affichée à droite", () => {
 
   it("autre site : aucun changement", () => {
     const p = buildPayload({ ...base, mainText: INDEED_SEARCH_PAGE });
-    expect(p.text).toContain("Assystem");
+    expect(p.text).toContain("Ingénova");
   });
 });
 

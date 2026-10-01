@@ -129,7 +129,7 @@ model JobSourceLink {
   id           String   @id @default(cuid())
   jobId        String
   job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  /// "france-travail", "adzuna", "ats:greenhouse:acme"...
+  /// "france-travail", "adzuna", "jooble", "manual"...
   source       String
   sourceJobId  String
   sourceUrl    String
@@ -280,17 +280,6 @@ model ApiQuota {
   used       Int       @default(0)
   lastCallAt DateTime?
   updatedAt  DateTime  @updatedAt
-}
-
-model CompanyTarget {
-  id       String  @id @default(cuid())
-  name     String
-  /// greenhouse | lever | ashby | recruitee | workable | personio
-  ats      String
-  boardKey String
-  enabled  Boolean @default(true)
-
-  @@unique([ats, boardKey])
 }
 
 // ───────────── Notifications ─────────────

@@ -133,7 +133,7 @@ describe("relecture : titre du poste", () => {
   });
 });
 
-describe("relecture : cas Worldgrid (lettre envoyée sans relecture)", () => {
+describe("relecture : cas Voltane (lettre envoyée sans relecture)", () => {
   it("« apprendre Python » alors que Python est dans le CV → signalé ; « Vu.js » corrigé", async () => {
     const kit = { ...KIT, cvText: `${KIT.cvText} Autres : Python`, letterExample: "" };
     const w = checkLetter("Je souhaite apprendre Python pour concevoir des applications.", kit, "Développeur Python/Vu.js");
@@ -147,11 +147,11 @@ describe("relecture : cas Worldgrid (lettre envoyée sans relecture)", () => {
   });
 });
 
-describe("pertinence (cas Worldgrid : paragraphe hors sujet)", () => {
+describe("pertinence (cas Voltane : paragraphe hors sujet)", () => {
   it("technos du CV absentes de l'annonce citées dans la lettre → signalées", () => {
     const kit = { ...KIT, cvText: "Vue.js, TypeScript, Java Spring Boot, React, .NET, Flutter, Docker, PostgreSQL. ".repeat(4), letterExample: "" };
     const job = "Développeur Web Python / Vue.js : API REST, SQL, Agile.";
-    const w = checkLetter("Pour Doc Chez Vous, j'ai utilisé React et .NET 8 ; pour le parking, Flutter.", kit, job, "Développeur Python / Vu.js");
+    const w = checkLetter("Pour Agenda Santé, j'ai utilisé React et .NET 8 ; pour les salles, Flutter.", kit, job, "Développeur Python / Vu.js");
     expect(w.some((x) => x.includes(".NET") && x.includes("Flutter") && x.includes("absents de l'annonce"))).toBe(true);
     expect(checkLetter("J'ai migré un module Vue 2 vers Vue 3 en TypeScript.", kit, job + " TypeScript")).toEqual([]);
   });
@@ -221,7 +221,7 @@ describe("relecture automatique (cas : Go / gRPC / NestJS)", () => {
 describe("atouts / manques et formulation humaine (cas n°2)", () => {
   const cv = [
     "Compétences : Java, Spring Boot, Vue.js, React, Node.js, PostgreSQL, Docker, JWT",
-    "CodeHub : plateforme de partage de code en React et Node.js, authentification JWT avec Auth0, base PostgreSQL, déploiement Docker Compose",
+    "Codalia : plateforme de partage de code en React et Node.js, authentification JWT avec Auth0, base PostgreSQL, déploiement Docker Compose",
     "ACMEPAY : API REST en Java Spring Boot, microservices",
   ].join("\n");
   const job = "Microservices en Go (Golang), gRPC, Node.js, React, PostgreSQL, authentification OAuth2 / JWT, Docker, Kubernetes.";
@@ -229,7 +229,7 @@ describe("atouts / manques et formulation humaine (cas n°2)", () => {
   it("calcule les atouts (avec la ligne concrète du CV) et les manques, dans l'ordre de l'annonce", () => {
     const { strengths, gaps } = strengthsAndGaps(job, cv);
     const auth = strengths.find((x) => x.id === "auth");
-    expect(auth?.proof).toMatch(/^CodeHub/);
+    expect(auth?.proof).toMatch(/^Codalia/);
     expect(strengths.map((x) => x.id)).toEqual(expect.arrayContaining(["microservices", "react", "postgresql", "docker"]));
     expect(strengths[0]?.id).toBe("microservices");
     expect(gaps).toEqual(expect.arrayContaining(["Go", "gRPC"]));
@@ -251,7 +251,7 @@ describe("atouts / manques et formulation humaine (cas n°2)", () => {
     const prompt = buildLetterPrompt({ ...JOB, description: job }, { ...KIT, cvText: cv });
     expect(prompt.indexOf("ATOUTS VÉRIFIÉS")).toBeGreaterThanOrEqual(0);
     expect(prompt.indexOf("MANQUES")).toBeLessThan(prompt.indexOf("CV DU CANDIDAT"));
-    expect(prompt).toMatch(/JWT \/ OAuth ← CV : « CodeHub/);
+    expect(prompt).toMatch(/JWT \/ OAuth ← CV : « Codalia/);
   });
 
   it("repère les « J'ai » en série, les clichés, la techno répétée et les atouts oubliés", () => {
@@ -283,8 +283,8 @@ describe("vérité projet ↔ techno, entreprise nommée, « j'ai » (cas n°3)"
     "- Tests des services via Postman et vérification des données en base PostgreSQL",
     "",
     "PROJETS",
-    "- CodeHub — Projet de fin d'études : réseau social de partage de code. React, Node JS, PostgreSQL, Auth0 / JWT.",
-    "- Réservation de parking — Projet d'architecture logicielle : Java / Spring Boot, Flutter, Docker Compose.",
+    "- Codalia — Projet de fin d'études : réseau social de partage de code. React, Node JS, PostgreSQL, Auth0 / JWT.",
+    "- Réservation de salles — Projet d'architecture logicielle : Java / Spring Boot, Flutter, Docker Compose.",
     "",
     "COMPÉTENCES",
     "- Architecture : API REST, Clean Architecture, Microservices",
@@ -295,18 +295,18 @@ describe("vérité projet ↔ techno, entreprise nommée, « j'ai » (cas n°3)"
   it("lit les projets et les entreprises du CV", () => {
     const e = cvEntities(cv);
     const acme = e.find((x) => x.name === "ACMEPAY");
-    const parking = e.find((x) => x.name === "Réservation de parking");
+    const parking = e.find((x) => x.name === "Réservation de salles");
     expect(e.filter((x) => x.name === "ACMEPAY")).toHaveLength(1);
     expect([...(acme?.skills ?? [])]).toEqual(expect.arrayContaining(["vue", "spring", "postgresql"]));
     expect(parking?.skills.has("microservices")).toBe(false);
     expect(parking?.skills.has("docker")).toBe(true);
   });
 
-  it("repère « microservices … projet de réservation de parking » et une entreprise non nommée", () => {
-    const issues = findLetterIssues("J'ai pratiqué les concepts de Microservices, comme lors du projet de réservation de parking. Sur CodeHub, l'authentification reposait sur JWT et PostgreSQL.", kit, job);
-    expect(issues[0]).toMatch(/Microservices n'est pas écrit pour Réservation de parking/);
+  it("repère « microservices … projet de réservation de salles » et une entreprise non nommée", () => {
+    const issues = findLetterIssues("J'ai pratiqué les concepts de Microservices, comme lors du projet de réservation de salles. Sur Codalia, l'authentification reposait sur JWT et PostgreSQL.", kit, job);
+    expect(issues[0]).toMatch(/Microservices n'est pas écrit pour Réservation de salles/);
     expect(issues.join("\n")).toMatch(/Nomme l'entreprise \(ACMEPAY\)/);
-    expect(issues.join("\n")).not.toMatch(/pas écrit pour CodeHub/);
+    expect(issues.join("\n")).not.toMatch(/pas écrit pour Codalia/);
   });
 
   it("compte les « j'ai » de toute la lettre et les nouvelles phrases creuses", () => {
@@ -319,10 +319,10 @@ describe("vérité projet ↔ techno, entreprise nommée, « j'ai » (cas n°3)"
 });
 
 describe("pas de fausse alerte", () => {
-  const cv = "09/2023 – 09/2025 : Développeur — Alternance · ACMEPAY\n- Interfaces en Vue.js, données en base PostgreSQL\n\n- CodeHub — Projet : React, Node JS.\n- Doc Chez Vous — Projet : .NET 8, SQL Server.";
+  const cv = "09/2023 – 09/2025 : Développeur — Alternance · ACMEPAY\n- Interfaces en Vue.js, données en base PostgreSQL\n\n- Codalia — Projet : React, Node JS.\n- Agenda Santé — Projet : .NET 8, SQL Server.";
   const kit = { ...KIT, cvText: cv };
   it("deux faits dans une phrase, chacun à sa place ; manque avoué franchement", () => {
-    const all = findLetterIssues("Chez ACMEPAY, j'ai développé des écrans en Vue.js et j'ai utilisé React sur CodeHub. J'ai vérifié des données en base PostgreSQL et j'ai utilisé SQL sur Doc Chez Vous. Je n'ai pas encore utilisé Go (Golang) ; mes connaissances en Java m'aideront.", kit, "Vue.js, React, Go (Golang).").join("\n");
+    const all = findLetterIssues("Chez ACMEPAY, j'ai développé des écrans en Vue.js et j'ai utilisé React sur Codalia. J'ai vérifié des données en base PostgreSQL et j'ai utilisé SQL sur Agenda Santé. Je n'ai pas encore utilisé Go (Golang) ; mes connaissances en Java m'aideront.", kit, "Vue.js, React, Go (Golang).").join("\n");
     expect(all).not.toMatch(/n'est pas écrit pour/);
     expect(all).not.toMatch(/Go.*n'est pas dans le CV/);
   });
@@ -333,8 +333,8 @@ describe("règles du candidat (cas Solvia)", () => {
     "09/2023 – 09/2025 : Développeur Frontend — Alternance · ACMEPAY",
     "- Création de 6 écrans de gestion de la fraude en Vue.js, migration Vue 3 en TypeScript",
     "",
-    "- CodeHub — Projet : React, Node JS, PostgreSQL.",
-    "- Doc Chez Vous — Projet : Flutter, Docker.",
+    "- Codalia — Projet : React, Node JS, PostgreSQL.",
+    "- Agenda Santé — Projet : Flutter, Docker.",
   ].join("\n");
   const kit = {
     ...KIT,
@@ -380,7 +380,7 @@ describe("règles du candidat (cas Solvia)", () => {
   });
 
   it("la conclusion de l'IA est remplacée par le dernier paragraphe fixe, avec le nom de l'entreprise", async () => {
-    const draft = { correspondances: [], objet: "Candidature au poste de Développeur Fullstack", paragraphes: ["Chez ACMEPAY, j'ai créé 6 écrans en Vue.js.", "Sur CodeHub, j'ai travaillé avec React et Node JS, et PostgreSQL.", "Je serais ravi de vous rencontrer en entretien."] };
+    const draft = { correspondances: [], objet: "Candidature au poste de Développeur Fullstack", paragraphes: ["Chez ACMEPAY, j'ai créé 6 écrans en Vue.js.", "Sur Codalia, j'ai travaillé avec React et Node JS, et PostgreSQL.", "Je serais ravi de vous rencontrer en entretien."] };
     const client = new OllamaClient({ fetch: async () => json({ message: { content: JSON.stringify(draft) } }) });
     const { content } = await writeCoverLetter(client, { ...JOB, company: "Solvia", description: job }, kit);
     expect(content).not.toContain("vous rencontrer en entretien");

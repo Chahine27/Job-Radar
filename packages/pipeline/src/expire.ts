@@ -28,6 +28,7 @@ export function linkVerdict(
     case "france-travail":
       if (unseenDays < EXPIRY.ftUnseenDays) return "online";
       return ftOnline === false ? "gone" : ftOnline === true ? "online" : "unknown";
+    // Anciennes offres des pages carrières (fonction retirée) : plus jamais revues, elles expirent seules.
     case "company-careers":
       return unseenDays >= EXPIRY.careersUnseenDays ? "gone" : "online";
     case "adzuna":

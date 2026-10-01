@@ -159,7 +159,7 @@ function findCompany(text: string, lines: string[], title: string | null): strin
   if (after && after.split(/\s+/).length <= 5 && /^[A-ZÀ-Ý0-9]/.test(after) && !ROLE.test(normalizeText(after)) && !/[:.?!]/.test(after)) {
     count.set(after, (count.get(after) ?? 0) + 2);
   }
-  // « PROTECTLINE » (en-tête) et « Protectline » (texte) = même entreprise : on garde l'écriture la plus lisible.
+  // « VEILLIS » (en-tête) et « Veillis » (texte) = même entreprise : on garde l'écriture la plus lisible.
   const groups = new Map<string, { total: number; forms: Map<string, number> }>();
   for (const [name, n] of count) {
     const key = comparable(name);

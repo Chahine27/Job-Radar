@@ -4,8 +4,6 @@ export * from "./france-travail/schema";
 export * from "./france-travail/source";
 export * from "./france-travail/sample";
 export * from "./adzuna/source";
-export * from "./careers/ats";
-export * from "./careers/source";
 export * from "./labonneboite";
 export * from "./jooble";
 export * from "./romeo";

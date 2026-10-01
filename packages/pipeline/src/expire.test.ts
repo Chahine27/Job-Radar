@@ -15,7 +15,7 @@ describe("expiration des offres", () => {
     expect(linkVerdict(link(8), job(10), NOW)).toBe("unknown");
   });
 
-  it("sites carrières : absente de la page carrières depuis 2 jours → retirée", () => {
+  it("anciennes offres des pages carrières (fonction retirée) : retirées après 2 jours", () => {
     const link = (d: number) => ({ source: "company-careers", sourceJobId: "x", lastSeenAt: daysAgo(d) });
     expect(linkVerdict(link(1), job(5), NOW)).toBe("online");
     expect(linkVerdict(link(2), job(5), NOW)).toBe("gone");

@@ -1,5 +1,5 @@
-// Copie réelle (raccourcie) de ce que l'extension relevait sur une page de recherche Indeed :
-// la liste des offres à gauche, puis l'offre affichée à droite (CGI).
+// Copie réelle (raccourcie, noms d'entreprises inventés) de ce que l'extension relevait sur une page de recherche Indeed :
+// la liste des offres à gauche, puis l'offre affichée à droite (Cegora).
 export const INDEED_SEARCH_PAGE = `Emplois développeur (Paris (75))
 
 Passer au contenu principal
@@ -22,33 +22,33 @@ Emplois développeur (Paris (75))
 Trier par :
 pertinence - date
 Développeur Full Stack H/F
-Assystem
+Ingénova
 92400 Courbevoie
 53 000 € par an
 CDI
 Consultez les offres d'emploi similaires de cet employeur
 Développeur IT H/F
-BNP Paribas
+Banque Horizon
 Boulogne-Billancourt (92)
 CDI +1
 Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H
 Candidature simplifiée
-CGI
+Cegora
 Paris (75)
 CDI
 Développeur Full Stack Senior / Expert – Java & Kafka (H/F)
 Candidature simplifiée
-ECM - Engineering Conception Maintenance
+Méca Conception
 75017 Paris
 À partir de 50 000 € par an
 CDI
 Stage : Développeur en automatisation de l’IA
 Candidature simplifiée
-SAP IT Business Systeme
+Systèmes Delta
 Télétravail partiel à 92300 Levallois-Perret
 Temps plein
 Lead Développeur PHP / Symfony H/F - Paris
-Webnet
+Webnova
 Paris (75)
 De 55 000 € à 65 000 € par an
 CDI
@@ -64,7 +64,7 @@ développeur full stack
 développeur web junior
 développeur informatique
 Développeur(euse) JavaScript - automaticien(ne) de tests Playwright F/H
-CGI
+Cegora
 ·
 3.5
 Paris (75)

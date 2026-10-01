@@ -2,18 +2,18 @@ import { describe, expect, it } from "vitest";
 import { analyzeJobText, cleanFullText, cleanPastedText } from "./manual-analyze";
 
 // Extrait réel d'un copier-coller LinkedIn (bloc « À propos de l'offre d'emploi », sans titre ni lieu en tête).
-const KOLECTO = `À propos de l’offre d’emploi
+const LUMEA = `À propos de l’offre d’emploi
 Qui sommes-nous ?
 
-Kolecto est une fintech de gestion affiliée au Groupe Crédit Agricole qui simplifie, sécurise et améliore les finances des TPE-PME françaises.
+Lumea est une fintech de gestion affiliée à un grand groupe bancaire qui simplifie, sécurise et améliore les finances des TPE-PME françaises.
 
-Aujourd’hui, Kolecto, c’est une équipe de 215 personnes en hypercroissance, classée n°1 au [TECH500 ](https://www.linkedin.com/safety/go/?url=https%3A%2F%2Ftech500%2Efr%2F&urlhash=avEk)(classement relayé par [Les Echos](https://www.linkedin.com/safety/go/?url=https%3A%2F%2Fwww%2Elesechos%2Efr)), qui évolue dans un environnement de travail très dynamique, avec des bureaux idéalement situés à Miromesnil (Paris 8e), à 5 min des Champs-Elysées et 10 min de la gare Saint-Lazare.
+Aujourd’hui, Lumea, c’est une équipe de 215 personnes en hypercroissance, classée n°1 au [TECH500 ](https://www.linkedin.com/safety/go/?url=https%3A%2F%2Ftech500%2Efr%2F&urlhash=avEk)(classement relayé par [Les Echos](https://www.linkedin.com/safety/go/?url=https%3A%2F%2Fwww%2Elesechos%2Efr)), qui évolue dans un environnement de travail très dynamique, avec des bureaux idéalement situés à Miromesnil (Paris 8e), à 5 min des Champs-Elysées et 10 min de la gare Saint-Lazare.
 
 📌 Notre mission
 
-Travailler chez Kolecto, c'est prendre activement part à un mouvement qui nous dépasse.
+Travailler chez Lumea, c'est prendre activement part à un mouvement qui nous dépasse.
 
-🤩 Pourquoi rejoindre Kolecto ?
+🤩 Pourquoi rejoindre Lumea ?
 
 * Notre politique de télétravail flexible, qui permet jusqu'à 3 jours de télétravail par semaine en France.
 
@@ -35,14 +35,14 @@ Notre stack technique
 
 🙌 Ce que nous offrons
 
-* Tickets restaurant Swile de 11,52 € par jour, pris en charge à 60 %, par Kolecto ;
+* Tickets restaurant Swile de 11,52 € par jour, pris en charge à 60 %, par Lumea ;
 * Une enveloppe de 150 € par an pour vous équiper et aménager votre espace de travail à domicile ;
 * Échange convivial au bureau (café, déjeuner) avec les équipes en poste.`;
 
 describe("lecture d'une annonce collée (sans IA)", () => {
-  it("copier-coller LinkedIn réel (Kolecto)", () => {
-    const a = analyzeJobText(KOLECTO);
-    expect(a.company).toBe("Kolecto");
+  it("copier-coller LinkedIn réel (Lumea)", () => {
+    const a = analyzeJobText(LUMEA);
+    expect(a.company).toBe("Lumea");
     expect(a.location).toBe("Paris (75)");
     expect(a.remoteType).toBe("hybrid");
     expect(a.experienceYears).toBe(5);
@@ -59,15 +59,15 @@ describe("lecture d'une annonce collée (sans IA)", () => {
   });
 
   it("copier-coller depuis le haut de la page LinkedIn : titre, entreprise, lieu", () => {
-    const a = analyzeJobText(`Kolecto
+    const a = analyzeJobText(`Lumea
 Développeur Fullstack TypeScript (H/F)
 Paris, Île-de-France, France · Republié il y a 1 semaine · Plus de 100 candidats
 Hybride  Temps plein
 Postuler
 À propos de l’offre d’emploi
-Chez Kolecto, nous cherchons un développeur fullstack. CDI. Rémunération : 45 000 € - 55 000 € brut annuel.`);
+Chez Lumea, nous cherchons un développeur fullstack. CDI. Rémunération : 45 000 € - 55 000 € brut annuel.`);
     expect(a.title).toBe("Développeur Fullstack TypeScript (H/F)");
-    expect(a.company).toBe("Kolecto");
+    expect(a.company).toBe("Lumea");
     expect(a.location).toBe("Paris (75)");
     expect(a.contractType).toBe("CDI");
     expect(a.salaryMin).toBe(45000);
@@ -100,20 +100,20 @@ Salaire : 38k€ - 42k€`);
 });
 
 import {
-  HELLOWORK_ALCADIA,
-  HELLOWORK_ELAP,
-  HELLOWORK_STABILIS,
-  INDEED_PROTECTLINE,
-  LINKEDIN_FELPS,
-  LINKEDIN_WORLDGRID,
-  WTTJ_OPEN,
+  HELLOWORK_BELLERIVE,
+  HELLOWORK_KOVAL,
+  HELLOWORK_NORDIA,
+  INDEED_VEILLIS,
+  LINKEDIN_ALTIS,
+  LINKEDIN_VOLTANE,
+  WTTJ_ORBIS,
 } from "./manual-analyze.fixtures";
 
 describe("vraies annonces collées (HelloWork, LinkedIn)", () => {
-  it("HelloWork — Stabilis IT (titre collé au lien de l'entreprise, pas de salaire)", () => {
-    const a = analyzeJobText(HELLOWORK_STABILIS);
+  it("HelloWork — Nordia Conseil (titre collé au lien de l'entreprise, pas de salaire)", () => {
+    const a = analyzeJobText(HELLOWORK_NORDIA);
     expect(a.title).toBe("Développeur Java 21 - Spring Boot - Kafka - Finance H/F");
-    expect(a.company).toBe("Stabilis IT");
+    expect(a.company).toBe("Nordia Conseil");
     expect(a.location).toBe("Paris (75)");
     expect(a.contractType).toBe("CDI");
     expect(a.remoteType).toBe("hybrid");
@@ -125,10 +125,10 @@ describe("vraies annonces collées (HelloWork, LinkedIn)", () => {
     expect(a.text).not.toMatch(/CV-EXEMPLE|Groupe Alliance|Coche ou décoche|Super recruteur/);
   });
 
-  it("HelloWork — Alcadia (salaire en puce)", () => {
-    const a = analyzeJobText(HELLOWORK_ALCADIA);
+  it("HelloWork — Bellerive (salaire en puce)", () => {
+    const a = analyzeJobText(HELLOWORK_BELLERIVE);
     expect(a.title).toBe("Développeur Full Stack Confirmé H/F");
-    expect(a.company).toBe("Alcadia Entreprises");
+    expect(a.company).toBe("Bellerive Entreprises");
     expect(a.location).toBe("Paris (75)");
     expect(a.contractType).toBe("CDI");
     expect(a.salaryMin).toBe(38000);
@@ -137,10 +137,10 @@ describe("vraies annonces collées (HelloWork, LinkedIn)", () => {
     expect(a.skills).toEqual(expect.arrayContaining(["Angular", "PostgreSQL"]));
   });
 
-  it("HelloWork — ELAP (salaire dans le texte en K€)", () => {
-    const a = analyzeJobText(HELLOWORK_ELAP);
+  it("HelloWork — KOVAL (salaire dans le texte en K€)", () => {
+    const a = analyzeJobText(HELLOWORK_KOVAL);
     expect(a.title).toBe("Developpeur PHP - Paris H/F");
-    expect(a.company).toBe("ELAP");
+    expect(a.company).toBe("KOVAL");
     expect(a.location).toBe("Paris (75)");
     expect(a.contractType).toBe("CDI");
     expect(a.salaryMin).toBe(35000);
@@ -149,29 +149,29 @@ describe("vraies annonces collées (HelloWork, LinkedIn)", () => {
     expect(a.skills).toEqual(expect.arrayContaining(["PHP", "JavaScript"]));
   });
 
-  it("LinkedIn — Felps Group (titre dans une phrase « nous recherchons un … »)", () => {
-    const a = analyzeJobText(LINKEDIN_FELPS);
+  it("LinkedIn — Altis Group (titre dans une phrase « nous recherchons un … »)", () => {
+    const a = analyzeJobText(LINKEDIN_ALTIS);
     expect(a.title).toBe("Développeur React senior");
-    expect(a.company).toBe("Felps Group");
+    expect(a.company).toBe("Altis Group");
     expect(a.location).toBe("Paris (75)");
     expect(a.experienceYears).toBe(5);
     expect(a.contractType).toBeNull();
     expect(a.skills).toEqual(expect.arrayContaining(["React", "TypeScript"]));
   });
 
-  it("LinkedIn — Worldgrid (titre « en tant que … », faute de frappe « Vu.js »)", () => {
-    const a = analyzeJobText(LINKEDIN_WORLDGRID);
+  it("LinkedIn — Voltane (titre « en tant que … », faute de frappe « Vu.js »)", () => {
+    const a = analyzeJobText(LINKEDIN_VOLTANE);
     expect(a.title).toBe("Développeur Web Python / Vu.js");
-    expect(a.company).toBe("Worldgrid");
+    expect(a.company).toBe("Voltane");
     expect(a.location).toBeNull();
     expect(a.experienceYears).toBe(3);
     expect(a.skills).toEqual(expect.arrayContaining(["Python", "Vue.js", "TypeScript", "SQL"]));
   });
 
-  it("Indeed — Protectline (code postal, « par an », expérience de l'entreprise ignorée)", () => {
-    const a = analyzeJobText(INDEED_PROTECTLINE);
+  it("Indeed — Veillis (code postal, « par an », expérience de l'entreprise ignorée)", () => {
+    const a = analyzeJobText(INDEED_VEILLIS);
     expect(a.title).toBe("Développeur Full Stack confirmé - Noisy le Grand - H/F");
-    expect(a.company).toBe("Protectline");
+    expect(a.company).toBe("Veillis");
     expect(a.location).toBe("Noisy-le-Grand (93)");
     expect(a.contractType).toBe("CDI");
     expect(a.remoteType).toBe("hybrid");
@@ -184,10 +184,10 @@ describe("vraies annonces collées (HelloWork, LinkedIn)", () => {
     expect(a.text).toContain("Lieu du poste");
   });
 
-  it("Welcome to the Jungle — Open (entreprise au-dessus du titre, ville sous le contrat)", () => {
-    const a = analyzeJobText(WTTJ_OPEN);
+  it("Welcome to the Jungle — Orbis (entreprise au-dessus du titre, ville sous le contrat)", () => {
+    const a = analyzeJobText(WTTJ_ORBIS);
     expect(a.title).toBe("Développeur Java Full Stack (H/F)");
-    expect(a.company).toBe("Open");
+    expect(a.company).toBe("Orbis");
     expect(a.location).toBe("Levallois-Perret (92)");
     expect(a.contractType).toBe("CDI");
     expect(a.remoteType).toBe("hybrid");
@@ -205,7 +205,7 @@ Où?
 Rechercher
 Recherche avancée
 Développeur junior Java / Angular F/H
-TALAN
+TERRALIS
 PARIS 16, 75116
 A partir de 36 k€ brut annuel
 NOUVEAU

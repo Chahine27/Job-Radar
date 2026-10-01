@@ -1,4 +1,4 @@
-import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Company, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
+import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -115,11 +115,6 @@ export const api = {
   listSources: () => request<{ items: SourceItem[] }>("GET", "/api/sources"),
   updateSource: (source: string, data: { enabled: boolean; intervalMinutes: number }) =>
     request<unknown>("PUT", `/api/sources/${encodeURIComponent(source)}`, data),
-  listCompanies: () => request<{ items: Company[] }>("GET", "/api/companies"),
-  addCompany: (name: string, url: string) => request<Company>("POST", "/api/companies", { name, url }),
-  setCompanyEnabled: (id: string, enabled: boolean) =>
-    request<Company>("PATCH", `/api/companies/${encodeURIComponent(id)}`, { enabled }),
-  removeCompany: (id: string) => request<{ ok: true }>("DELETE", `/api/companies/${encodeURIComponent(id)}`),
   getNotificationSettings: () => request<NotificationSettings>("GET", "/api/notifications/settings"),
   saveNotificationSettings: (s: Pick<NotificationSettings, "emailEnabled" | "pushEnabled" | "emailTo">) =>
     request<unknown>("PUT", "/api/notifications/settings", s),

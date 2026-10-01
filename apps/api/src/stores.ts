@@ -134,16 +134,6 @@ export interface SourceStore {
   update(source: string, data: { enabled: boolean; intervalMinutes: number }): Promise<SourceRow | null>;
 }
 
-export type CompanyRow = { id: string; name: string; ats: string; boardKey: string; enabled: boolean };
-
-export interface CompanyStore {
-  list(): Promise<CompanyRow[]>;
-  /** null si (outil, identifiant) existe déjà. */
-  add(data: Omit<CompanyRow, "id" | "enabled">): Promise<CompanyRow | null>;
-  setEnabled(id: string, enabled: boolean): Promise<CompanyRow | null>;
-  remove(id: string): Promise<boolean>;
-}
-
 export const LEAD_STATUSES = ["TO_CONTACT", "CONTACTED", "FOLLOWED_UP", "INTERVIEW", "NOT_INTERESTED", "IGNORED"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
@@ -244,7 +234,6 @@ export type Stores = {
   letters: CoverLetterStore;
   leads: LeadStore;
   sources: SourceStore;
-  companies: CompanyStore;
   notifications: NotificationStore;
   users: UserStore;
   sessions: SessionStore;

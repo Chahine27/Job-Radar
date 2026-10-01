@@ -15,7 +15,6 @@ describe("quotas", () => {
     expect((1440 / adzunaMinIntervalMinutes(12)) * 12).toBeLessThanOrEqual(200);
     expect(adzunaMinIntervalMinutes(30)).toBe(240);
     expect(minIntervalFor("france-travail", 12)).toBe(5);
-    expect(minIntervalFor("company-careers", 12)).toBe(30);
   });
 });
 

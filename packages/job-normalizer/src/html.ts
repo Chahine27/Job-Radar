@@ -13,7 +13,7 @@ export function decodeEntities(s: string): string {
 /** HTML d'une annonce → texte lisible (le site n'affiche jamais de HTML venant d'une source). */
 export function htmlToText(html: string): string {
   let s = html;
-  // Greenhouse renvoie du HTML lui-même échappé (&lt;p&gt;…).
+  // Certaines sources renvoient du HTML lui-même échappé (&lt;p&gt;…).
   if (/&lt;\/?[a-z]/i.test(s) && !/<[a-z]/i.test(s)) s = decodeEntities(s);
   s = s
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")

@@ -67,7 +67,7 @@ Pour tout arrêter : `Ctrl + C` dans le terminal. La base lancée par le lanceur
 ### Quand une offre est-elle « expirée » ?
 
 - **France Travail** : l'offre n'est plus vue depuis 7 jours **et** l'API confirme qu'elle n'existe plus.
-- **Pages carrières (ATS)** : l'offre n'est plus vue depuis 2 jours.
+- **Anciennes offres des pages carrières** (fonction retirée) : retirées toutes seules.
 - **Adzuna, Jooble** : l'offre a plus de 45 jours.
 
 Si une offre vient de plusieurs sources, elle n'expire que si **toutes** disent qu'elle a disparu.
@@ -95,7 +95,7 @@ Le dépôt utilisé est écrit dans `package.json` (`jobRadar.updateRepo`).
 | `pnpm check`       | Le code se compile et les tests rapides passent (sans base de données) |
 | `pnpm test:int`    | Les tests avec une vraie base (la base doit tourner). Utilise une base à part, `jobradar_test` : tes vraies données ne sont pas touchées |
 | `pnpm ft:test`     | Tes identifiants France Travail fonctionnent                          |
-| `pnpm sources:test`| Chaque source (France Travail, Adzuna, pages carrières) répond         |
+| `pnpm sources:test`| Chaque source (France Travail, Adzuna) répond                          |
 | `pnpm travel:test` | Le calcul du temps de trajet répond (voiture IGN, + transports PRIM si la clé est là) |
 | `pnpm lbb:test`    | La Bonne Boîte (candidatures spontanées) répond                       |
 | `pnpm jooble:test` | Ta clé Jooble marche (fait **1 vrai appel**, compté dans les 500)      |

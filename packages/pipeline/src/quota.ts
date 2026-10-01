@@ -12,7 +12,6 @@ export function adzunaMinIntervalMinutes(callsPerRun: number): number {
 /** Intervalle minimum imposé par les règles de chaque source (null = pas de contrainte). */
 export function minIntervalFor(source: string, callsPerRun: number): number {
   if (source === "adzuna") return adzunaMinIntervalMinutes(callsPerRun);
-  if (source === "company-careers") return 30;
   // Jooble : 500 appels à vie par clé gratuite → une collecte par jour au plus.
   if (source === "jooble") return 1440;
   return 5;

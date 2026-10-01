@@ -117,7 +117,6 @@ export type SourceItem = {
   lastError: string | null;
 };
 
-export type Company = { id: string; name: string; ats: string; boardKey: string; enabled: boolean };
 
 export type LeadStatus = "TO_CONTACT" | "CONTACTED" | "FOLLOWED_UP" | "INTERVIEW" | "NOT_INTERESTED" | "IGNORED";
 
