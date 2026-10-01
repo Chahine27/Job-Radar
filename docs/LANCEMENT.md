@@ -118,7 +118,7 @@ Le message sous le trajet (page de l'offre) donne la raison.
 Un clic sur une offre (LinkedIn, Indeed, HelloWork, Welcome to the Jungle…) l'ouvre dans Job Radar, déjà remplie.
 
 **Installation (une seule fois)**
-1. Ouvre `chrome://extensions` (ou `edge://extensions` dans Edge).
+1. Dans Job Radar, clique sur **Installer l'extension** (sur la page Offres ou dans le menu), puis choisis Chrome ou Edge. Tu peux aussi ouvrir `chrome://extensions` (ou `edge://extensions` dans Edge).
 2. Active le **Mode développeur** (interrupteur en haut à droite, ou en bas à gauche dans Edge).
 3. Clique sur **Charger l'extension non empaquetée** et choisis le dossier `jobRadar/extension`.
 4. Épingle l'icône Job Radar (pièce de puzzle → punaise) pour l'avoir toujours sous la main.

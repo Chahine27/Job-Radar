@@ -13,6 +13,7 @@ export const router = createRouter({
     { path: "/entreprises", name: "leads", component: () => import("./views/LeadsView.vue") },
     { path: "/entreprises/:id/candidature", name: "spontaneous", component: () => import("./views/SpontaneousView.vue"), props: true },
     { path: "/sources", name: "sources", component: () => import("./views/SourcesView.vue") },
+    { path: "/extension", name: "extension", component: () => import("./views/ExtensionView.vue") },
     { path: "/candidature", name: "letter-kit", component: () => import("./views/LetterKitView.vue") },
     { path: "/profil", name: "profile", component: () => import("./views/ProfileView.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },

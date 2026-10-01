@@ -17,6 +17,7 @@ const NAV: Array<{ to: string; label: string; icon: IconName }> = [
   { to: "/ajouter", label: "Ajouter une offre", icon: "plus" },
   { to: "/entreprises", label: "Entreprises", icon: "building" },
   { to: "/sources", label: "Sources", icon: "rss" },
+  { to: "/extension", label: "Extension navigateur", icon: "external" },
   { to: "/candidature", label: "CV & lettre", icon: "file" },
   { to: "/profil", label: "Profil", icon: "user" },
 ];

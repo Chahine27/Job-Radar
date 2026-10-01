@@ -251,6 +251,9 @@ function place(job: JobSummary) {
       <template v-else>{{ lastRunText }}</template>
     </p>
     <template #actions>
+      <RouterLink to="/extension" class="btn">
+        <Icon name="external" :size="16" />Installer l'extension
+      </RouterLink>
       <button type="button" class="primary" :disabled="running" @click="refreshNow">
         <Icon name="refresh" :size="16" :class="{ spin: running }" />
         {{ running ? "Collecte en cours…" : "Actualiser maintenant" }}
