@@ -24,6 +24,9 @@ const confirmSend = ref(false);
 const confirmRedo = ref(false);
 const error = ref<string | null>(null);
 const sentNow = ref(false);
+/** Résultat de l'envoi : affiché à côté du bouton (en haut de page, il passait inaperçu). */
+const sendError = ref<string | null>(null);
+const result = ref<HTMLElement | null>(null);
 let timer: ReturnType<typeof setInterval> | undefined;
 
 function apply(s: SpontaneousApplicationState, resetMail = false) {
@@ -113,6 +116,7 @@ async function send() {
   confirmSend.value = false;
   sending.value = true;
   error.value = null;
+  sendError.value = null;
   try {
     apply(
       await api.sendApplication(props.id, {
@@ -125,9 +129,11 @@ async function send() {
     );
     sentNow.value = true;
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : "L'email n'est pas parti.";
+    sendError.value = e instanceof ApiError ? e.message : "L'email n'est pas parti.";
   } finally {
     sending.value = false;
+    await nextTick();
+    result.value?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 }
 </script>
@@ -146,8 +152,7 @@ async function send() {
 
   <div v-else-if="state" class="stack">
     <p v-if="error" class="alert" role="alert"><Icon name="alert" :size="16" />{{ error }}</p>
-    <p v-if="sentNow" class="success" role="status"><Icon name="check" :size="16" />Envoyée à {{ state.application?.sentTo }}. L'entreprise est passée en « Contactée ».</p>
-    <p v-else-if="sentAt" class="info small"><Icon name="info" :size="15" />Déjà envoyée le {{ sentAt }} à {{ state.application?.sentTo }}.</p>
+    <p v-if="sentAt && !sentNow" class="info small"><Icon name="info" :size="15" />Déjà envoyée le {{ sentAt }} à {{ state.application?.sentTo }}.</p>
 
     <section class="card stack">
       <h2><span class="step">1</span>La lettre</h2>
@@ -218,7 +223,14 @@ async function send() {
       <ul class="clean checks small">
         <li v-for="c in checks" :key="c.text" :class="c.ok ? 'ok' : 'ko'"><Icon :name="c.ok ? 'check' : 'alert'" :size="15" />{{ c.text }}</li>
       </ul>
-      <div class="row buttons">
+      <div ref="result" class="stack" style="gap: 0.5rem">
+        <p v-if="sendError" class="alert" role="alert"><Icon name="alert" :size="16" />{{ sendError }}</p>
+        <p v-if="sentNow" class="success" role="status"><Icon name="check" :size="16" />Envoyée à {{ state.application?.sentTo }}. L'entreprise est passée en « Contactée ».</p>
+      </div>
+      <div v-if="sentNow" class="row buttons">
+        <RouterLink to="/entreprises" class="btn primary" @click.prevent="goBack('/entreprises')"><Icon name="building" :size="16" />Retour aux entreprises</RouterLink>
+      </div>
+      <div v-else class="row buttons">
         <button type="button" :class="confirmSend ? 'danger' : 'primary'" :disabled="!ready || sending || running" @click="send">
           <Icon name="send" :size="16" />
           {{ sending ? "Envoi…" : confirmSend ? `Oui, envoyer à ${to.trim()}` : sentAt ? "Renvoyer" : "Envoyer la candidature" }}

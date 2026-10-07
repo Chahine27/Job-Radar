@@ -31,7 +31,7 @@ const PAGE = 20;
 const leads = ref<Lead[]>([]);
 const total = ref(0);
 /** Filtres retenus comme préférences (serveur + copie locale). */
-const prefs = usePrefs<{ filter: LeadStatus | "active" | "all"; email: "any" | "hint" | "missing"; sort: "potential" | "distance" }>("entreprises", {
+const prefs = usePrefs<{ filter: LeadStatus | "active" | "all"; email: "any" | "hint" | "missing" | "set"; sort: "potential" | "distance" }>("entreprises", {
   filter: "active",
   email: "any",
   sort: "potential",
@@ -52,7 +52,7 @@ async function load(append = false, keepCount = false) {
   if (!append && !keepCount) loading.value = true;
   try {
     const limit = keepCount ? Math.min(100, Math.max(PAGE, leads.value.length)) : PAGE; // 100 = plafond de l'API
-    const res = await api.listLeads(filter.value, sort.value, append ? leads.value.length : 0, limit, emailFilter.value);
+    const res = await api.listLeads(filter.value, sort.value, append ? leads.value.length : 0, limit, emailFilter.value, query.value.trim());
     leads.value = append ? [...leads.value, ...res.items] : res.items;
     total.value = res.total;
     lastRefreshAt.value = res.lastRefreshAt;
@@ -73,6 +73,14 @@ onActivated(() => {
   mounted = true;
 });
 watch([filter, sort, emailFilter], () => load());
+/** Recherche par nom d'entreprise (rechargée 250 ms après la dernière touche). */
+const query = ref("");
+let queryTimer: ReturnType<typeof setTimeout> | undefined;
+watch(query, () => {
+  clearTimeout(queryTimer);
+  queryTimer = setTimeout(() => load(), 250);
+});
+onUnmounted(() => clearTimeout(queryTimer));
 
 async function refresh() {
   busy.value = true;
@@ -252,6 +260,10 @@ const searchUrl = (l: Lead) =>
 
     <section class="card toolbar">
       <label>
+        Entreprise
+        <input v-model="query" type="search" placeholder="Nom de l'entreprise…" aria-label="Rechercher une entreprise" />
+      </label>
+      <label>
         Afficher
         <select v-model="filter" aria-label="Suivi">
           <option value="active">À traiter (sans les écartées)</option>
@@ -264,6 +276,7 @@ const searchUrl = (l: Lead) =>
         <select v-model="emailFilter">
           <option value="any">Toutes</option>
           <option value="hint">« Email sur la fiche » La Bonne Boîte (pas encore saisi)</option>
+          <option value="set">Avec email saisi</option>
           <option value="missing">Sans email saisi</option>
         </select>
       </label>

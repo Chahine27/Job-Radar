@@ -125,6 +125,13 @@ describe("emails trouvés par une IA avec recherche web (JSON collé)", () => {
     const hint = (await req("GET", "/api/leads?status=all&email=hint")).json().items as Array<{ name: string }>;
     expect(hint.map((l) => l.name)).toEqual([]); // ALPHA (seule « email sur la fiche ») a déjà son email
     expect((await req("GET", "/api/leads?status=all&email=missing")).json().total).toBe(0);
+    // Filtre « avec email saisi » : la liste des entreprises dont l'email est noté.
+    const withEmail = (await req("GET", "/api/leads?status=all&email=set")).json();
+    expect(withEmail.total).toBe((await req("GET", "/api/leads?status=all")).json().total);
+    expect(withEmail.items.every((l: { contactEmail: string | null }) => !!l.contactEmail)).toBe(true);
+    // Recherche par nom, sans accents ni majuscules.
+    const found = (await req("GET", "/api/leads?status=all&q=b%C3%A9ta")).json().items as Array<{ name: string }>;
+    expect(found.map((l) => l.name)).toEqual(["BETA SERVICES"]);
   });
 });
 

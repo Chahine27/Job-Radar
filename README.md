@@ -97,7 +97,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 12. ✅ Navigation : retour à la même position dans les listes, lieux cliquables (Google Maps), annonce sans description signalée « à compléter ».
 13. ✅ Notifications « à compléter » puis « à postuler », et « lettre terminée » dans le navigateur.
 14. ✅ Lettre de motivation : plusieurs brouillons relus et corrigés, modèle plus gros au choix (Réglages).
-15. ⏳ Tests complets avec des profils variés.
+15. ✅ Entreprises : recherche par nom, filtre « avec email saisi », prompt des emails plus fiable, résultat d'envoi près du bouton.
+16. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

@@ -79,14 +79,18 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
       .object({
         status: z.enum([...LEAD_STATUSES, "active", "all"]).default("active"),
         sort: z.enum(["potential", "distance"]).default("potential"),
-        /** hint = La Bonne Boîte connaît un email (« email sur la fiche ») ; missing = pas encore d'email saisi. */
-        email: z.enum(["any", "hint", "missing"]).default("any"),
+        /** hint = La Bonne Boîte connaît un email (« email sur la fiche ») ; missing = pas encore d'email saisi ; set = email saisi. */
+        email: z.enum(["any", "hint", "missing", "set"]).default("any"),
+        /** Recherche dans le nom de l'entreprise (sans tenir compte des accents ni des majuscules). */
+        q: z.string().trim().max(100).default(""),
         limit: z.coerce.number().int().min(1).max(100).default(20),
         offset: z.coerce.number().int().min(0).default(0),
       })
       .safeParse(request.query);
     if (!q.success) return reply.code(400).send({ error: "INVALID_QUERY" });
     const { status, sort, email, limit, offset } = q.data;
+    const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    const needle = plain(q.data.q);
 
     const rec = await stores.profiles.get(request.userId!);
     if (!rec) return reply.code(404).send({ error: "PROFILE_NOT_FOUND" });
@@ -104,7 +108,8 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
       }))
       .filter((l) => (place ? l.distanceKm !== null && l.distanceKm <= radius : l.department !== null && depts.includes(l.department)))
       .filter((l) => (status === "all" ? true : status === "active" ? !INACTIVE.includes(l.status) : l.status === status))
-      .filter((l) => (email === "hint" ? l.hasEmail && !l.contactEmail : email === "missing" ? !l.contactEmail : true));
+      .filter((l) => !needle || plain(l.name).includes(needle))
+      .filter((l) => (email === "hint" ? l.hasEmail && !l.contactEmail : email === "missing" ? !l.contactEmail : email === "set" ? !!l.contactEmail : true));
 
     const potential = (l: { hiringPotential: number | null }) => l.hiringPotential ?? -1;
     inZone.sort((a, b) =>

@@ -30,8 +30,10 @@ Règles :
 - Même sans email, donne le site officiel ("site") et, s'il existe, la page de candidature ou le formulaire de contact ("contact_url").
 - Prends le temps de chercher pour CHAQUE entreprise (site officiel, mentions légales, page LinkedIn de l'entreprise, Pages Jaunes, societe.com) avant de mettre null.
 
-Réponds UNIQUEMENT avec ce JSON (même ordre, un objet par entreprise, garde le SIRET tel quel) :
+Réponds UNIQUEMENT avec ce JSON (même ordre, un objet par entreprise, garde le SIRET tel quel), placé dans UN SEUL bloc de code (\`\`\`json … \`\`\`) pour que rien ne soit reformaté :
 [{"siret": "…", "email": "…" ou null, "source": "https://…" ou null, "site": "https://…" ou null, "contact_url": "https://…" ou null}]
+
+Dans ce bloc de code, écris les emails et les URL en TEXTE BRUT : jamais de lien Markdown ([texte](url)), pas de "mailto:", pas de lien cliquable. Rien avant, rien après le bloc de code.
 
 Entreprises :
 ${JSON.stringify(companies, null, 2)}`;

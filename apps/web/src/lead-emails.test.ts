@@ -24,6 +24,12 @@ describe("emails des entreprises via une IA avec recherche web", () => {
     expect(p).toContain("candidature spontanée (Assistant comptable).");
   });
 
+  it("le prompt demande un seul bloc de code, liens en texte brut", () => {
+    const p = buildEmailPrompt([lead("11111111100011", "ALPHA LOGICIELS")]);
+    expect(p).toContain("UN SEUL bloc de code");
+    expect(p).toContain("TEXTE BRUT");
+  });
+
   it("lit la réponse même entourée de texte ou de ```json, et ignore les lignes sans SIRET", () => {
     const answer = 'Voici :\n```json\n[{"siret":"111 111 111 00011","email":"rh@alpha.fr","source":"https://alpha.fr/contact"},{"siret":"22222222200022","email":null,"source":null},{"nom":"sans siret"}]\n```\nBonne chance !';
     expect(parseEmailJson(answer)).toEqual([

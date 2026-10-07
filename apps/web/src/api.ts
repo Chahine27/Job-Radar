@@ -90,10 +90,10 @@ export const api = {
       "GET",
       `/api/geocode?q=${encodeURIComponent(q)}`,
     ),
-  listLeads: (status: LeadStatus | "active" | "all", sort: "potential" | "distance", offset = 0, limit = 20, email: "any" | "hint" | "missing" = "any") =>
+  listLeads: (status: LeadStatus | "active" | "all", sort: "potential" | "distance", offset = 0, limit = 20, email: "any" | "hint" | "missing" | "set" = "any", q = "") =>
     request<{ items: Lead[]; total: number; lastRefreshAt: string | null; configured: boolean; addressesPending: boolean }>(
       "GET",
-      `/api/leads?status=${status}&sort=${sort}&email=${email}&offset=${offset}&limit=${limit}`,
+      `/api/leads?status=${status}&sort=${sort}&email=${email}&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`,
     ),
   /** Signale la page ouverte et au premier plan : pas de notification pour une lettre terminée ici. */
   presence: (path: string) => request<void>("POST", "/api/presence", { path }),
