@@ -7,6 +7,9 @@ import Icon from "./Icon.vue";
 const LOGOS: Record<string, string> = {
   "france-travail": "/logos/france-travail.png",
   adzuna: "/logos/adzuna.png",
+  "jobscraper:linkedin": "/logos/linkedin.png",
+  "jobscraper:wttj": "/logos/wttj.png",
+  "jobscraper:hellowork": "/logos/hellowork.png",
 };
 
 const props = withDefaults(defineProps<{ source: string; size?: number }>(), { size: 24 });

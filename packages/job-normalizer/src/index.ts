@@ -8,6 +8,7 @@ export * from "./contract";
 export * from "./jooble";
 export * from "./manual";
 export * from "./manual-analyze";
+export * from "./jobscraper";
 
 import type { RawJob } from "@job-radar/source-connectors";
 import { ADZUNA_SOURCE, FT_SOURCE, JOOBLE_SOURCE } from "@job-radar/source-connectors";
@@ -15,6 +16,7 @@ import { normalizeAdzuna } from "./adzuna";
 import { normalizeFranceTravail } from "./france-travail";
 import { normalizeJooble } from "./jooble";
 import { MANUAL_SOURCE, normalizeManual } from "./manual";
+import { normalizeJobScraper } from "./jobscraper";
 import type { NormalizedJob } from "./types";
 
 /** Aiguillage par source. Source inconnue → null (l'offre est ignorée et comptée). */
@@ -29,7 +31,7 @@ export function normalize(raw: RawJob): NormalizedJob | null {
     case MANUAL_SOURCE:
       return normalizeManual(raw);
     default:
-      return null;
+      return raw.source.startsWith("jobscraper:") ? normalizeJobScraper(raw) : null;
   }
 }
 export * from "./dedupe";

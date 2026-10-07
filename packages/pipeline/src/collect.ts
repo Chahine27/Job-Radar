@@ -50,6 +50,7 @@ export function buildQueries(profile: Profile, publishedSinceDays: SearchParams[
       queries.push({
         keywords,
         department: loc.department,
+        locationLabel: loc.label,
         maxResults,
         ...(publishedSinceDays ? { publishedSinceDays } : {}),
       });

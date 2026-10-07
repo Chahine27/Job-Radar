@@ -6,5 +6,6 @@ export * from "./france-travail/sample";
 export * from "./adzuna/source";
 export * from "./labonneboite";
 export * from "./jooble";
+export * from "./jobscraper";
 export * from "./romeo";
 export * from "./recherche-entreprises";

@@ -1,4 +1,6 @@
 node_modules/
+# ESSAI JobScraper : outil Python cloné à part (non redistribué)
+tools/jobscraper/
 # Base de données locale (fichiers PostgreSQL)
 data/
 dist/

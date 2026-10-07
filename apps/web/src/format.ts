@@ -79,6 +79,9 @@ export const SOURCE_LABELS: Record<string, string> = {
   adzuna: "Adzuna",
   "company-careers": "Site carrières",
   jooble: "Jooble",
+  "jobscraper:linkedin": "LinkedIn (JobScraper)",
+  "jobscraper:hellowork": "HelloWork (JobScraper)",
+  "jobscraper:wttj": "Welcome to the Jungle (JobScraper)",
   manual: "Ajoutée par toi",
   demo: "Démo",
 };

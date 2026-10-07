@@ -1,6 +1,6 @@
 import path from "node:path";
 import { config } from "dotenv";
-import { AdzunaSource, FranceTravailSource, JoobleSource, type JoobleQuotaStore } from "@job-radar/source-connectors";
+import { AdzunaSource, FranceTravailSource, JoobleSource, createJobScraperSources, type JoobleQuotaStore } from "@job-radar/source-connectors";
 
 config({ path: path.resolve(import.meta.dirname, "../../../.env"), quiet: true });
 
@@ -17,4 +17,14 @@ export function adzunaFromEnv() {
 
 export function joobleFromEnv(quota: JoobleQuotaStore) {
   return new JoobleSource({ apiKey: process.env.JOOBLE_API_KEY?.trim(), quota });
+}
+
+/** ESSAI : sites collectés par JobScraper (outil Python à installer à part, voir docs/JOBSCRAPER.md). */
+export function jobScraperFromEnv(enabled = process.env.JOBSCRAPER_ENABLED?.trim() === "true") {
+  return createJobScraperSources({
+    enabled,
+    ...(process.env.JOBSCRAPER_PATH?.trim() ? { path: process.env.JOBSCRAPER_PATH.trim() } : {}),
+    ...(process.env.JOBSCRAPER_PYTHON?.trim() ? { python: process.env.JOBSCRAPER_PYTHON.trim() } : {}),
+    ...(Number(process.env.JOBSCRAPER_TIMEOUT_MS) >= 1000 ? { timeoutMs: Number(process.env.JOBSCRAPER_TIMEOUT_MS) } : {}),
+  });
 }

@@ -6,7 +6,7 @@
 import { createPrismaClient } from "@job-radar/db";
 import { collectOnce, prismaJoobleQuota } from "@job-radar/pipeline";
 import { ProfileSchema } from "@job-radar/shared";
-import { adzunaFromEnv, franceTravailFromEnv, joobleFromEnv } from "./env";
+import { adzunaFromEnv, franceTravailFromEnv, jobScraperFromEnv, joobleFromEnv } from "./env";
 
 const ALLOWED_DAYS = [1, 3, 7, 14, 31] as const;
 const arg = process.argv.find((a) => a.startsWith("--days="));
@@ -33,6 +33,7 @@ try {
       franceTravailFromEnv(),
       adzunaFromEnv(),
       joobleFromEnv(prismaJoobleQuota(prisma, process.env.JOOBLE_API_KEY)),
+      ...jobScraperFromEnv(),
     ].filter((s) => enabled.has(s.name)),
     trigger: "cli",
     publishedSinceDays: days,

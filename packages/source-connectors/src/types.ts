@@ -4,6 +4,8 @@ export type SearchParams = {
   keywords: string;
   /** Code département, ex. "69". */
   department?: string;
+  /** Nom de la zone du profil (ex. « Nantes ») : les sources qui cherchent par lieu écrit (JobScraper) l'utilisent. */
+  locationLabel?: string;
   /** Ne garder que les offres publiées depuis N jours. */
   publishedSinceDays?: 1 | 3 | 7 | 14 | 31;
   /** Nombre max d'offres à récupérer pour cette recherche. */

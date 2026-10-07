@@ -23,6 +23,7 @@ import {
   RomeoClient,
   RechercheEntreprisesClient,
 } from "@job-radar/source-connectors";
+import { JOBSCRAPER_SOURCE_NAMES, createJobScraperSources } from "@job-radar/source-connectors";
 import { buildApp } from "./app";
 import { updateEnvFile } from "./env-file";
 import { ENV_PATH, loadEnv } from "./env";
@@ -122,6 +123,14 @@ let lastExpiryAt = 0;
 const ollama = new OllamaClient({ baseUrl: e.OLLAMA_URL, model: e.OLLAMA_MODEL });
 const sirene = new RechercheEntreprisesClient();
 
+const jobScraperOn = e.JOBSCRAPER_ENABLED?.trim() === "true";
+const jobScraper = createJobScraperSources({
+  enabled: jobScraperOn,
+  ...(e.JOBSCRAPER_PATH?.trim() ? { path: e.JOBSCRAPER_PATH.trim() } : {}),
+  ...(e.JOBSCRAPER_PYTHON?.trim() ? { python: e.JOBSCRAPER_PYTHON.trim() } : {}),
+  ...(Number(e.JOBSCRAPER_TIMEOUT_MS) >= 1000 ? { timeoutMs: Number(e.JOBSCRAPER_TIMEOUT_MS) } : {}),
+});
+
 const runner = new CollectionRunner({
   log: (msg) => log(msg),
   repo: createPrismaRunRepo(prisma),
@@ -129,6 +138,8 @@ const runner = new CollectionRunner({
     liveSource(() => keyed.franceTravail),
     liveSource(() => keyed.adzuna),
     liveSource(() => keyed.jooble),
+    // ESSAI : JobScraper (outil Python à installer à part, voir docs/JOBSCRAPER.md). Désactivé tant que JOBSCRAPER_ENABLED≠true.
+    ...jobScraper,
   ],
   collect: prismaCollect(prisma, env.CRON_INTERVAL_MINUTES),
   // Après chaque collecte : annonce les nouvelles offres compatibles.
@@ -211,7 +222,7 @@ const app = await buildApp({
     if (job.travel) return "aucun itinéraire trouvé depuis ton point de départ";
     return report.skipped ?? "lieu de l'offre inconnu ou hors zone";
   },
-  sourcesConfigured: () => keyed.configured,
+  sourcesConfigured: () => ({ ...keyed.configured, ...Object.fromEntries(JOBSCRAPER_SOURCE_NAMES.map((n) => [n, jobScraperOn])) }),
   // Compteur Jooble affiché sur la page Sources (500 appels à vie par clé gratuite).
   sourceQuotas: async () => ({ jooble: { used: (await keyed.joobleQuota.get()).used, limit: JOOBLE_DEFAULTS.lifetimeLimit } }),
   ai: {

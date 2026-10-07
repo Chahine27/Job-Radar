@@ -8,6 +8,9 @@ export const SOURCE_LABELS: Record<string, string> = {
   "france-travail": "France Travail",
   adzuna: "Adzuna",
   jooble: "Jooble",
+  "jobscraper:linkedin": "JobScraper · LinkedIn",
+  "jobscraper:hellowork": "JobScraper · HelloWork",
+  "jobscraper:wttj": "JobScraper · Welcome to the Jungle",
 };
 
 export type SourcesOptions = {

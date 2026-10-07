@@ -31,6 +31,7 @@
     "lbb:test": "pnpm --filter @job-radar/worker lbb:test",
     "test:int": "vitest run -c vitest.int.config.ts",
     "jooble:test": "pnpm --filter @job-radar/worker jooble:test",
+    "jobscraper:test": "pnpm --filter @job-radar/worker jobscraper:test",
     "ai:test": "pnpm --filter @job-radar/worker ai:test"
   },
   "devDependencies": {
