@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { hashProfile } from "./profile-hash";
-import { contractFromTitle, detectRemote, detectSeniority, normalizeContract, parseExperienceYears } from "./signals";
+import { contractFromText, contractFromTitle, contractOfJob, detectRemote, detectSeniority, normalizeContract, parseExperienceYears } from "./signals";
 
 describe("detectSeniority", () => {
   it.each([
@@ -115,5 +115,34 @@ describe("expérience : l'ancienneté de l'entreprise n'est pas l'expérience de
   it("ignore « expérience de plus de 20 ans en la matière » (entreprise)", () => {
     const text = "Disposant d'une expérience de plus de 20 ans en la matière, Veillis… Vous avez une expérience de 3 ans dans un poste similaire.";
     expect(parseExperienceYears(text)).toEqual({ min: 3, max: null });
+  });
+});
+
+describe("contractFromText", () => {
+  it.each([
+    ["Alternance / Apprentissage", "ALTERNANCE"],
+    ["Type de contrat : Stage de 6 mois", "STAGE"],
+    ["Contrat proposé : freelance, TJM 450 €", "FREELANCE"],
+    ["CDI ou alternance selon le profil", null],
+    ["Temps plein · Travail en équipe", null],
+    ["Contrat : MIS", "INTERIM"],
+    ["Tu as mis en place des procédures qualité", null],
+    ["Projet d'apprentissage automatique", null],
+    ["Mise à jour d'une lib interne de modèles", null],
+    ["Poste en contrat d'apprentissage, rythme 3 semaines / 1 semaine", "ALTERNANCE"],
+    ["• Contract: CDI (permanent)\n• Also open to: interns (5–6 month internship)", "CDI"],
+  ] as const)("%s → %s", (text, expected) => {
+    expect(contractFromText(text)).toBe(expected);
+  });
+});
+
+describe("contractOfJob : la même règle pour le score, l'IA et l'affichage", () => {
+  it.each([
+    ["source « CDI » par défaut, titre « Stage »", { contractType: "CDI", title: "Stage assistant comptable (H/F)", description: "" }, "STAGE"],
+    ["source « CDI », titre en alternance", { contractType: "CDI", title: "Assistant RH en alternance", description: "" }, "ALTERNANCE"],
+    ["« (CDD possible) » ne remplace pas un CDI de la source", { contractType: "CDI", title: "Comptable (CDD possible)", description: "" }, "CDI"],
+    ["rien dans la source ni le titre : la description", { contractType: null, title: "Aide-soignant H/F", description: "Type de contrat : CDI" }, "CDI"],
+  ] as const)("%s", (_name, job, expected) => {
+    expect(contractOfJob(job)).toBe(expected);
   });
 });

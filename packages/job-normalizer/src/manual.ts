@@ -1,4 +1,4 @@
-import { detectRemote, parseExperienceYears } from "@job-radar/scoring";
+import { contractFromText, detectRemote, parseExperienceYears } from "@job-radar/scoring";
 import { DEPARTMENTS, departmentFromText, ManualJobSchema, manualOrigin } from "@job-radar/shared";
 import { extractSkills, getSkill } from "@job-radar/skills";
 import type { RawJob } from "@job-radar/source-connectors";
@@ -7,16 +7,6 @@ import { comparable, fingerprintOf, sha } from "./text";
 import type { NormalizedJob } from "./types";
 
 export const MANUAL_SOURCE = "manual";
-
-/** « CDI » ou « CDD » écrit dans l'annonce, seulement s'il n'y a pas d'ambiguïté (un seul des deux). */
-function contractFromText(text: string): string | null {
-  const t = comparable(text);
-  const cdi = /\bcdi\b|duree indeterminee/.test(t);
-  const cdd = /\bcdd\b|duree determinee/.test(t);
-  if (cdi && !cdd) return "CDI";
-  if (cdd && !cdi) return "CDD";
-  return null;
-}
 
 /** Offre ajoutée à la main : `raw.data` = champs du formulaire (validés ici encore). */
 export function normalizeManual(raw: RawJob): NormalizedJob | null {

@@ -10,8 +10,12 @@ export type ScoringRules = {
   nearbyDepartments: string[];
   /** Masquer du flux principal les contrats hors profil (ils restent en base). */
   hideNonMatchingContract: boolean;
-  /** Masquer au-delà de N années demandées (null = jamais masquer, seulement pénaliser). */
-  hideAboveYears: number | null;
+  /** Sous-score du salaire quand il n'est pas communiqué (ni par la source, ni dans l'annonce). */
+  unknownSalary: number;
+  /** Masquer au-delà de « ton expérience max » + N années demandées (null = jamais masquer, seulement pénaliser). */
+  hideYearsOverMax: number | null;
+  /** Masquer les offres hors de la zone du profil (départements, voisins, rayon). Le télétravail complet et les lieux inconnus ne le sont jamais. */
+  hideOutOfZone: boolean;
   /** Masquer les postes senior / confirmé / lead (lu dans le titre). */
   hideSenior: boolean;
   /**
@@ -29,16 +33,18 @@ export type ScoringRules = {
 export type CapPart = "technical" | "experience" | "contract" | "salary" | "location" | "transport";
 
 export const DEFAULT_RULES: ScoringRules = {
-  version: "2026-10-01.3",
+  version: "2026-10-07.1",
   neutral: 60,
   nearbyDepartments: [],
   hideNonMatchingContract: true,
-  hideAboveYears: 4,
+  unknownSalary: 50,
+  hideYearsOverMax: 1,
+  hideOutOfZone: true,
   hideSenior: true,
   caps: [
     { part: "experience", atOrBelow: 15, cap: 35, label: "expérience très au-dessus de ta cible" },
     { part: "experience", atOrBelow: 35, cap: 55, label: "expérience au-dessus de ta cible" },
-    { part: "contract", atOrBelow: 10, cap: 40, label: "contrat hors profil" },
+    { part: "contract", atOrBelow: 10, cap: 0, label: "contrat hors profil" },
     { part: "location", atOrBelow: 15, cap: 50, label: "hors de ta zone" },
     { part: "transport", atOrBelow: 20, cap: 60, label: "trajet trop long" },
   ],

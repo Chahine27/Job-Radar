@@ -72,6 +72,20 @@ describe("GET /api/jobs", () => {
     expect((await get("/api/jobs")).json().limit).toBe(20);
   });
 
+  it("rubriques de zone : dans ma zone, télétravail complet, lieu non précisé ; hors zone masquée", async () => {
+    const { get, jobs } = await setup();
+    Object.assign(jobs.get("j-java")!, { department: "13", city: "Marseille" });
+    Object.assign(jobs.get("j-ruby")!, { department: null, city: null });
+    jobs.get("j-vue")!.remoteType = "remote";
+    const ids = async (url: string) => (await get(url)).json().items.map((i: { id: string }) => i.id);
+    expect(await ids("/api/jobs?zone=remote")).toEqual(["j-vue"]);
+    expect(await ids("/api/jobs?zone=unknown")).toEqual(["j-ruby"]);
+    expect(await ids("/api/jobs?zone=local")).toEqual([]);
+    const hidden = (await get("/api/jobs?includeHidden=true&zone=local")).json().items.find((i: { id: string }) => i.id === "j-java");
+    expect(hidden.score.hiddenReason).toBe("Hors de ta zone (département 13)");
+    expect((await get("/api/jobs?zone=ailleurs")).statusCode).toBe(400);
+  });
+
   it("refuse un filtre invalide", async () => {
     const { get } = await setup();
     expect((await get("/api/jobs?minScore=500")).statusCode).toBe(400);

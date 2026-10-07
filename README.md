@@ -92,7 +92,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 7. ✅ Nettoyage avant publication : textes et exemples neutres pour tous les métiers, offres de démo variées.
 8. ✅ Temps de trajet partout en France : en voiture (IGN, sans clé), en transports en commun en Île-de-France (PRIM).
 9. ✅ Mises à jour automatiques au lancement (dernière « Release » GitHub), sans git ni téléchargement à la main.
-10. ⏳ Tests complets avec des profils variés.
+10. ✅ Score plus juste : contrat hors profil à 0 (lu aussi dans le titre et l'annonce), salaire lu dans l'annonce, rayon de recherche et rubriques de zone, seuils du profil respectés.
+11. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { contractOfJob, normalizeContract } from "@job-radar/scoring";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les analyses déjà faites seront refaites à la demande. */
-export const ANALYSIS_PROMPT_VERSION = "2026-10-01.1";
+export const ANALYSIS_PROMPT_VERSION = "2026-10-07.1";
 
 /** Ce que l'IA doit rendre (validé : une réponse hors format est refusée). */
 export const JobAnalysisSchema = z.object({
@@ -90,11 +91,11 @@ Règles :
 - employeur : cabinet_ou_client si une agence, un cabinet, une ESN ou un intermédiaire recrute pour un client (« pour l'un de nos clients », « en mission chez ») ; direct si l'entreprise recrute pour elle-même ; sinon inconnu.
 - Si l'annonce est marquée EXTRAIT : ce n'est que le début du texte. Ne déduis rien de ce qui manque, et mets « Annonce incomplète : ouvre l'annonce complète pour vérifier les exigences » dans points_attention.
 - Ce qui correspond au parcours du candidat (secteur où il a déjà travaillé, compétence de son CV) est un ATOUT : cite-le dans avis, jamais dans points_attention.
-- Type de contrat : ne le mets dans points_attention QUE s'il n'est pas dans les « Contrats souhaités » du candidat.
+- Type de contrat : compare-le aux « Contrats souhaités » du candidat. S'il est connu et non souhaité, indique-le dans points_attention et considère l'adéquation comme faible. S'il est souhaité, ne le mets pas dans points_attention.
 - points_attention : les pièges concrets pour le candidat (poste senior, mission chez un client, astreintes, déplacements, anglais exigé, habilitation, salaire non indiqué, compétence principale absente de son profil…). 5 maximum.
-- adequation : compare l'annonce au PROFIL DU CANDIDAT donné.
+- adequation : compare l'annonce au PROFIL DU CANDIDAT donné, y compris le contrat souhaité.
   forte = il a la plupart des compétences exigées ET l'expérience demandée ne dépasse pas la sienne.
-  faible = expérience demandée nettement au-dessus de la sienne, OU compétence principale absente de son profil.
+  faible = contrat connu non souhaité, OU expérience demandée nettement au-dessus de la sienne, OU compétence principale absente de son profil.
   moyenne = entre les deux.
 - avis : une phrase directe, en TUTOYANT le candidat (« tu », jamais « vous »), qui dit pourquoi ça colle ou pas. Même règle pour points_attention.`;
 
@@ -114,7 +115,7 @@ ANNONCE
 Titre : ${job.title}
 Entreprise : ${job.company ?? "non indiquée"}
 Lieu : ${place}
-Contrat : ${job.contractType ?? "non indiqué"}
+Contrat : ${contractOfJob(job) ?? "non indiqué"}
 Télétravail : ${job.remoteType === "unknown" ? "non indiqué" : job.remoteType}
 Salaire : ${salary}
 
@@ -141,7 +142,15 @@ function skillNames(list: string[]): string[] {
 }
 
 /** Filet de sécurité : poste trop expérimenté pour le profil → adéquation faible, quoi qu'en dise le modèle. */
-function checkAdequation(r: JobAnalysisResult, profile: AnalysisProfileInput): JobAnalysisResult["adequation"] {
+/** Contrat de l'offre hors des contrats souhaités (même règle que le score), sinon null. */
+function unwantedContract(job: AnalysisJobInput, profile: AnalysisProfileInput) {
+  const kind = contractOfJob(job);
+  const wanted = profile.contracts.map((c) => normalizeContract(c) ?? c.toUpperCase());
+  return kind && !wanted.includes(kind) ? kind : null;
+}
+
+function checkAdequation(r: JobAnalysisResult, job: AnalysisJobInput, profile: AnalysisProfileInput): JobAnalysisResult["adequation"] {
+  if (unwantedContract(job, profile)) return "faible";
   if (r.experience_min_ans !== null && r.experience_min_ans > profile.experienceMax + 1) return "faible";
   return r.adequation;
 }
@@ -158,9 +167,11 @@ function checkNiveau(r: JobAnalysisResult, title: string): JobAnalysisResult["ni
 /** « Contrat CDD » alors que le candidat accepte les CDD : pas un piège. */
 function wantedContract(point: string, contracts: string[]): boolean {
   const p = point.trim();
-  if (p.length > 70 || !/contrat|^(cdd|cdi)\b/i.test(p)) return false;
-  const types = [...p.matchAll(/\b(cdd|cdi|int[ée]rim|freelance|alternance|stage)\b/giu)].map((m) => m[1]!.toLowerCase().replace("é", "e"));
-  return types.length > 0 && types.every((t) => contracts.some((c) => c.toLowerCase() === t));
+  if (p.length > 70 || !/contrat|^(cdd|cdi|int[ée]rim|freelance|alternance|stage)\b/i.test(p)) return false;
+  const types = [...p.matchAll(/\b(cdd|cdi|int[ée]rim|freelance|alternance|stage|apprentissage|professionnalisation)\b/giu)]
+    .map((m) => normalizeContract(m[1]!))
+    .filter((kind) => kind !== null);
+  return types.length > 0 && types.every((kind) => contracts.some((c) => normalizeContract(c) === kind));
 }
 
 export const ABRIDGED_WARNING = "Annonce incomplète (extrait) : ouvre l'annonce complète pour vérifier les exigences.";
@@ -173,6 +184,10 @@ export async function analyzeJobWithAi(
 ): Promise<{ result: JobAnalysisResult; model: string; durationMs: number }> {
   const started = Date.now();
   const prompt = buildAnalysisPrompt(job, profile);
+  const badContract = unwantedContract(job, profile);
+  const contractWarning = badContract
+    ? `Contrat ${badContract} hors de tes critères (tu cherches : ${profile.contracts.join(", ") || "non renseignés"})`
+    : null;
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const raw = await client.chatJson(ANALYSIS_SYSTEM_PROMPT, prompt, JOB_ANALYSIS_JSON_SCHEMA);
@@ -187,12 +202,15 @@ export async function analyzeJobWithAi(
           competences_bonus: skillNames(r.competences_bonus).filter(
             (b) => !r.competences_obligatoires.some((o) => o.toLowerCase() === b.toLowerCase()),
           ),
-          points_attention: (job.abridged
-            ? [ABRIDGED_WARNING, ...tidy(r.points_attention).filter((p) => !/incompl|extrait/i.test(p))].slice(0, 6)
-            : tidy(r.points_attention)
-          ).filter((p) => !wantedContract(p, profile.contracts)),
+          points_attention: [
+            ...(job.abridged ? [ABRIDGED_WARNING] : []),
+            ...(contractWarning ? [contractWarning] : []),
+            ...tidy(r.points_attention).filter((p) => !job.abridged || !/incompl|extrait/i.test(p)),
+          ]
+            .filter((p) => !wantedContract(p, profile.contracts))
+            .slice(0, 6),
           niveau: checkNiveau(r, job.title),
-          adequation: checkAdequation(r, profile),
+          adequation: checkAdequation(r, job, profile),
         },
         model: client.model,
         durationMs: Date.now() - started,

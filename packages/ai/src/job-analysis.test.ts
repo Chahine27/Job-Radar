@@ -118,4 +118,23 @@ describe("points d'attention sur le contrat", () => {
     const cdiOnly = await analyzeJobWithAi(client, JOB, PROFILE);
     expect(cdiOnly.result.points_attention).toContain("Le contrat est un CDD.");
   });
+
+  it.each([
+    ["STAGE", "Assistant comptable — Stage", "Stage"],
+    ["ALTERNANCE", "Assistant RH — Alternance", "Alternance"],
+  ] as const)("le contrat %s compte dans l'adéquation et les points d'attention", async (contractType, title, label) => {
+    const answer = { ...GOOD, experience_min_ans: null, adequation: "forte", points_attention: [] };
+    const client = new OllamaClient({ fetch: async () => json({ message: { content: JSON.stringify(answer) } }) });
+    const job = { ...JOB, title, contractType };
+    const wanted = await analyzeJobWithAi(client, job, { ...PROFILE, contracts: [label] });
+    expect(wanted.result.adequation).toBe("forte");
+    const unwanted = await analyzeJobWithAi(client, job, PROFILE);
+    expect(unwanted.result.adequation).toBe("faible");
+    expect(unwanted.result.points_attention).toContain(`Contrat ${contractType} hors de tes critères (tu cherches : CDI)`);
+  });
+
+  it("contrat lu dans l'annonce quand la source ne le donne pas", () => {
+    const job = { ...JOB, title: "Gestionnaire de paie", contractType: null, description: "Alternance / Apprentissage\nDurée du contrat : 12 mois" };
+    expect(buildAnalysisPrompt(job, PROFILE)).toContain("Contrat : ALTERNANCE");
+  });
 });

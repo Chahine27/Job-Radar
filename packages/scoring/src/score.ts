@@ -1,7 +1,8 @@
 import { neighborDepartments, type Profile, type RemoteType } from "@job-radar/shared";
 import { extractSkills, getSkill, resolveSkill } from "@job-radar/skills";
 import { DEFAULT_RULES, type ScoringRules } from "./rules";
-import { contractFromTitle, detectSeniority, normalizeContract, type Seniority } from "./signals";
+import { salaryOfJob } from "./salary";
+import { contractOfJob, detectSeniority, normalizeContract, type Seniority } from "./signals";
 
 /** Ce dont le score a besoin. Les champs inconnus sont `null` — jamais devinés. */
 export type ScoringInput = {
@@ -20,6 +21,8 @@ export type ScoringInput = {
   remoteType: RemoteType;
   /** Durée porte-à-porte estimée, en minutes. null = non calculé. */
   travelMinutes: number | null;
+  /** Distance à vol d'oiseau entre le point de départ et l'offre, en km. null/absent = inconnue. */
+  distanceKm?: number | null;
   /**
    * Compétences lues par l'IA (analyse à jour) : exigées et « un plus ». Si présentes, le critère Technique
    * est calculé sur elles (les « plus » comptent moitié) au lieu des mots-clés trouvés dans le texte.
@@ -182,13 +185,7 @@ function scoreExperience(input: ScoringInput, profile: Profile, rules: ScoringRu
 
 // ───────── Contrat ─────────
 
-/** Contrat donné par la source, sinon lu dans le titre. */
-function contractOf(input: ScoringInput) {
-  const fromTitle = contractFromTitle(input.title);
-  // « Freelance » dans le titre l'emporte : Adzuna classe souvent les missions freelance en « contract » (→ CDD).
-  if (fromTitle === "FREELANCE") return fromTitle;
-  return normalizeContract(input.contractType) ?? fromTitle;
-}
+const contractOf = (input: ScoringInput) => contractOfJob(input);
 
 function scoreContract(input: ScoringInput, profile: Profile, rules: ScoringRules): Part {
   const kind = contractOf(input);
@@ -200,11 +197,13 @@ function scoreContract(input: ScoringInput, profile: Profile, rules: ScoringRule
 
 // ───────── Salaire ─────────
 
-function scoreSalary(input: ScoringInput, profile: Profile, rules: ScoringRules): Part {
+function scoreSalary(job: ScoringInput, profile: Profile, rules: ScoringRules): Part {
+  // Salaire de la source, sinon lu dans l'annonce (« Salaire : 2 200 € brut mensuel »).
+  const input = { ...job, ...salaryOfJob(job) };
   const raw = input.salaryMax ?? input.salaryMin;
   // Moins de 8 000 €/an : ce n'est pas un salaire annuel (souvent un taux journalier de freelance) → inconnu.
   const ref = raw !== null && raw >= 8000 ? raw : null;
-  if (ref === null) return { score: rules.neutral, reasons: [], warnings: ["Salaire non communiqué"] };
+  if (ref === null) return { score: rules.unknownSalary, reasons: [], warnings: ["Salaire non communiqué"] };
 
   const label =
     input.salaryMin !== null && input.salaryMax !== null && input.salaryMin !== input.salaryMax
@@ -226,14 +225,24 @@ function scoreSalary(input: ScoringInput, profile: Profile, rules: ScoringRules)
 function scoreLocation(input: ScoringInput, profile: Profile, rules: ScoringRules): Part {
   if (input.remoteType === "remote") return { score: 100, reasons: ["Télétravail complet"], warnings: [] };
   const dept = input.department;
-  if (!dept) return { score: 50, reasons: [], warnings: ["Lieu de travail non précisé"] };
-  const target = profile.locations.find((l) => l.department === dept);
+  const km = input.distanceKm ?? null;
+  if (!dept && km === null) return { score: 50, reasons: [], warnings: ["Lieu de travail non précisé"] };
+  const target = dept ? profile.locations.find((l) => l.department === dept) : undefined;
   if (target) return { score: 100, reasons: [`Dans ta zone : ${target.label}`], warnings: [] };
-  // « Proche » : un département voisin d'une zone du profil (ou listé dans les règles).
-  if (rules.nearbyDepartments.includes(dept) || profile.locations.some((l) => neighborDepartments(l.department).includes(dept))) {
+  const radius = profile.searchRadiusKm;
+  if (radius !== null && km !== null && km <= radius) {
+    return { score: 80, reasons: [`À ${Math.round(km)} km de ton point de départ (rayon ${radius} km)`], warnings: [] };
+  }
+  // Sans rayon, un département voisin d'une zone du profil est « proche » ; avec un rayon, c'est lui qui décide.
+  if (
+    radius === null &&
+    dept &&
+    (rules.nearbyDepartments.includes(dept) || profile.locations.some((l) => neighborDepartments(l.department).includes(dept)))
+  ) {
     return { score: 60, reasons: [], warnings: [`Département ${dept}, proche de ta zone`] };
   }
-  return { score: 15, reasons: [], warnings: [`Département ${dept}, hors de ta zone`] };
+  const where = dept ? `Département ${dept}` : "Lieu";
+  return { score: 15, reasons: [], warnings: [`${where}, hors de ta zone${km !== null ? ` (${Math.round(km)} km)` : ""}`] };
 }
 
 // ───────── Transport ─────────
@@ -309,11 +318,13 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
   } else if (rules.hideSenior && (seniority === "senior" || seniority === "lead")) {
     hiddenReason = seniority === "lead" ? "Poste de lead / direction" : "Poste senior / confirmé";
   } else if (
-    rules.hideAboveYears !== null &&
+    rules.hideYearsOverMax !== null &&
     input.experienceMinYears !== null &&
-    input.experienceMinYears > rules.hideAboveYears
+    input.experienceMinYears > profile.experienceMax + rules.hideYearsOverMax
   ) {
     hiddenReason = `Demande ${input.experienceMinYears} ans d'expérience`;
+  } else if (rules.hideOutOfZone && breakdown.location <= 15) {
+    hiddenReason = input.department ? `Hors de ta zone (département ${input.department})` : "Hors de ta zone";
   }
 
   const all = Object.values(parts);

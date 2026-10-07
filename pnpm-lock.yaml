@@ -304,6 +304,9 @@ importers:
 
   packages/ai:
     dependencies:
+      '@job-radar/scoring':
+        specifier: workspace:*
+        version: link:../scoring
       '@job-radar/shared':
         specifier: workspace:*
         version: link:../shared

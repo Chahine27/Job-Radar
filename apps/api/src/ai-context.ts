@@ -48,9 +48,6 @@ export type Adequation = "forte" | "moyenne" | "faible";
 /** Score maximum selon l'avis de l'IA : elle ne fait que baisser un score trop optimiste, jamais le monter. */
 export const AI_SCORE_CAPS: Record<Adequation, number> = { forte: 100, moyenne: 75, faible: 50 };
 
-/** Les offres à partir de ce score (parmi celles affichées) sont vérifiées par l'IA. */
-export const AUTO_ANALYSIS_THRESHOLD = 70;
-
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 20) : []);
 
 /** Lit l'adéquation et l'avis dans une analyse enregistrée (null si illisible). */

@@ -62,6 +62,43 @@ export function normalizeContract(value: string | null | undefined): ContractKin
   return null;
 }
 
+/**
+ * Contrat lu dans la description, quand la source ne le donne pas : une ligne de contrat explicite
+ * (« Type de contrat : Stage », « Contract: CDI », « Alternance / Apprentissage »), sinon un seul type cité dans tout le texte.
+ * Ailleurs que sur une ligne de contrat, les mots ambigus (« mis en place », « lib », « apprentissage automatique ») ne comptent pas.
+ */
+export function contractFromText(text: string): ContractKind | null {
+  const kindsIn = (value: string, label: boolean): Set<ContractKind> => {
+    const found = new Set<ContractKind>();
+    if (/\bcdi\b|contrat a duree indeterminee/.test(value)) found.add("CDI");
+    if (/\bcdd\b|contrat a duree determinee/.test(value)) found.add("CDD");
+    if ((label && /\b(mis|tti)\b/.test(value)) || /interim|travail temporaire/.test(value)) found.add("INTERIM");
+    if (/alternance|contrat d'apprentissage|en apprentissage|professionnalisation/.test(value) || (label && /apprentissage/.test(value)))
+      found.add("ALTERNANCE");
+    if (/\bstage\b|stagiaire|internship/.test(value)) found.add("STAGE");
+    if ((label && /\b(lib|liberal|tjm)\b/.test(value)) || /\b(freelance|free-lance|independant|portage salarial)\b/.test(value))
+      found.add("FREELANCE");
+    return found;
+  };
+  const lines = normalizeText(text)
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(/\s+[·•|]\s+/))
+    .map((line) => line.replace(/^[\s*•·-]+|[\s.,;:!?]+$/g, "").trim())
+    .filter(Boolean);
+  for (const line of lines) {
+    const kinds = kindsIn(line, true);
+    const isContractField = /^(type de contrat|contrat(?: de travail)?|employment type|contract(?: type)?)\s*[:=-]/.test(line);
+    const isContractLabel =
+      line.length <= 80 &&
+      /^(?:cdi|cdd|mis|tti|interim|travail temporaire|alternance|apprentissage|professionnalisation|stage|stagiaire|internship|freelance|free-lance|independant|liberal|portage|tjm)(?:\s*(?:\/|,|ou|et)\s*(?:cdi|cdd|interim|alternance|apprentissage|stage|freelance|independant|portage))?$/.test(
+        line,
+      );
+    if ((isContractField || isContractLabel) && kinds.size === 1) return [...kinds][0]!;
+  }
+  const kinds = kindsIn(normalizeText(text), false);
+  return kinds.size === 1 ? [...kinds][0]! : null;
+}
+
 /** Télétravail lu dans le texte. Rien trouvé → "unknown" (pas "sur site" : on ne devine pas). */
 export function detectRemote(text: string): "remote" | "hybrid" | "onsite" | "unknown" {
   const t = normalizeText(text);
@@ -89,4 +126,16 @@ export function contractFromTitle(title: string): ContractKind | null {
   if (/\bcdd\b/.test(t)) return "CDD";
   if (/\bcdi\b/.test(t)) return "CDI";
   return null;
+}
+
+/**
+ * Contrat d'une offre, la même règle partout (score, analyse IA, pastille affichée) :
+ * un titre qui dit Stage / Alternance / Freelance l'emporte sur le champ de la source (souvent rempli par défaut) ;
+ * sinon le champ de la source, puis le titre, puis la description. Pour CDD / CDI, la source reste prioritaire
+ * (« CDI » + titre « (CDD possible) » = CDI).
+ */
+export function contractOfJob(job: { contractType: string | null; title: string; description: string }): ContractKind | null {
+  const fromTitle = contractFromTitle(job.title);
+  if (fromTitle === "STAGE" || fromTitle === "ALTERNANCE" || fromTitle === "FREELANCE") return fromTitle;
+  return normalizeContract(job.contractType) ?? fromTitle ?? contractFromText(job.description);
 }

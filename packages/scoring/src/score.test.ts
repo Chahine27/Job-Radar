@@ -36,17 +36,17 @@ const score = (input: ScoringInput, profile: Profile = DEV_PROFILE) => scoreJob(
 describe(`scores figés — règles ${DEFAULT_RULES.version}`, () => {
   it.each([
     ["offre parfaite", PERFECT, 93],
-    ["offre acceptable", ACCEPTABLE, 77],
+    ["offre acceptable", ACCEPTABLE, 76],
     ["offre trop senior", TOO_SENIOR, 55],
     ["salaire faible", LOW_SALARY, 85],
     ["trop éloignée", TOO_FAR, 50],
-    ["non-CDI", NOT_CDI, 40],
+    ["non-CDI", NOT_CDI, 0],
   ] as const)("%s → %i %%", (_name, input, expected) => {
     expect(score(input).final).toBe(expected);
   });
 
   it("version des règles attendue", () => {
-    expect(DEFAULT_RULES.version).toBe("2026-10-01.3");
+    expect(DEFAULT_RULES.version).toBe("2026-10-07.1");
   });
 });
 
@@ -108,7 +108,7 @@ describe("données absentes = neutre, jamais inventées", () => {
       experienceMinYears: null,
       title: "Développeur Vue.js",
     });
-    expect(r.breakdown.salary).toBe(DEFAULT_RULES.neutral);
+    expect(r.breakdown.salary).toBe(DEFAULT_RULES.unknownSalary);
     expect(r.breakdown.transport).toBe(DEFAULT_RULES.neutral);
     expect(r.breakdown.contract).toBe(DEFAULT_RULES.neutral);
     expect(r.breakdown.experience).toBe(DEFAULT_RULES.neutral);
@@ -240,11 +240,11 @@ describe("règles détaillées", () => {
 
   it("un « salaire » sous 8 000 € (taux journalier) est ignoré", () => {
     const r = score({ ...PERFECT, salaryMin: 450, salaryMax: 550 });
-    expect(r.breakdown.salary).toBe(DEFAULT_RULES.neutral);
+    expect(r.breakdown.salary).toBe(DEFAULT_RULES.unknownSalary);
     expect(r.warnings).toContain("Salaire non communiqué");
   });
 
-  it("plus de 4 ans d'expérience demandés → masquée", () => {
+  it("plus que « expérience max du profil + 1 an » → masquée (profil : 3 ans max)", () => {
     expect(score({ ...PERFECT, title: "Développeur", experienceMinYears: 4 }).hidden).toBe(false);
     expect(score({ ...PERFECT, title: "Développeur", experienceMinYears: 5 }).hiddenReason).toBe("Demande 5 ans d'expérience");
   });
@@ -306,5 +306,90 @@ describe("critère Technique calculé sur les compétences lues par l'IA", () =>
     const s1 = scoreJob(PERFECT, EXAMPLE_PROFILE);
     const s2 = scoreJob({ ...PERFECT, aiSkills: { required: [], bonus: [] } }, EXAMPLE_PROFILE);
     expect(s2.breakdown.technical).toBe(s1.breakdown.technical);
+  });
+});
+
+describe("contrat : hors profil = 0, lu dans le titre ou l'annonce", () => {
+  it("contrat hors profil : score nul, masquée du flux principal mais gardée", () => {
+    const r = score(NOT_CDI);
+    expect(r.final).toBe(0);
+    expect(r.hiddenReason).toBe("Contrat CDD hors profil");
+  });
+
+  it.each([
+    ["STAGE", "Stage"],
+    ["ALTERNANCE", "Alternance"],
+  ] as const)("le contrat %s est accepté s'il est dans le profil", (contractType, label) => {
+    const ok = score({ ...PERFECT, contractType }, { ...DEV_PROFILE, contracts: [label] });
+    expect(ok.breakdown.contract).toBe(100);
+    expect(ok.hidden).toBe(false);
+    expect(score({ ...PERFECT, contractType }).final).toBe(0);
+  });
+
+  it("contrat lu dans la description quand la source ne le donne pas", () => {
+    const r = score({ ...PERFECT, contractType: null, title: "Assistant administratif", description: "Alternance / Apprentissage\nDurée : 12 mois" });
+    expect(r.hiddenReason).toBe("Contrat ALTERNANCE hors profil");
+  });
+
+  it("salaire lu dans l'annonce quand la source ne le donne pas", () => {
+    const r = score({ ...PERFECT, salaryMin: null, salaryMax: null, description: `${PERFECT.description}\nSalaire : 42 000 € - 46 000 € brut annuel` });
+    expect(r.reasons).toContain("Salaire 42k–46k");
+  });
+});
+
+describe("zone : départements, voisins, rayon, télétravail", () => {
+  const far = { ...PERFECT, department: "13" };
+  it("hors zone → masquée (sauf télétravail complet ou lieu inconnu)", () => {
+    expect(score(far).hiddenReason).toBe("Hors de ta zone (département 13)");
+    expect(score({ ...far, remoteType: "remote" }).hidden).toBe(false);
+    expect(score({ ...far, department: null }).hidden).toBe(false);
+  });
+  it("département voisin d'une zone du profil : proche, pas masqué", () => {
+    const r = score({ ...PERFECT, department: "01" }); // voisin du 69
+    expect(r.breakdown.location).toBe(60);
+    expect(r.hidden).toBe(false);
+  });
+  it("avec un rayon, c'est lui qui décide hors des départements du profil", () => {
+    const withRadius = { ...DEV_PROFILE, searchRadiusKm: 30 };
+    expect(score({ ...far, distanceKm: 12 }, withRadius).hidden).toBe(false);
+    expect(score({ ...far, distanceKm: 80 }, withRadius).hidden).toBe(true);
+    expect(score({ ...PERFECT, department: "01", distanceKm: 80 }, withRadius).hidden).toBe(true);
+  });
+});
+
+/** Profil non informaticien : le score marche pour tous les métiers. */
+describe("profil aide-soignante (fictif)", () => {
+  const CARE: Profile = {
+    ...EXAMPLE_PROFILE,
+    skills: ["Soins d'hygiène", "Aide à la toilette", "Transmissions", "Prise des constantes", "Bionettoyage"],
+    preferredTechs: [{ name: "Transmissions", weight: 1 }],
+    contracts: ["CDI", "CDD"],
+    experienceMin: 2,
+    experienceMax: 6,
+    salaryTarget: 26000,
+    salaryMinimum: 23000,
+    locations: [{ label: "Nantes", department: "44" }],
+    searches: ["Aide-soignant"],
+  };
+  const JOB: ScoringInput = {
+    title: "Aide-soignant(e) de nuit (H/F)",
+    description: "EHPAD. Soins d'hygiène, aide à la toilette, prise des constantes et transmissions. 2 ans d'expérience. Salaire : 2 100 € brut mensuel.",
+    technologies: [],
+    contractType: null,
+    experienceMinYears: 2,
+    salaryMin: null,
+    salaryMax: null,
+    department: "44",
+    remoteType: "onsite",
+    travelMinutes: 25,
+  };
+  it("offre du métier dans la zone : bonne note, salaire mensuel converti", () => {
+    const r = scoreJob(JOB, CARE);
+    expect(r.final).toBeGreaterThanOrEqual(CARE.minScoreForNotification);
+    expect(r.reasons).toContain("Salaire 25k");
+    expect(r.hidden).toBe(false);
+  });
+  it("stage d'aide-soignant : contrat hors profil → 0", () => {
+    expect(scoreJob({ ...JOB, title: "Stage aide-soignant" }, CARE).final).toBe(0);
   });
 });

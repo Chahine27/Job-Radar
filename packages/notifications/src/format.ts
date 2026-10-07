@@ -54,7 +54,7 @@ export function escapeHtml(s: string): string {
 export function emailHtml(alerts: JobAlert[]): string {
   const cards = alerts
     .map((a) => {
-      const color = a.score >= 70 ? "#1f8a4c" : "#a86a00";
+      const color = "#1f8a4c"; // toute offre notifiée a déjà passé ton seuil
       const chips = (list: string[], bg: string, fg: string) =>
         list.map((s) => `<span style="display:inline-block;margin:2px;padding:2px 8px;border-radius:99px;background:${bg};color:${fg};font-size:12px">${escapeHtml(s)}</span>`).join("");
       return `

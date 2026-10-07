@@ -16,10 +16,10 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
-import { EMPTY_LETTER_KIT, LetterKitSchema, letterKitReady, type LetterKit } from "@job-radar/shared";
+import { DEFAULT_PROFILE, EMPTY_LETTER_KIT, LetterKitSchema, letterKitReady, type LetterKit } from "@job-radar/shared";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AUTO_ANALYSIS_THRESHOLD, analysisHash, isAbridged, toJobInput, toProfileInput } from "../ai-context";
+import { analysisHash, isAbridged, toJobInput, toProfileInput } from "../ai-context";
 import { requireAuth } from "../auth";
 import { DEFAULT_PDF_NAME, renderLetterPdf, safeName, saveLetterPdf } from "../letter-pdf";
 import { defaultMail, defaultSpontaneousTitle } from "../spontaneous-mail";
@@ -202,26 +202,31 @@ export async function aiRoutes(
     }
   }
 
-  const autoStatus = () => ({
+  /** Seuil du profil (« Analyse IA à partir de »). */
+  const thresholdOf = async (userId: string) =>
+    (await stores.profiles.get(userId))?.profile.minScoreForAnalysis ?? DEFAULT_PROFILE.minScoreForAnalysis;
+
+  const autoStatus = (threshold: number) => ({
     enabled: !!ai,
-    threshold: AUTO_ANALYSIS_THRESHOLD,
+    threshold,
     pending: [...(current ? [current] : []), ...queue.map((q) => q.jobId)],
     offline: Date.now() < offlineUntil,
     message: Date.now() < offlineUntil ? offlineMessage : null,
   });
 
-  app.get("/api/ai/auto", async () => autoStatus());
+  app.get("/api/ai/auto", async (request) => autoStatus(await thresholdOf(request.userId!)));
 
   app.post("/api/ai/auto", async (request, reply) => {
     const body = AutoBody.safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "INVALID_BODY" });
-    if (!ai || Date.now() < offlineUntil) return autoStatus();
-    const wanted = await opts.jobs.autoCandidates(request.userId!, body.data.jobIds, AUTO_ANALYSIS_THRESHOLD);
+    const threshold = await thresholdOf(request.userId!);
+    if (!ai || Date.now() < offlineUntil) return autoStatus(threshold);
+    const wanted = await opts.jobs.autoCandidates(request.userId!, body.data.jobIds, threshold);
     for (const jobId of wanted) {
       if (jobId !== current && !queue.some((q) => q.jobId === jobId)) queue.push({ userId: request.userId!, jobId });
     }
     void pump();
-    return autoStatus();
+    return autoStatus(threshold);
   });
 
   /**
@@ -232,16 +237,17 @@ export async function aiRoutes(
   app.post("/api/ai/auto/feed", async (request, reply) => {
     const body = FeedBody.safeParse(request.body ?? {});
     if (!body.success) return reply.code(400).send({ error: "INVALID_BODY" });
-    if (!ai) return { ...autoStatus(), queued: 0 };
+    const threshold = await thresholdOf(request.userId!);
+    if (!ai) return { ...autoStatus(threshold), queued: 0 };
     if (body.data.retry) offlineUntil = 0;
-    if (Date.now() < offlineUntil) return { ...autoStatus(), queued: 0 };
+    if (Date.now() < offlineUntil) return { ...autoStatus(threshold), queued: 0 };
     const feed = await opts.jobs.list(request.userId!, {
-      minScore: AUTO_ANALYSIS_THRESHOLD,
+      minScore: threshold,
       status: "active",
       includeHidden: false,
       sort: "score",
     });
-    const wanted = (await opts.jobs.autoCandidates(request.userId!, feed.map((j) => j.id), AUTO_ANALYSIS_THRESHOLD)).slice(0, body.data.limit);
+    const wanted = (await opts.jobs.autoCandidates(request.userId!, feed.map((j) => j.id), threshold)).slice(0, body.data.limit);
     let queued = 0;
     for (const jobId of wanted) {
       if (jobId !== current && !queue.some((q) => q.jobId === jobId)) {
@@ -250,7 +256,7 @@ export async function aiRoutes(
       }
     }
     void pump();
-    return { ...autoStatus(), queued };
+    return { ...autoStatus(threshold), queued };
   });
 
   // ───────────── Lettre de motivation ─────────────

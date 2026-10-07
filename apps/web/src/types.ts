@@ -17,6 +17,7 @@ export type JobSummary = {
   company: string | null;
   city: string | null;
   department: string | null;
+  zone: "local" | "remote" | "unknown";
   contractType: string | null;
   salaryMin: number | null;
   salaryMax: number | null;

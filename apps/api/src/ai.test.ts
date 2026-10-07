@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createTestApp, login } from "./test-helpers";
+import { createTestApp, DEVELOPER_TEST_PROFILE, login } from "./test-helpers";
+
+/** Seuil du profil (« Analyse IA à partir de ») : c'est lui qui décide des offres vérifiées. */
+const THRESHOLD = DEVELOPER_TEST_PROFILE.minScoreForAnalysis;
 
 async function setup() {
   const t = await createTestApp();
@@ -85,15 +88,15 @@ describe("vérification automatique des meilleures offres affichées", () => {
     throw new Error("file IA jamais vidée");
   }
 
-  it("seules les offres ≥ 70 % sans analyse à jour partent à l'IA ; « faible » ramène le score à 50 % max", async () => {
+  it("seules les offres ≥ seuil du profil sans analyse à jour partent à l'IA ; « faible » ramène le score à 50 % max", async () => {
     const { req, aiCalls, aiState } = await setup();
     aiState.adequation = "faible";
     const list = (await req("GET", "/api/jobs?limit=10")).json().items as Array<{ id: string; score: { final: number } }>;
-    const high = list.filter((j) => j.score.final >= 70).map((j) => j.id);
+    const high = list.filter((j) => j.score.final >= THRESHOLD).map((j) => j.id);
     expect(high.length).toBeGreaterThan(0);
 
     const first = (await req("POST", "/api/ai/auto", { jobIds: list.map((j) => j.id) })).json();
-    expect(first.threshold).toBe(70);
+    expect(first.threshold).toBe(THRESHOLD);
     await waitIdle(req);
     expect(aiCalls.map((c) => c.title).sort()).toEqual(
       list.filter((j) => high.includes(j.id)).map((j: any) => j.title).sort(),
@@ -103,7 +106,7 @@ describe("vérification automatique des meilleures offres affichées", () => {
     const checked = after.find((j) => j.id === high[0]);
     expect(checked.ai).toMatchObject({ adequation: "faible" });
     expect(checked.score.final).toBeLessThanOrEqual(50);
-    expect(checked.ai.before).toBeGreaterThanOrEqual(70);
+    expect(checked.ai.before).toBeGreaterThanOrEqual(THRESHOLD);
     const detail = (await req("GET", `/api/jobs/${high[0]}`)).json();
     expect(detail.warnings[0]).toMatch(/^Score ramené de \d+ à \d+ % par l'IA \(adéquation faible\)/);
 
@@ -129,10 +132,10 @@ describe("vérification automatique des meilleures offres affichées", () => {
     expect((await req("GET", `/api/jobs/${top.id}`)).json().ai).toBeNull();
   });
 
-  it("tout le flux (bouton « Actualiser » / « Vérifier avec l'IA ») : même les offres pas affichées, seulement ≥ 70 %, une seule fois", async () => {
+  it("tout le flux (bouton « Actualiser » / « Vérifier avec l'IA ») : même les offres pas affichées, seulement ≥ seuil du profil, une seule fois", async () => {
     const { req, aiCalls } = await setup();
     const all = (await req("GET", "/api/jobs?limit=50")).json().items as Array<{ id: string; title: string; score: { final: number } }>;
-    const high = all.filter((j) => j.score.final >= 70);
+    const high = all.filter((j) => j.score.final >= THRESHOLD);
     expect(high.length).toBeGreaterThan(0);
 
     const res = (await req("POST", "/api/ai/auto/feed", {})).json();

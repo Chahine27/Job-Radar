@@ -40,6 +40,8 @@ export type JobQuery = {
   sort?: "score" | "date";
   /** Une seule source (vide = toutes). */
   source?: string;
+  /** Rubrique du flux : dans ta zone, télétravail complet, lieu non précisé (vide = tout). */
+  zone?: "" | "local" | "remote" | "unknown";
   limit?: number;
   offset?: number;
 };

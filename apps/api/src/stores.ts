@@ -56,6 +56,8 @@ export type JobRow = {
   city: string | null;
   postalCode: string | null;
   department: string | null;
+  latitude: number | null;
+  longitude: number | null;
   /** Adresse du lieu de travail, si connue (trajet calculé jusqu'à elle). */
   address: string | null;
   remoteType: RemoteType;

@@ -199,11 +199,19 @@ Aucune clé, aucun abonnement, et les annonces comme ton profil restent chez toi
   L'analyse est gardée : la rouvrir ne coûte rien. Elle est signalée « à refaire » si l'annonce ou ton profil change.
 
 **Vérification automatique des scores**
-La liste des offres s'affiche par 10. Parmi les offres affichées, celles à **70 % et plus** sont relues par l'IA
+La liste des offres s'affiche par 10. Parmi les offres affichées, celles au-dessus du seuil **« Analyse IA à partir de »** de ton profil (55 % par défaut) sont relues par l'IA
 (une à la fois, 5 à 10 s chacune ; « IA en cours… » sur l'offre). Si l'IA juge l'offre peu adaptée, le score baisse :
 adéquation **moyenne → 75 % max**, **faible → 50 % max** (l'ancien score reste affiché : « 91 → 50 % »). Elle ne monte jamais un score.
 Si ton profil, ton CV ou l'annonce change, l'ancienne vérification ne compte plus et l'offre est revérifiée.
 Ollama éteint : la liste marche normalement, avec « IA éteinte : scores non vérifiés ».
+
+**Ce qui est masqué du flux** (case « Offres masquées » pour les revoir)
+- Contrat absent de ton profil (score 0) : le contrat est lu dans la source, le titre (« Stage », « Alternance ») ou l'annonce.
+- Expérience demandée au-delà de ton maximum + 1 an.
+- Offre hors de ta zone : hors de tes départements (et de leurs voisins), ou au-delà du **rayon** choisi dans le Profil.
+  Le télétravail complet et les lieux non précisés ne sont jamais masqués. Rubriques en haut de la liste :
+  Tout · Dans ma zone · Télétravail complet · Lieu non précisé.
+- Salaire non communiqué : note neutre de 50 sur ce critère. Un salaire écrit dans l'annonce (« 2 100 € brut mensuel », « 38-42 k€ ») est lu.
 
 **Offres Adzuna et Jooble : compléter l'annonce**
 Ces sites ne donnent que le début de l'annonce : le score est approximatif (« Extrait · score approximatif » dans la liste)

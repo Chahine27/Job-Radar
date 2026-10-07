@@ -56,6 +56,8 @@ export const ProfileSchema = z
     salaryTarget: z.number().int().positive().nullable(),
     salaryMinimum: z.number().int().positive().nullable(),
     locations: z.array(LocationTargetSchema),
+    /** Rayon autour du point de départ : une offre à moins de N km est « dans ta zone » même hors de tes départements. null = désactivé. */
+    searchRadiusKm: z.number().int().min(5).max(200).nullable().default(null),
     /** Ce que tu préfères : sert aux recherches et à départager deux offres de même score. */
     preferredTechs: z.array(PreferredTechSchema),
     searches: z.array(z.string().min(2)),
@@ -99,6 +101,7 @@ export const EXAMPLE_PROFILE: Profile = {
     { label: "Zone A", department: "69" },
     { label: "Paris", department: "75" },
   ],
+  searchRadiusKm: null,
   preferredTechs: [
     { name: "Excel", weight: 1 },
     { name: "CRM", weight: 0.9 },
@@ -141,6 +144,7 @@ export const DEFAULT_PROFILE: Profile = {
   salaryTarget: null,
   salaryMinimum: null,
   locations: [],
+  searchRadiusKm: null,
   preferredTechs: [],
   searches: [],
   scoringWeights: EXAMPLE_PROFILE.scoringWeights,

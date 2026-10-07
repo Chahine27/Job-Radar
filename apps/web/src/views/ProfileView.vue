@@ -10,7 +10,7 @@ import type { HomeLocation, Profile } from "../types";
 
 type WeightKey = keyof typeof BREAKDOWN_LABELS;
 const WEIGHT_KEYS = Object.keys(BREAKDOWN_LABELS) as WeightKey[];
-const CONTRACTS = ["CDI", "CDD", "Intérim", "Alternance", "Freelance"];
+const CONTRACTS = ["CDI", "CDD", "Intérim", "Alternance", "Stage", "Freelance"];
 
 const profile = ref<Profile | null>(null);
 const weights = ref<Record<WeightKey, number>>({ technical: 0, experience: 0, contract: 0, salary: 0, location: 0, transport: 0 });
@@ -85,6 +85,7 @@ async function save() {
   }
   const payload: Profile = {
     ...profile.value,
+    searchRadiusKm: Number(profile.value.searchRadiusKm) || null, // champ vidé → ""
     preferredTechs: profile.value.preferredTechs.filter((p) => p.name.trim()),
     locations: profile.value.locations.filter((l) => l.label.trim() || l.department.trim()),
     scoringWeights: Object.fromEntries(WEIGHT_KEYS.map((k) => [k, (Number(weights.value[k]) || 0) / 100])) as Profile["scoringWeights"],
@@ -206,6 +207,14 @@ async function save() {
           <button type="button" class="icon-btn danger" :aria-label="`Retirer ${l.label}`" @click="profile.locations.splice(i, 1)"><Icon name="trash" :size="15" /></button>
         </div>
         <div><button type="button" class="small" @click="addLocation"><Icon name="plus" :size="14" />Ajouter une zone</button></div>
+        <label>
+          Rayon autour du point de départ (km, de 5 à 200, vide = aucun)
+          <input v-model.number="profile.searchRadiusKm" type="number" min="5" max="200" placeholder="ex. 30" />
+        </label>
+        <p class="muted small">
+          Sans rayon, les départements voisins de tes zones comptent comme « proches ». Avec un rayon, une offre à moins de cette
+          distance est dans ta zone, même hors de tes départements. Les offres hors zone sont masquées (le télétravail complet jamais).
+        </p>
       </section>
 
       <section class="card stack">

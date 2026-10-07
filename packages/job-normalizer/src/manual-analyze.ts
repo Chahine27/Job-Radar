@@ -1,8 +1,7 @@
-import { detectRemote, parseExperienceYears } from "@job-radar/scoring";
+import { contractFromText, contractFromTitle, detectRemote, parseExperienceYears, salaryFromText } from "@job-radar/scoring";
 import type { RemoteType } from "@job-radar/shared";
 import { departmentFromText, departmentName } from "@job-radar/shared";
 import { extractSkills, getSkill, normalizeText } from "@job-radar/skills";
-import { parseLooseSalary } from "./salary";
 import { comparable } from "./text";
 
 /**
@@ -219,47 +218,14 @@ function findLocation(lines: string[], text: string): string | null {
 }
 
 function findContract(title: string | null, text: string): JobTextAnalysis["contractType"] {
-  const tt = normalizeText(title ?? "");
-  if (/\b(stage|stagiaire|internship)\b/.test(tt)) return "STAGE";
-  if (/\b(alternance|alternant|apprenti)/.test(tt)) return "ALTERNANCE";
-  if (/\b(freelance|independant|tjm)\b/.test(tt)) return "FREELANCE";
-  const KINDS: Record<string, JobTextAnalysis["contractType"]> = {
-    cdi: "CDI", cdd: "CDD", stage: "STAGE", alternance: "ALTERNANCE", interim: "INTERIM", freelance: "FREELANCE",
-  };
-  for (const seg of text.split("\n").flatMap(segments)) {
-    const k = normalizeText(seg);
-    if (KINDS[k]) return KINDS[k];
-  }
-  const t = normalizeText(text);
-  const found = new Set<JobTextAnalysis["contractType"]>();
-  if (/\bcdi\b|duree indeterminee/.test(t)) found.add("CDI");
-  if (/\bcdd\b|duree determinee/.test(t)) found.add("CDD");
-  if (/type de contrat\s*:\s*(stage|stagiaire)/.test(t)) found.add("STAGE");
-  if (/type de contrat\s*:\s*(alternance|apprentissage)/.test(t)) found.add("ALTERNANCE");
-  if (/type de contrat\s*:\s*(interim|mission d'interim)/.test(t)) found.add("INTERIM");
-  if (/type de contrat\s*:\s*(freelance|independant)/.test(t)) found.add("FREELANCE");
-  return found.size === 1 ? [...found][0]! : null;
-}
-
-/** Salaire : seulement sur une ligne qui parle de salaire (pas les tickets restaurant ni le budget télétravail). */
-function findSalary(lines: string[]): { min: number; max: number } | null {
-  for (const line of lines) {
-    const t = normalizeText(line);
-    if (!/salaire|remuneration|package|brut|k€|k euros|\d\s*k\b|€\s*\/\s*an|par an|annuel/.test(t)) continue;
-    if (/ticket|restaurant|mutuelle|prime de|enveloppe|budget/.test(t)) continue;
-    // « Estimation Hellowork → 37 900 - 65 000 € / an » : estimation du site, pas le salaire de l'annonce.
-    if (/estimation|estime|salaire moyen|moyenne/.test(t)) continue;
-    const s = parseLooseSalary(line);
-    if (s && s.min >= 15000) return s;
-  }
-  return null;
+  return contractFromTitle(title ?? "") ?? contractFromText(text);
 }
 
 export function analyzeJobText(raw: string): JobTextAnalysis {
   const text = cleanPastedText(raw);
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const title = findTitle(lines);
-  const salary = findSalary(lines);
+  const salary = salaryFromText(text);
   const exp = parseExperienceYears(text);
   return {
     text,

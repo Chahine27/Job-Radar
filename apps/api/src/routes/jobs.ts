@@ -15,6 +15,8 @@ const ListQuery = z.object({
     .transform((v) => v === "true"),
   q: z.string().max(200).optional(),
   sort: z.enum(["score", "date"]).default("score"),
+  /** Rubrique du flux : « local » (dans ta zone), « remote » (télétravail complet), « unknown » (lieu non précisé). */
+  zone: z.enum(["local", "remote", "unknown"]).optional(),
   /** Seulement les offres de cette source (« france-travail », « manual »…) ; absent = toutes. */
   source: z.string().trim().max(40).regex(/^[a-z0-9-]*$/).optional(),
   /** Pagination : 20 offres par page par défaut. */

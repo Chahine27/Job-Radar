@@ -15,7 +15,7 @@ type Filters = Required<Omit<JobQuery, "q" | "limit" | "offset">> & { q: string 
 /** Filtres retenus comme préférences (serveur + copie locale) : retrouvés après un rechargement. */
 const filters = usePrefs<Filters>(
   "offres",
-  { minScore: 0, status: "active", includeHidden: false, q: "", sort: "score", source: "" },
+  { minScore: 0, status: "active", includeHidden: false, q: "", sort: "score", source: "", zone: "" },
   { legacyKey: "jobradar.filters" },
 );
 // « Postulé » a sa propre page (Candidatures) : ancien filtre → flux normal.
@@ -71,12 +71,12 @@ async function loadMore() {
   }
 }
 
-// ───── Vérification par l'IA des meilleures offres affichées (≥ 70 %) ─────
+// ───── Vérification par l'IA des meilleures offres affichées (≥ seuil « Analyse IA » du profil) ─────
 const check = ref<AutoCheckStatus | null>(null);
 const pending = computed(() => new Set(check.value?.pending ?? []));
 let checkPoll: ReturnType<typeof setInterval> | undefined;
 
-/** Envoie les offres affichées : le serveur ne garde que celles ≥ 70 % pas encore vérifiées. */
+/** Envoie les offres affichées : le serveur ne garde que celles au-dessus du seuil du profil pas encore vérifiées. */
 async function requestCheck(items: JobSummary[]) {
   if (items.length === 0 || check.value?.enabled === false) return;
   try {
@@ -104,7 +104,7 @@ function afterCheck() {
 }
 
 /**
- * Tout le flux, pas seulement les offres affichées : les offres à 70 % et plus jamais vérifiées
+ * Tout le flux, pas seulement les offres affichées : les offres au-dessus du seuil du profil jamais vérifiées
  * (ou dont l'analyse est dépassée) partent à l'IA, de la meilleure à la moins bonne.
  * `retry` : clic de l'utilisateur → on réessaie même si l'IA était éteinte il y a peu.
  */
@@ -114,7 +114,7 @@ async function feedCheck(retry: boolean) {
     const res = await api.autoCheckFeed(retry);
     check.value = res;
     if (retry && !res.offline && res.pending.length === 0) {
-      checkMessage.value = "L'IA a déjà vérifié toutes les offres à 70 % et plus.";
+      checkMessage.value = `L'IA a déjà vérifié toutes les offres à ${res.threshold} % et plus.`;
       setTimeout(() => (checkMessage.value = null), 6000);
     }
     afterCheck();
@@ -225,6 +225,15 @@ onUnmounted(() => {
   clearTimeout(timer);
 });
 
+const MIN_SCORES = [25, 50, 65, 75];
+
+const ZONE_TABS: Array<{ value: NonNullable<JobQuery["zone"]>; label: string }> = [
+  { value: "", label: "Tout" },
+  { value: "local", label: "Dans ma zone" },
+  { value: "remote", label: "Télétravail complet" },
+  { value: "unknown", label: "Lieu non précisé" },
+];
+
 const STATUS_TABS: Array<{ value: NonNullable<JobQuery["status"]>; label: string }> = [
   { value: "active", label: "Actives" },
   { value: "NEW", label: "Nouvelles" },
@@ -317,6 +326,20 @@ function place(job: JobSummary) {
     </div>
 
     <section class="card toolbar">
+      <div class="tab-rows">
+      <div class="tabs" role="tablist" aria-label="Rubrique">
+        <button
+          v-for="t in ZONE_TABS"
+          :key="t.value"
+          type="button"
+          role="tab"
+          :aria-selected="filters.zone === t.value"
+          :class="{ active: filters.zone === t.value }"
+          @click="filters.zone = t.value"
+        >
+          {{ t.label }}
+        </button>
+      </div>
       <div class="tabs" role="tablist" aria-label="Statut">
         <button
           v-for="t in STATUS_TABS"
@@ -330,15 +353,30 @@ function place(job: JobSummary) {
           {{ t.label }}
         </button>
       </div>
+      </div>
       <div class="filters">
         <div class="field search">
           <Icon name="search" :size="16" />
           <input v-model="filters.q" type="search" placeholder="Titre, entreprise, ville…" aria-label="Recherche" />
         </div>
-        <label class="range">
-          <span>Compatibilité min. <strong class="num">{{ filters.minScore }} %</strong></span>
-          <input v-model.number="filters.minScore" type="range" min="0" max="100" step="5" />
-        </label>
+        <div class="range" role="radiogroup" aria-label="Compatibilité minimale">
+          <span>Compatibilité min.</span>
+          <div class="min-scores">
+            <button
+              v-for="m in MIN_SCORES"
+              :key="m"
+              type="button"
+              role="radio"
+              class="min-score"
+              :class="{ active: filters.minScore === m }"
+              :aria-checked="filters.minScore === m"
+              :title="filters.minScore === m ? 'Cliquer pour retirer le filtre' : `Seulement les offres à ${m} % et plus`"
+              @click="filters.minScore = filters.minScore === m ? 0 : m"
+            >
+              <ScoreBadge :value="m" :threshold="threshold" />
+            </button>
+          </div>
+        </div>
         <label class="sort">
           <span>Trier par</span>
           <select v-model="filters.sort">
@@ -360,7 +398,7 @@ function place(job: JobSummary) {
         v-if="check?.enabled !== false && !check?.pending.length"
         type="button"
         class="small ghost ai-btn"
-        title="Envoie à l'IA toutes les offres à 70 % et plus qu'elle n'a pas encore vérifiées"
+        :title="`Envoie à l'IA toutes les offres à ${check?.threshold ?? ''} % et plus qu'elle n'a pas encore vérifiées`"
         @click="feedCheck(true)"
       >
         <Icon name="sparkle" :size="14" />Vérifier avec l'IA
@@ -449,7 +487,12 @@ function place(job: JobSummary) {
 .toolbar { display: grid; gap: 0.9rem; padding: 0.9rem 1rem; }
 .filters { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(180px, 1.3fr) minmax(150px, 1fr) auto; gap: 0.9rem 1.1rem; align-items: end; }
 .filters .range span, .filters .sort span { display: flex; justify-content: space-between; gap: 0.5rem; }
-.filters .range strong { color: var(--text); }
+.tab-rows { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.min-scores { display: flex; gap: 0.5rem; margin-top: 0.3rem; }
+.min-score { padding: 0.15rem; border-radius: 50%; background: none; border: 2px solid transparent; cursor: pointer; opacity: 0.55; transition: opacity 0.15s, border-color 0.15s; }
+.min-score:hover { opacity: 0.85; }
+.min-score.active { opacity: 1; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.min-score :deep(.ring) { --size: 40px; pointer-events: none; }
 .filters .switch { padding-bottom: 0.45rem; white-space: nowrap; }
 @media (max-width: 900px) { .filters { grid-template-columns: 1fr 1fr; } .filters .search { grid-column: 1 / -1; } }
 @media (max-width: 520px) { .filters { grid-template-columns: 1fr; } }

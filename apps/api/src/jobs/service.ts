@@ -1,3 +1,4 @@
+import { distanceKm } from "@job-radar/routing";
 import type { JobStatus, Profile } from "@job-radar/shared";
 import { DEFAULT_RULES, hashProfile, scoreJob, scoringInputFromJob, type ScoreResult, type ScoringRules } from "@job-radar/scoring";
 import { AI_SCORE_CAPS, type Adequation, analysisHash, isAbridged, readVerdict, toProfileInput } from "../ai-context";
@@ -5,7 +6,12 @@ import type { JobRow, Stores } from "../stores";
 
 export { ABRIDGED_SOURCES, isAbridged } from "../ai-context";
 
+/** Rubrique du flux : télétravail complet, lieu connu (dans ta zone ; hors zone = masquée), lieu non précisé. */
+export type Zone = "local" | "remote" | "unknown";
+
 export type JobFilters = {
+  /** Une seule rubrique du flux ; absent = toutes. */
+  zone?: Zone | undefined;
   minScore: number;
   /** "active" = tout sauf IGNORED / REJECTED / EXPIRED. */
   status: JobStatus | "active" | "all";
@@ -22,6 +28,7 @@ export type JobSummary = {
   company: string | null;
   city: string | null;
   department: string | null;
+  zone: Zone;
   contractType: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
@@ -94,6 +101,8 @@ const sameKey = (t: string) =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
+const zoneOf = (job: JobRow): Zone => (job.remoteType === "remote" ? "remote" : job.department || job.latitude !== null ? "local" : "unknown");
+
 function toSummary(job: JobRow, s: ScoreResult, verdict: Verdict = null): JobSummary {
   const cap = verdict ? AI_SCORE_CAPS[verdict.adequation] : 100;
   const final = Math.min(s.final, cap);
@@ -103,6 +112,7 @@ function toSummary(job: JobRow, s: ScoreResult, verdict: Verdict = null): JobSum
     company: job.company,
     city: job.city,
     department: job.department,
+    zone: zoneOf(job),
     contractType: job.contractType,
     salaryMin: job.salaryMin,
     salaryMax: job.salaryMax,
@@ -127,14 +137,18 @@ function toSummary(job: JobRow, s: ScoreResult, verdict: Verdict = null): JobSum
  */
 export function createJobService(stores: Stores, rules: ScoringRules = DEFAULT_RULES, opts: { aiModel?: string } = {}) {
   const cache = new Map<string, ScoreResult>();
+  // Point de départ de chaque profil chargé : le rayon de recherche en dépend (il n'est pas dans le hash du profil).
+  const homes = new WeakMap<Profile, { lat: number; lng: number } | null>();
 
   function scoreOf(job: JobRow, profile: Profile, profileHash: string, v: Verdict = null): ScoreResult {
     const aiSkills = aiSkillsOf(v);
     const aiKey = aiSkills ? `${aiSkills.required.join("|")}#${aiSkills.bonus.join("|")}` : "-";
-    const key = `${job.id}:${job.contentHash}:${job.experienceMinYrs ?? "-"}:${job.travelMinutes ?? "-"}:${aiKey}:${profileHash}:${rules.version}`;
+    const home = homes.get(profile) ?? null;
+    const km = home && job.latitude !== null && job.longitude !== null ? distanceKm(home, { lat: job.latitude, lng: job.longitude }) : null;
+    const key = `${job.id}:${job.contentHash}:${job.experienceMinYrs ?? "-"}:${job.travelMinutes ?? "-"}:${aiKey}:${profileHash}:${rules.version}:${km === null ? "-" : Math.round(km)}`;
     let s = cache.get(key);
     if (!s) {
-      s = scoreJob({ ...scoringInputFromJob(job), aiSkills }, profile, rules);
+      s = scoreJob({ ...scoringInputFromJob(job), aiSkills, distanceKm: km }, profile, rules);
       if (cache.size > 20_000) cache.clear();
       cache.set(key, s);
     }
@@ -144,6 +158,7 @@ export function createJobService(stores: Stores, rules: ScoringRules = DEFAULT_R
   async function loadProfile(userId: string) {
     const rec = await stores.profiles.get(userId);
     if (!rec) throw Object.assign(new Error("Profil introuvable"), { statusCode: 404 });
+    homes.set(rec.profile, rec.home);
     return { profile: rec.profile, hash: hashProfile(rec.profile) };
   }
 
@@ -179,9 +194,11 @@ export function createJobService(stores: Stores, rules: ScoringRules = DEFAULT_R
           const jj = withAiExperience(j, v);
           return toSummary(jj, scoreOf(jj, profile, hash, v), v);
         })
+        .filter((s) => !f.zone || s.zone === f.zone)
         .filter((s) => s.score.final >= f.minScore)
-        // Une offre ajoutée à la main n'est jamais masquée : tu l'as choisie.
-        .filter((s) => f.includeHidden || !s.score.hidden || isManual(s));
+        // Une offre ajoutée à la main n'est jamais masquée : tu l'as choisie. Sauf hors de ta zone :
+        // l'extension sert souvent à évaluer une offre sans vouloir la garder dans le flux.
+        .filter((s) => f.includeHidden || !s.score.hidden || (isManual(s) && s.score.breakdown.location > 15));
 
       const date = (s: JobSummary) => (s.publishedAt ?? s.firstSeenAt).getTime();
       items.sort((a, b) =>

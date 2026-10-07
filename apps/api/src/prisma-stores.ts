@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@job-radar/db";
 import { buildManualJob, removeManualJob, saveManualJob } from "@job-radar/pipeline";
 import { travelModeOf } from "@job-radar/routing";
+import { contractOfJob, salaryOfJob } from "@job-radar/scoring";
 import { LetterKitSchema, ProfileSchema } from "@job-radar/shared";
 import type { FullTextInfo, HomeLocation, JobRow, ProfileRecord, Stores } from "./stores";
 
@@ -42,6 +43,9 @@ function toJobRow(j: JobWithRelations): JobRow {
       row.salaryMax = info.salaryMax ?? info.salaryMin;
     }
   }
+  // Même règles que le score : les pastilles « Contrat » et « Salaire » affichent ce que le score utilise.
+  row.contractType = contractOfJob(row);
+  Object.assign(row, salaryOfJob(row));
   return row;
 }
 
@@ -60,6 +64,8 @@ const jobSelect = {
   city: true,
   postalCode: true,
   department: true,
+  latitude: true,
+  longitude: true,
   address: true,
   remoteType: true,
   technologies: true,

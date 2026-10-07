@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@job-radar/scoring": "workspace:*",
     "@job-radar/shared": "workspace:*",
     "@job-radar/skills": "workspace:*",
     "zod": "4.6.5"

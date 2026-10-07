@@ -129,7 +129,7 @@ async function readWithAi() {
 }
 
 // ───────────── 3. Profil à relire ─────────────
-const CONTRACTS = ["CDI", "CDD", "Intérim", "Alternance", "Freelance"];
+const CONTRACTS = ["CDI", "CDD", "Intérim", "Alternance", "Stage", "Freelance"];
 const FROM_AI: Record<string, string> = { CDI: "CDI", CDD: "CDD", INTERIM: "Intérim", ALTERNANCE: "Alternance", FREELANCE: "Freelance" };
 const form = ref<SetupForm>({
   fullName: null,
