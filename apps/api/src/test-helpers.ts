@@ -373,6 +373,8 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
   /** Fausse IA : compte les appels, peut simuler Ollama éteint. */
   const aiCalls: Array<{ title: string; skills: string[] }> = [];
   const aiState: { online: boolean; adequation: "forte" | "moyenne" | "faible" } = { online: true, adequation: "forte" };
+  /** Pages des notifications « lettre terminée » envoyées. */
+  const letterNotices: string[] = [];
   const notifiers: Notifier[] = [
     { channel: "email", isConfigured: () => true, sendAlerts: async () => {}, sendTest: async () => void tests.push("email") },
     {
@@ -403,6 +405,7 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
     secureCookie: false,
     collector,
     notifiers,
+    onLetterReady: async (n) => void letterNotices.push(n.path),
     vapidPublicKey: "BTestPublicKey",
     ai: {
       model: "fake-model",
@@ -501,7 +504,7 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
     geocoder: async (q: string) =>
       q.includes("introuvable") ? [] : [{ label: "Place de la Gare 69100 Villeurbanne", lat: 45.7714, lng: 5.2467, precision: "address" }],
   });
-  return { app, collector, tests, travelRequests, lbbSearches, aiCalls, aiState, sentMails, settingsValues, settingsTests, ...mem };
+  return { app, collector, tests, travelRequests, lbbSearches, aiCalls, aiState, sentMails, settingsValues, settingsTests, letterNotices, ...mem };
 }
 
 export async function login(app: Awaited<ReturnType<typeof buildApp>>) {

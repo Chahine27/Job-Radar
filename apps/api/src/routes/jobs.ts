@@ -3,7 +3,7 @@ import { JOB_STATUSES, ManualJobSchema } from "@job-radar/shared";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireAuth } from "../auth";
-import type { JobService } from "../jobs/service";
+import type { JobDetail, JobService } from "../jobs/service";
 import type { Stores } from "../stores";
 
 const ListQuery = z.object({
@@ -48,7 +48,13 @@ const FindBody = z.object({
 
 export async function jobRoutes(
   app: FastifyInstance,
-  opts: { jobs: JobService; stores: Stores; ensureTravel?: (jobId: string) => Promise<string | null> },
+  opts: {
+    jobs: JobService;
+    stores: Stores;
+    ensureTravel?: (jobId: string) => Promise<string | null>;
+    /** Annonce complète collée : score recalculé (mail « à postuler » s'il reste bon). */
+    onJobCompleted?: (job: JobDetail) => Promise<unknown>;
+  },
 ) {
   const { jobs } = opts;
   app.addHook("preHandler", requireAuth);
@@ -142,7 +148,10 @@ export async function jobRoutes(
       info: body.data.info ?? null,
     });
     if (!row) return reply.code(404).send({ error: "JOB_NOT_FOUND" });
-    return jobs.get(request.userId!, params.data.id);
+    const detail = await jobs.get(request.userId!, params.data.id);
+    // Sans attendre l'envoi du mail : la réponse ne dépend pas du serveur SMTP.
+    if (detail && opts.onJobCompleted) void opts.onJobCompleted(detail).catch((err) => request.log.error(err, "notification après annonce complète"));
+    return detail;
   });
 
   // Page envoyée par l'extension (ou collée) : est-ce une offre déjà connue par un simple extrait ?

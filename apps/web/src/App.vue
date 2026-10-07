@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "./api";
 import Icon, { type IconName } from "./components/Icon.vue";
@@ -31,6 +31,24 @@ const THEMES: Array<{ mode: ThemeMode; label: string; icon: IconName }> = [
 /** « Offres » reste en surbrillance sur la page d'une offre. */
 const isActive = (to: string) => (to === "/" ? route.path === "/" || route.path.startsWith("/offres/") : route.path.startsWith(to));
 const initial = computed(() => currentEmail.value?.[0] ?? "?");
+
+// Page visible ET fenêtre au premier plan : signalée au serveur (toutes les 10 s) pour ne pas notifier une lettre
+// terminée sous tes yeux. Sans hasFocus(), un navigateur resté derrière une autre fenêtre compte encore comme « visible ».
+function ping() {
+  if (currentEmail.value && document.visibilityState === "visible" && document.hasFocus()) void api.presence(route.path).catch(() => {});
+}
+let pingTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  pingTimer = setInterval(ping, 10_000);
+  document.addEventListener("visibilitychange", ping);
+  window.addEventListener("focus", ping);
+});
+onUnmounted(() => {
+  clearInterval(pingTimer);
+  document.removeEventListener("visibilitychange", ping);
+  window.removeEventListener("focus", ping);
+});
+watch(() => route.path, ping);
 
 async function logout() {
   await api.logout().catch(() => {});

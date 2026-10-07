@@ -46,6 +46,9 @@ const ReadBody = z.object({
 const AutoBody = z.object({ jobIds: z.array(z.string().min(1).max(64)).max(30) });
 const FeedBody = z.object({ limit: z.number().int().min(1).max(50).default(30), retry: z.boolean().default(false) });
 
+/** Notification « lettre terminée » (chemin relatif à APP_URL). */
+export type LetterNotice = { title: string; body: string; path: string; tag: string };
+
 const NO_DESCRIPTION_MESSAGE =
   "La source n'a donné aucune description : l'IA n'a rien à lire. Colle l'annonce complète (bouton « Compléter l'annonce »).";
 
@@ -59,11 +62,45 @@ const errorReply = (err: unknown) => {
 
 export async function aiRoutes(
   app: FastifyInstance,
-  opts: { stores: Stores; jobs: JobService; ai?: AiService; savePdf?: typeof saveLetterPdf; mailer?: Mailer },
+  opts: {
+    stores: Stores;
+    jobs: JobService;
+    ai?: AiService;
+    savePdf?: typeof saveLetterPdf;
+    mailer?: Mailer;
+    /** Lettre terminée : prévient l'utilisateur (notification). Une erreur ici ne fait jamais échouer la lettre. */
+    onLetterReady?: (n: LetterNotice) => Promise<unknown>;
+  },
 ) {
   const { stores, ai } = opts;
   const savePdf = opts.savePdf ?? saveLetterPdf;
   app.addHook("preHandler", requireAuth);
+
+  /**
+   * Pages ouvertes, visibles et au premier plan : le navigateur le signale toutes les 10 s (POST /api/presence).
+   * Une lettre terminée sur la page où tu es déjà n'envoie pas de notification.
+   */
+  const watching = new Map<string, number>();
+  const WATCH_TTL_MS = 25_000;
+  const watchKey = (userId: string, path: string) => {
+    try {
+      return `${userId}|${decodeURIComponent(path)}`;
+    } catch {
+      return `${userId}|${path}`;
+    }
+  };
+  function notifyLetter(userId: string, n: LetterNotice) {
+    if (Date.now() - (watching.get(watchKey(userId, n.path)) ?? 0) < WATCH_TTL_MS) return;
+    void opts.onLetterReady?.(n)?.catch(() => {});
+  }
+
+  app.post("/api/presence", async (request, reply) => {
+    const body = z.object({ path: z.string().min(1).max(300) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "INVALID_BODY" });
+    if (watching.size > 1000) watching.clear();
+    watching.set(watchKey(request.userId!, body.data.path), Date.now());
+    return reply.code(204).send();
+  });
 
   /**
    * La carte graphique fait une chose à la fois : chaque appel à l'IA passe par cette file.
@@ -334,6 +371,12 @@ export async function aiRoutes(
       const { content, model, durationMs } = await withLock(() => ai.writeLetter(toJobInput(ctx.job), ctx.kit!));
       const saved = await stores.letters.save(params.data.id, { inputHash: ctx.inputHash, model, content });
       request.log.info({ jobId: params.data.id, durationMs, model }, "lettre IA écrite");
+      notifyLetter(request.userId!, {
+        title: "Lettre de motivation terminée",
+        body: `${ctx.job.title}${ctx.job.company ? ` — ${ctx.job.company}` : ""}`,
+        path: `/offres/${encodeURIComponent(params.data.id)}`,
+        tag: `letter-${params.data.id}`,
+      });
       return { ...letterReply(saved, ctx), cached: false, durationMs };
     } catch (err) {
       const e = errorReply(err);
@@ -449,6 +492,12 @@ export async function aiRoutes(
       const { content, model, durationMs } = await withLock(() => ai.writeLetter(ctx.job, ctx.kit!, { spontaneous: true }));
       const saved = await stores.applications.save(params.data.id, { inputHash: ctx.inputHash, model, letter: content });
       request.log.info({ leadId: params.data.id, durationMs, model }, "lettre spontanée écrite");
+      notifyLetter(request.userId!, {
+        title: "Lettre de motivation terminée",
+        body: `Candidature spontanée — ${ctx.lead.name}`,
+        path: `/entreprises/${encodeURIComponent(params.data.id)}/candidature`,
+        tag: `letter-${params.data.id}`,
+      });
       return { ...applicationReply({ ...ctx, application: saved }), durationMs };
     } catch (err) {
       const e = errorReply(err);

@@ -5,10 +5,12 @@ import {
   createMailer,
   createPrismaNotifyRepo,
   createWebPushNotifier,
+  notifyCompletedJob,
   notifyNewMatches,
+  notifyNotice,
 } from "@job-radar/notifications";
 import { CollectionRunner, createPrismaRunRepo, expireJobs, prismaCollect, prismaJoobleQuota } from "@job-radar/pipeline";
-import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, ensureTravelTimes, geocode, inIdf } from "@job-radar/routing";
+import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, distanceKm, ensureTravelTimes, geocode, inIdf } from "@job-radar/routing";
 import { scoreJob, scoringInputFromJob } from "@job-radar/scoring";
 import { ProfileSchema } from "@job-radar/shared";
 import {
@@ -137,12 +139,15 @@ const runner = new CollectionRunner({
     const row = await prisma.profile.findFirst();
     if (!run || !row) return;
     const profile = ProfileSchema.parse(row.data);
+    const home = row.homeLat !== null && row.homeLng !== null ? { lat: row.homeLat, lng: row.homeLng } : null;
+    const distanceOf = (j: { latitude: number | null; longitude: number | null }) =>
+      home && j.latitude !== null && j.longitude !== null ? distanceKm(home, { lat: j.latitude, lng: j.longitude }) : null;
     // 1) temps de trajet des seules nouvelles offres qui peuvent être notifiées (≥ seuil − 5, car un bon
     //    trajet peut faire monter le score), 2) notifications. Les autres : calcul à l'ouverture de l'offre.
     const candidates = await notifyRepo.candidates(run.startedAt);
     const likely = candidates
       .filter((j) => {
-        const s = scoreJob(scoringInputFromJob(j), profile);
+        const s = scoreJob({ ...scoringInputFromJob(j), distanceKm: distanceOf(j) }, profile);
         return !s.hidden && s.final >= profile.minScoreForNotification - 5;
       })
       .map((j) => j.id);
@@ -155,6 +160,7 @@ const runner = new CollectionRunner({
       profile,
       since: run.startedAt,
       appUrl: env.APP_URL,
+      distanceOf,
       log: (m) => log(m),
     });
   },
@@ -164,6 +170,23 @@ const app = await buildApp({
   stores: createPrismaStores(prisma),
   collector: runner,
   notifiers,
+  // Offre « à compléter » complétée : « à postuler » si le score recalculé (celui affiché) reste bon.
+  // Lettre de motivation terminée (offre ou candidature spontanée) : notification du navigateur.
+  onLetterReady: ({ path, ...n }) => notifyNotice({ repo: notifyRepo, notifiers, notice: { ...n, url: new URL(path, env.APP_URL).href }, log: (m) => log(m) }),
+  onJobCompleted: async (job) => {
+    const row = await prisma.profile.findFirst();
+    if (!row) return;
+    await notifyCompletedJob({
+      repo: notifyRepo,
+      notifiers,
+      profile: ProfileSchema.parse(row.data),
+      job,
+      score: { final: job.score.final, hidden: job.score.hidden, matchedSkills: job.matchedSkills, missingSkills: job.missingSkills },
+      abridged: job.abridged,
+      appUrl: env.APP_URL,
+      log: (m) => log(m),
+    });
+  },
   vapidPublicKey: e.VAPID_PUBLIC_KEY?.trim() || null,
   geocoder: (q) => geocode(q, { limit: 5 }),
   searchCompanies: (p) => keyed.lbb.search(p),

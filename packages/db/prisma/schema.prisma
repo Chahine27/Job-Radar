@@ -292,12 +292,14 @@ model Notification {
   jobId     String
   /// email | webpush
   channel   String
+  /// apply (à postuler) | complete (annonce incomplète à compléter)
+  kind      String   @default("apply")
   /// sent | failed
   status    String
   error     String?
   createdAt DateTime @default(now())
 
-  @@unique([jobId, channel])
+  @@unique([jobId, channel, kind])
 }
 
 model PushSubscription {

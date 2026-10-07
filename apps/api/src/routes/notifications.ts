@@ -63,7 +63,16 @@ export async function notificationRoutes(
 
   app.post("/api/notifications/subscribe", async (request, reply) => {
     const body = SubscribeBody.safeParse(request.body);
-    if (!body.success) return reply.code(400).send({ error: "INVALID_SUBSCRIPTION" });
+    if (!body.success) {
+      const host = (() => {
+        try {
+          return new URL(String((request.body as { endpoint?: unknown } | null)?.endpoint)).hostname;
+        } catch {
+          return "?";
+        }
+      })();
+      return reply.code(400).send({ error: "INVALID_SUBSCRIPTION", message: `Abonnement refusé (service de notification : ${host}).` });
+    }
     await stores.notifications.subscribe(request.userId!, body.data);
     return { ok: true };
   });

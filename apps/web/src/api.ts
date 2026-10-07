@@ -95,6 +95,8 @@ export const api = {
       "GET",
       `/api/leads?status=${status}&sort=${sort}&email=${email}&offset=${offset}&limit=${limit}`,
     ),
+  /** Signale la page ouverte et au premier plan : pas de notification pour une lettre terminée ici. */
+  presence: (path: string) => request<void>("POST", "/api/presence", { path }),
   getLeadSettings: () => request<SpontaneousSettings>("GET", "/api/leads/settings"),
   saveLeadSettings: (s: SpontaneousSettings) => request<SpontaneousSettings>("PUT", "/api/leads/settings", s),
   refreshLeads: () =>

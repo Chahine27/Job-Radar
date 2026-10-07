@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { pushPayload } from "./format";
-import type { JobAlert, Notifier } from "./types";
+import type { JobAlert, Notice, Notifier } from "./types";
 
 export type PushSubscriptionRecord = { endpoint: string; keys: { p256dh: string; auth: string } };
 
@@ -64,13 +64,16 @@ export function createWebPushNotifier(cfg: WebPushConfig, sender?: Sender): Noti
           : [
               ...alerts.slice(0, max).map(pushPayload),
               JSON.stringify({
-                title: `+ ${alerts.length - max} autre(s) offre(s) compatible(s)`,
+                title: `+ ${alerts.length - max} autre(s) offre(s) ${alerts[0]!.kind === "complete" ? "à compléter" : "compatible(s)"}`,
                 body: "Ouvre Job Radar pour les voir.",
                 url: new URL("/", alerts[0]!.url).href,
                 tag: "job-radar-summary",
               }),
             ];
       await broadcast(payloads);
+    },
+    async sendNotice(n: Notice) {
+      await broadcast([JSON.stringify(n)]);
     },
     async sendTest() {
       await broadcast([JSON.stringify({ title: "Job Radar", body: "Les notifications du navigateur fonctionnent.", url: "/", tag: "test" })]);

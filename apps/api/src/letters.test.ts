@@ -77,4 +77,16 @@ describe("lettre de motivation", () => {
     expect(res.statusCode).toBe(503);
     expect(res.json().message).toMatch(/lance l'appli Ollama/);
   });
+
+  it("notification « lettre terminée » : envoyée, sauf si la page de l'offre est ouverte au premier plan", async () => {
+    const { req, letterNotices } = await setup();
+    await req("PUT", "/api/letter-kit", KIT);
+    await req("POST", "/api/jobs/j-vue/letter");
+    expect(letterNotices).toEqual(["/offres/j-vue"]);
+
+    expect((await req("POST", "/api/presence", { path: "/offres/j-vue" })).statusCode).toBe(204);
+    await req("POST", "/api/jobs/j-vue/letter?force=true");
+    expect(letterNotices).toHaveLength(1); // page ouverte : pas de notification
+    expect((await req("POST", "/api/presence", {})).statusCode).toBe(400);
+  });
 });

@@ -263,10 +263,19 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
       async update(source, data) {
         const exists = await prisma.sourceState.findUnique({ where: { source } });
         if (!exists) return null;
+        // Intervalle raccourci : la prochaine collecte ne doit pas rester calée sur l'ancien (ex. 1 jour).
+        const sooner = new Date(Date.now() + data.intervalMinutes * 60_000);
         await prisma.sourceState.update({
           where: { source },
           // Activer une source la rend « due » tout de suite.
-          data: { ...data, ...(data.enabled && !exists.enabled ? { nextRunAt: new Date(), failures: 0 } : {}) },
+          data: {
+            ...data,
+            ...(data.enabled && !exists.enabled
+              ? { nextRunAt: new Date(), failures: 0 }
+              : data.intervalMinutes < exists.intervalMinutes && sooner < exists.nextRunAt
+                ? { nextRunAt: sooner }
+                : {}),
+          },
         });
         return (await this.list()).find((r) => r.source === source) ?? null;
       },

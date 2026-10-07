@@ -220,6 +220,12 @@ Ollama éteint : la liste marche normalement, avec « IA éteinte : scores non v
   Tout · Dans ma zone · Télétravail complet · Lieu non précisé.
 - Salaire non communiqué : note neutre de 50 sur ce critère. Un salaire écrit dans l'annonce (« 2 100 € brut mensuel », « 38-42 k€ ») est lu.
 
+**Notifications** (email et/ou navigateur, carte Notifications de la page Profil)
+- Offre au-dessus de ton seuil, annonce complète : « à postuler ».
+- Même chose mais Adzuna / Jooble ne donnent qu'un extrait : « à compléter » (score provisoire). Colle l'annonce complète :
+  si le score recalculé reste bon, tu reçois alors « à postuler ». Jamais deux fois la même alerte.
+- Lettre de motivation terminée : notification du navigateur seulement (pas d'email), et pas si la page est déjà ouverte devant toi.
+
 **Offres Adzuna et Jooble : compléter l'annonce**
 Ces sites ne donnent que le début de l'annonce : le score est approximatif (« Extrait · score approximatif » dans la liste)
 et l'IA ne vérifie pas ces offres, pour ne pas juger sur un bout de texte.

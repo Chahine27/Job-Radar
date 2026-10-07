@@ -3,8 +3,8 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyServerOptions, LogController } from "fastify";
 import { SESSION_COOKIE, resolveSession } from "./auth";
-import { createJobService } from "./jobs/service";
-import { type AiService, aiRoutes } from "./routes/ai";
+import { createJobService, type JobDetail } from "./jobs/service";
+import { type AiService, type LetterNotice, aiRoutes } from "./routes/ai";
 import { authRoutes } from "./routes/auth";
 import { type Collector, collectionRoutes } from "./routes/collection";
 import { type LeadsOptions, leadRoutes } from "./routes/leads";
@@ -30,6 +30,10 @@ export type AppOptions = {
   /** Collecte (bouton Actualiser + état). Absent → routes non exposées. */
   collector?: Collector;
   notifiers?: Notifier[];
+  /** Annonce complète collée sur une offre : envoie la notification « à postuler » si le score reste bon. */
+  onJobCompleted?: (job: JobDetail) => Promise<unknown>;
+  /** Lettre de motivation IA terminée : notification du navigateur (sauf si la page est ouverte). */
+  onLetterReady?: (n: LetterNotice) => Promise<unknown>;
   vapidPublicKey?: string | null;
   /** Identifiants présents dans .env, par source (affichage page Sources). Fonction = valeur à jour. */
   sourcesConfigured?: Record<string, boolean> | (() => Record<string, boolean>);
@@ -104,8 +108,9 @@ export async function buildApp(opts: AppOptions) {
     jobs: jobService,
     stores: opts.stores,
     ...(opts.ensureTravel ? { ensureTravel: opts.ensureTravel } : {}),
+    ...(opts.onJobCompleted ? { onJobCompleted: opts.onJobCompleted } : {}),
   });
-  await app.register(aiRoutes, { stores: opts.stores, jobs: jobService, ...(opts.ai ? { ai: opts.ai } : {}), ...(opts.mailer ? { mailer: opts.mailer } : {}) });
+  await app.register(aiRoutes, { stores: opts.stores, jobs: jobService, ...(opts.ai ? { ai: opts.ai } : {}), ...(opts.mailer ? { mailer: opts.mailer } : {}), ...(opts.onLetterReady ? { onLetterReady: opts.onLetterReady } : {}) });
   if (opts.collector) await app.register(collectionRoutes, { collector: opts.collector });
   await app.register(leadRoutes, {
     stores: opts.stores,

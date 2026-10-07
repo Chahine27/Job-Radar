@@ -2,11 +2,12 @@ import { EXAMPLE_PROFILE } from "@job-radar/shared";
 import { describe, expect, it } from "vitest";
 import { createEmailNotifier } from "./email";
 import { emailHtml, emailSubject, escapeHtml, pushPayload } from "./format";
-import { type CandidateJob, type NotifyRepo, notifyNewMatches } from "./notify";
+import { type CandidateJob, type NotifyRepo, notifyCompletedJob, notifyNewMatches, notifyNotice } from "./notify";
 import type { Channel, JobAlert, Notifier } from "./types";
 import { createWebPushNotifier, type PushSubscriptionRecord } from "./webpush";
 
 const ALERT: JobAlert = {
+  kind: "apply",
   jobId: "j1",
   title: "Développeur Vue.js <script>",
   company: "Atelier",
@@ -31,6 +32,14 @@ describe("format", () => {
   it("sujet : une offre / plusieurs offres", () => {
     expect(emailSubject([ALERT])).toBe("🟢 91 % — Développeur Vue.js <script>");
     expect(emailSubject([ALERT, { ...ALERT, score: 80 }])).toBe("🟢 2 nouvelles offres compatibles (jusqu'à 91 %)");
+  });
+
+  it("annonce incomplète : sujet, score provisoire et bouton « Compléter »", () => {
+    const complete = { ...ALERT, kind: "complete" as const };
+    expect(emailSubject([complete])).toBe("📝 À compléter — 91 % provisoire — Développeur Vue.js <script>");
+    expect(emailSubject([complete, { ...complete, score: 80 }])).toBe("📝 2 offres à compléter (jusqu'à 91 % provisoire)");
+    expect(emailHtml([complete])).toContain("Compléter l'annonce");
+    expect(JSON.parse(pushPayload(complete)).title).toBe("📝 À compléter · 91 % provisoire — Développeur Vue.js <script>");
   });
 
   it("notification navigateur", () => {
@@ -110,6 +119,10 @@ function job(id: string, extra: Partial<CandidateJob> = {}): CandidateJob {
     company: "Atelier",
     city: "Villeurbanne",
     description: "Vue 3, TypeScript, Node.js",
+    sources: [{ source: "france-travail" }],
+    fullTextAt: null,
+    latitude: null,
+    longitude: null,
     technologies: [],
     contractType: "CDI",
     experienceMinYrs: 2,
@@ -128,13 +141,14 @@ function memoryRepo(jobs: CandidateJob[], settings = { emailEnabled: true, pushE
   const repo: NotifyRepo = {
     settings: async () => settings,
     candidates: async () => jobs.filter((j) => !notified.includes(j.id)),
-    claim: async (jobId, channel) => {
-      const key = `${jobId}:${channel}`;
+    claim: async (jobId, channel, kind) => {
+      const key = `${jobId}:${channel}:${kind}`;
       if (rows.has(key)) return false;
       rows.set(key, "pending");
       return true;
     },
-    finish: async (jobId, channel, status) => void rows.set(`${jobId}:${channel}`, status),
+    finish: async (jobId, channel, kind, status) => void rows.set(`${jobId}:${channel}:${kind}`, status),
+    wasSent: async (jobId, kind) => [...rows].some(([key, status]) => key.startsWith(`${jobId}:`) && key.endsWith(`:${kind}`) && status === "sent"),
     markNotified: async (ids) => void notified.push(...ids),
   };
   return { repo, rows, notified };
@@ -213,8 +227,79 @@ describe("notifyNewMatches", () => {
     const push = fakeNotifier("webpush");
     const res = await run(repo, [fakeNotifier("email", true), push]);
     expect(push.batches).toHaveLength(1);
-    expect(rows.get("a:email")).toBe("failed");
-    expect(rows.get("a:webpush")).toBe("sent");
+    expect(rows.get("a:email:apply")).toBe("failed");
+    expect(rows.get("a:webpush:apply")).toBe("sent");
     expect(res.errors[0]).toContain("SMTP refusé");
+  });
+});
+
+describe("annonces incomplètes : « à compléter » puis « à postuler »", () => {
+  const extract = (id: string) => job(id, { description: "Vue 3, TypeScript, Node.js", sources: [{ source: "adzuna" }] });
+  const completed = { final: 85, hidden: false, matchedSkills: ["Vue.js"], missingSkills: [] };
+  const afterPaste = (repo: NotifyRepo, notifiers: Notifier[], score = completed, abridged = false) =>
+    notifyCompletedJob({ repo, notifiers, profile: EXAMPLE_PROFILE, job: job("x"), score, abridged, appUrl: "http://localhost:5173" });
+
+  it("bon score sur un extrait → mail « à compléter », jamais « à postuler »", async () => {
+    const { repo, rows } = memoryRepo([extract("x"), job("complete")]);
+    const email = fakeNotifier("email");
+    await run(repo, [email]);
+    expect(email.batches.map((b) => b.map((a) => [a.jobId, a.kind]))).toEqual([[["complete", "apply"]], [["x", "complete"]]]);
+    expect(rows.get("x:email:apply")).toBeUndefined();
+  });
+
+  it("annonce collée et score toujours bon → « à postuler », une seule fois", async () => {
+    const { repo } = memoryRepo([extract("x")]);
+    const email = fakeNotifier("email");
+    await run(repo, [email]);
+    await afterPaste(repo, [email]);
+    await afterPaste(repo, [email]);
+    expect(email.batches.map((b) => b.map((a) => a.kind))).toEqual([["complete"], ["apply"]]);
+    expect(email.batches[1]![0]!.score).toBe(85);
+  });
+
+  it("score qui chute après l'annonce complète → aucun mail « à postuler »", async () => {
+    const { repo } = memoryRepo([extract("x")]);
+    const email = fakeNotifier("email");
+    await run(repo, [email]);
+    await afterPaste(repo, [email], { ...completed, final: 40 });
+    await afterPaste(repo, [email], { ...completed, hidden: true });
+    expect(email.batches).toHaveLength(1);
+  });
+
+  it("annonce encore incomplète, ou jamais signalée « à compléter » → rien", async () => {
+    const { repo } = memoryRepo([extract("x")]);
+    const email = fakeNotifier("email");
+    await afterPaste(repo, [email]);
+    expect(email.batches).toHaveLength(0);
+    await run(repo, [email]);
+    await afterPaste(repo, [email], completed, true);
+    expect(email.batches).toHaveLength(1);
+  });
+});
+
+describe("rayon de recherche du profil", () => {
+  it("une offre hors des départements mais dans le rayon est annoncée ; au-delà, non", async () => {
+    const { repo } = memoryRepo([job("proche", { department: "13" }), job("loin", { department: "13" })]);
+    const email = fakeNotifier("email");
+    await notifyNewMatches({
+      repo,
+      notifiers: [email],
+      profile: { ...DEVELOPER_PROFILE, searchRadiusKm: 30 },
+      since: new Date(0),
+      appUrl: "http://localhost:5173",
+      distanceOf: (j) => (j.id === "proche" ? 12 : 80),
+    });
+    expect(email.batches.flat().map((a) => a.jobId)).toEqual(["proche"]);
+  });
+});
+
+describe("information ponctuelle (lettre terminée)", () => {
+  it("va au navigateur seulement, jamais par email", async () => {
+    const notice = { title: "Lettre terminée", body: "Assistant comptable", url: "https://x.test/offres/1", tag: "letter-1" };
+    const sent: string[] = [];
+    const email = fakeNotifier("email");
+    const push = { ...fakeNotifier("webpush"), sendNotice: async () => void sent.push("webpush") };
+    await notifyNotice({ repo: { settings: async () => ({ emailEnabled: true, pushEnabled: true }) }, notifiers: [email, push], notice });
+    expect(sent).toEqual(["webpush"]);
   });
 });

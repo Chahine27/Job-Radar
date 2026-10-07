@@ -30,7 +30,9 @@ describe("notifications", () => {
     const { req, pushSubs } = await setup();
     const keys = { p256dh: "BKey", auth: "auth" };
     expect((await req("POST", "/api/notifications/subscribe", { endpoint: "https://fcm.googleapis.com/fcm/send/abc", keys })).statusCode).toBe(200);
-    expect((await req("POST", "/api/notifications/subscribe", { endpoint: "http://127.0.0.1:5432/x", keys })).statusCode).toBe(400);
+    const refused = await req("POST", "/api/notifications/subscribe", { endpoint: "http://127.0.0.1:5432/x", keys });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().message).toBe("Abonnement refusé (service de notification : 127.0.0.1).");
     expect((await req("POST", "/api/notifications/subscribe", { endpoint: "https://evil.example/fcm.googleapis.com", keys })).statusCode).toBe(400);
     expect(pushSubs.size).toBe(1);
     await req("POST", "/api/notifications/unsubscribe", { endpoint: "https://fcm.googleapis.com/fcm/send/abc" });
