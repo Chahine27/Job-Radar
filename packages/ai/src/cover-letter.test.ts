@@ -412,3 +412,27 @@ describe("candidature spontanée (pas d'offre)", () => {
     expect(content).toContain("Objet : Candidature spontanée – Développeur full stack");
   });
 });
+
+describe("règles longues du candidat et style « j'ai »", () => {
+  it("envoie des règles longues en entier à l'IA (la liste des faits n'est plus coupée)", () => {
+    const rules = `${"STRUCTURE : intro imposée. ".repeat(200)}\nFAITS : écran de planning chez Nordia.`;
+    expect(rules.length).toBeGreaterThan(5_000);
+    expect(buildLetterPrompt(JOB, { ...KIT, rules }, {})).toContain("FAITS : écran de planning chez Nordia.");
+  });
+
+  it("accepte « approfondir X en m'appuyant sur Y » et les « j'ai » d'une lettre longue", () => {
+    const job = "Développeur Java Spring Boot, Kafka, Vue.js.";
+    const gap = "Je souhaite approfondir Kafka en m'appuyant sur ma pratique de Java Spring Boot.";
+    expect(findLetterIssues(gap, KIT, job).join("\n")).not.toMatch(/Kafka n'est pas dans le CV/);
+    expect(findLetterIssues("Je souhaite approfondir ma connaissance de Kafka.", KIT, job).join("\n")).toMatch(/Kafka n'est pas dans le CV/);
+    const filler = "Le module servait aux équipes de suivi chaque jour et devait rester simple à lire pour tout le monde. ";
+    const long = `Chez Nordia, j'ai développé des écrans Vue.js. ${filler}${filler}`.repeat(8);
+    expect(findLetterIssues(long, KIT, job).join("\n")).not.toMatch(/« J'ai » revient/);
+  });
+
+  it("repère le tiret long et les adverbes répétés", () => {
+    const all = findLetterIssues("Chez Nordia — en Vue.js — j'ai notamment créé un écran. J'ai notamment migré un module.", KIT, "Vue.js").join("\n");
+    expect(all).toMatch(/tiret long/);
+    expect(all).toMatch(/Supprime un « notamment »/);
+  });
+});

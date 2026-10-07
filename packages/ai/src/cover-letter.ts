@@ -5,7 +5,7 @@ import type { AnalysisJobInput } from "./job-analysis";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les lettres existantes seront signalées « à refaire ». */
-export const LETTER_PROMPT_VERSION = "2026-10-01.3";
+export const LETTER_PROMPT_VERSION = "2026-10-06.1";
 
 /** Ce que l'IA écrit : l'objet et le corps. L'en-tête, « Madame, Monsieur » et la politesse sont ajoutés par le code. */
 export const LetterDraftSchema = z.object({
@@ -45,14 +45,16 @@ export const LETTER_JSON_SCHEMA = {
 const MAX_JOB = 5_000;
 const MAX_CV = 5_000;
 const MAX_EXAMPLE = 4_000;
-const MAX_RULES = 3_000;
+const MAX_RULES = 8_000;
 
 export const LETTER_SYSTEM_PROMPT = `Tu écris une lettre de motivation en français pour un candidat, à partir de SON CV et d'une annonce. Le candidat peut exercer n'importe quel métier.
 Tu réponds UNIQUEMENT avec le JSON demandé.
 
 1. VÉRITÉ (règles absolues)
 - N'invente RIEN : chaque expérience, projet, diplôme, chiffre, compétence ou outil cité doit être écrit dans le CV (ou dans les RÈGLES DU CANDIDAT, écrites par lui). Aucun chiffre qui n'y figure pas.
-- Si des RÈGLES DU CANDIDAT sont fournies, elles passent AVANT toutes les règles ci-dessous en cas de conflit (structure, longueur, phrases types).
+- Si des RÈGLES DU CANDIDAT sont fournies, elles passent AVANT toutes les règles ci-dessous en cas de conflit (structure, longueur, phrases types, phrase d'introduction imposée). Leurs listes de FAITS sont la référence : n'ajoute rien qu'elles ne disent pas.
+- Projet en équipe : ce que le candidat a fait lui-même se dit « j'ai… » ; ce que faisait le reste de l'équipe se dit « le projet utilisait… ». Ne lui attribue jamais la part de l'équipe.
+- Notion vue en formation (cours) : « ma formation m'a apporté des bases en… », jamais « j'ai conçu » ni « j'ai mis en production ».
 - Associe une compétence ou un outil à une expérience SEULEMENT si le CV l'écrit pour CETTE expérience (ne prête pas à un poste ce qui a été fait ailleurs).
 - Une expérience professionnelle (emploi, alternance, stage) n'est jamais présentée comme un projet de formation, et inversement.
 - Sur l'entreprise, utilise seulement ce que dit l'annonce. Nom inconnu → n'en invente pas.
@@ -79,7 +81,8 @@ Tu réponds UNIQUEMENT avec le JSON demandé.
 - Clichés interdits : « bases solides », « m'ont exposé », « je vise », « correspond à mon parcours », « je serais intéressé », « mettre à profit », « au sein de votre structure », « environnement stimulant », « je suis convaincu », « motivé », « sérieux », « missions variées et complexes ».
 - Pas de faux liens de cause : n'écris pas « ce qui m'a permis de », « ce qui me permet de » ni « comme en témoigne » ; décris simplement ce qu'il a fait.
 - Nomme l'entreprise (ex. « chez [entreprise] ») et la mission : « une expérience enrichissante » ne dit rien.
-- Au plus 5 « j'ai » dans toute la lettre : utilise aussi « j'ai conçu », « je m'occupais de », « mon travail consistait à », « chez [entreprise], … », ou une phrase dont le sujet est la mission.
+- Verbes simples à la première personne (« j'ai développé », « j'ai créé », « j'ai migré ») : c'est bien, mais pas plus de deux phrases de suite qui commencent par « J'ai ».
+- « particulièrement », « notamment », « également », « aussi » : une fois au plus chacun. Pas de tiret long (—), pas de liste à puces, pas de gras.
 - Chaque phrase apporte un fait. Pas d'importance annoncée sans preuve (« ce qui souligne », « joue un rôle clé », « ma démarche structurée ») ; pas de formule du type « Plus qu'un poste, c'est… » ; pas de listes de trois éléments par réflexe.
 - Varie la longueur des phrases : une courte quand elle suffit, une plus longue quand deux idées sont liées.
 - N'invente jamais un détail pour remplir une phrase vide : supprime-la.
@@ -93,7 +96,7 @@ Tu réponds UNIQUEMENT avec le JSON demandé.
 
 5. CONTENU
 - objet : « Candidature au poste de » + l'intitulé du poste (sans « H/F »), orthographe corrigée.
-- paragraphes : 3 à 5 paragraphes, 200 à 330 mots en tout :
+- paragraphes : 3 à 5 paragraphes, 250 à 350 mots en tout (une page) :
   1. qui il est (formation, dernière expérience chez l'entreprise nommée) et le poste visé, avec UN élément concret de l'annonce qui l'attire ;
   2. (et 3. si utile) les preuves des correspondances, avec des faits concrets du CV ;
   4. les éventuels manques (une phrase franche) et ce qu'il apportera ;
@@ -380,7 +383,10 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [word("joue(?:nt)? un r[ôo]le (?:cl[ée]|essentiel|central|majeur)"), "« joue un rôle clé » (importance annoncée sans preuve)"],
   [word("ce qui souligne|ce qui t[ée]moigne"), "« ce qui souligne / témoigne » (importance annoncée sans preuve)"],
   [word("plus qu['’]un (?:simple )?(?:poste|emploi|m[ée]tier)"), "« plus qu'un poste, c'est… » (formule toute faite)"],
+  [/—/, "le tiret long « — » (mets une virgule ou un point)"],
 ];
+/** Mots utiles une fois, mais qui sonnent « robot » quand ils reviennent. */
+const ONCE = ["particulièrement", "notamment", "également", "aussi"];
 
 /**
  * Projets et entreprises du CV, avec les compétences et outils écrits pour chacun.
@@ -512,7 +518,8 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
     const masteryOk = mastered.size > 0 && claimed.length > 0 && claimed.every((id) => mastered.has(id));
     if (MASTERY.test(s) && !masteryOk) issues.push(`Pas de « maîtrise » ni « expert » (seulement pour ce que tu as déclaré maîtriser) : « ${s.slice(0, 90)}… » → « j'ai utilisé / j'ai développé ».`);
     const absent = extractSkills(s, extraSkills).filter((id) => !inCv.has(id));
-    if (absent.length && KNOWS.test(s) && !/pas encore|jamais (?:utilis|travaill|pratiqu)|n['’]ai pas/i.test(s)) {
+    // « je souhaite approfondir X en m'appuyant sur Y » : la seule façon permise de parler d'un manque.
+    if (absent.length && KNOWS.test(s) && !/pas encore|jamais (?:utilis|travaill|pratiqu)|n['’]ai pas|approfondir [^.]{2,80} en m['’]appuyant sur/i.test(s)) {
       issues.push(`${absent.map(label).join(", ")} n'est pas dans le CV : ne prétends pas le connaître (« ${s.slice(0, 90)}… »). Une seule phrase franche : pas encore utilisé, envie de s'y former.`);
     }
     const words = s.split(/\s+/).length;
@@ -579,9 +586,13 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
     issues.push(`Nomme l'entreprise (${employers.map((e) => e.name).join(", ")}) : « une expérience » seule ne dit rien.`);
   }
   const jai = body.match(/(?<![\p{L}])j['’]ai(?![\p{L}])/giu)?.length ?? 0;
-  // 5 pour une lettre courte, un de plus par tranche de ~55 mots au-delà de 275 (lettre de 350 mots → 6).
-  const maxJai = Math.max(5, Math.round(body.split(/\s+/).length / 55));
+  // 5 pour une lettre courte, environ un par phrase sur trois au-delà (lettre de 330 mots → 10).
+  const maxJai = Math.max(5, Math.round(body.split(/\s+/).length / 33));
   if (jai > maxJai) issues.push(`« J'ai » revient ${jai} fois : ${maxJai} au maximum. Varie (« Chez [entreprise], je travaillais… », « Sur le projet [nom], le travail consistait à… »).`);
+  for (const w of ONCE) {
+    const n = body.match(new RegExp(word(w).source, "giu"))?.length ?? 0;
+    if (n > 1) issues.push(`Supprime un « ${w} » : ${n} fois, une seule suffit.`);
+  }
   const connectors = body.match(/\b(De plus|Parall[èe]lement|En outre|Par ailleurs)\b/g) ?? [];
   if (connectors.length > 1) issues.push("Trop de connecteurs (« De plus », « Parallèlement »…) : un seul maximum.");
   // Les erreurs de vérité d'abord (la liste est coupée à 10).

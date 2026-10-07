@@ -18,7 +18,7 @@ export type OllamaOptions = {
   baseUrl?: string;
   model?: string;
   fetch?: FetchLike;
-  /** Mémoire de travail du modèle (tokens). 8192 = une annonce + un CV. */
+  /** Mémoire de travail du modèle (tokens). 12288 = une annonce + un CV + la lettre exemple + les règles du candidat. */
   contextTokens?: number;
   timeoutMs?: number;
 };
@@ -26,7 +26,7 @@ export type OllamaOptions = {
 export const OLLAMA_DEFAULTS = {
   baseUrl: "http://127.0.0.1:11434",
   model: "gemma4:e4b",
-  contextTokens: 8192,
+  contextTokens: 12_288,
   timeoutMs: 180_000,
 };
 

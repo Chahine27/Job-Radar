@@ -32,7 +32,7 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
 
 **Le plus simple : double-clic sur « Lancer Job Radar.cmd »** (à la racine de `jobRadar`), ou sur le raccourci « Job Radar » du Bureau.
 Il vérifie d'abord s'il existe une nouvelle version de Job Radar et l'installe toute seule (voir « 3. Mises à jour »). Il démarre ensuite la base de données (en arrière-plan, invisible), Ollama, installe les mises à jour (`pnpm install` si besoin,
-migrations de la base), lance `pnpm dev` et ouvre http://localhost:5173 tout seul. Si Job Radar tourne déjà, il ouvre juste le site.
+migrations de la base), lance `pnpm dev` et ouvre http://localhost:5173 tout seul. Si Job Radar tourne déjà, il arrête l'ancienne fenêtre et relance tout (pour toujours avoir la dernière version). Si le port 5173 ou 3000 est pris par un autre programme, il le dit et indique lequel.
 Pour créer le raccourci du Bureau (une seule fois) : clic droit sur `scripts\creer-raccourci.ps1` → « Exécuter avec PowerShell ».
 
 À la main, si besoin :

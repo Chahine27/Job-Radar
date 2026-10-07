@@ -46,7 +46,7 @@ describe("IA locale (Ollama)", () => {
       },
     });
     const { result, model } = await analyzeJobWithAi(client, JOB, PROFILE);
-    expect(body).toMatchObject({ model: "gemma4:e4b", stream: false, think: false, options: { num_ctx: 8192 } });
+    expect(body).toMatchObject({ model: "gemma4:e4b", stream: false, think: false, options: { num_ctx: 12_288 } });
     expect(body.format.required).toContain("avis");
     expect(model).toBe("gemma4:e4b");
     expect(result.missions).toEqual(["Développer en Java", "Faire les interfaces Angular"]);

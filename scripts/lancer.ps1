@@ -18,12 +18,21 @@ function Responds($address) {
   try { Invoke-WebRequest $address -UseBasicParsing -TimeoutSec 2 | Out-Null; return $true } catch { return $false }
 }
 
-# 0. Déjà lancé ? On ouvre juste le site.
-if (Responds $url) {
-  Write-Host "Job Radar tourne déjà : ouverture du site." -ForegroundColor Green
-  Start-Process $url
+# 0. Déjà lancé ? On arrête l'ancienne version (sinon elle garde l'ancien code) avant de tout relancer.
+$root = (Get-Location).Path
+$old = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like "*$root*" }
+if ($old) {
+  Step "Arrêt de l'ancienne fenêtre de Job Radar"
+  $old | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   Start-Sleep -Seconds 2
-  exit 0
+}
+# Ports du site (5173) et du serveur (3000) encore pris : un autre programme (ou une copie de Job Radar dans un autre dossier).
+foreach ($port in 5173, 3000) {
+  $owner = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($owner) {
+    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$($owner.OwningProcess)").CommandLine
+    Fail "le port $port est déjà pris par un autre programme :`n  $cmd`nFerme sa fenêtre (ou redémarre le PC), puis relance Job Radar."
+  }
 }
 
 if (-not (Test-Path ".env")) { Fail "le fichier .env est introuvable dans $(Get-Location)." }
@@ -75,12 +84,17 @@ pnpm db:generate | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "prisma generate a échoué." }
 Write-Host "Tout est à jour." -ForegroundColor Green
 
-# 3. Ouvre le site dès qu'il répond (en arrière-plan), puis lance l'appli dans cette fenêtre
+# 3. Ouvre le site quand le site ET le serveur répondent (en arrière-plan), puis lance l'appli dans cette fenêtre
 Start-Job -ArgumentList $url -ScriptBlock {
   param($u)
   for ($i = 0; $i -lt 90; $i++) {
-    try { Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 2 | Out-Null; Start-Process $u; return } catch { Start-Sleep -Seconds 1 }
+    try {
+      Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 2 | Out-Null
+      Invoke-WebRequest "$u/api/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+      break
+    } catch { Start-Sleep -Seconds 1 }
   }
+  Start-Process $u
 } | Out-Null
 
 Step "Job Radar démarre ($url s'ouvrira tout seul)"
