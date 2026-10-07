@@ -164,8 +164,6 @@ const runner = new CollectionRunner({
       profile,
       since: run.startedAt,
       appUrl: env.APP_URL,
-  // Lancé par « Lancer Job Radar.cmd » : ce fichier demande au lanceur (qui le surveille) de tout arrêter.
-  ...(e.JOB_RADAR_STOP_FILE ? { stopApp: () => writeFileSync(e.JOB_RADAR_STOP_FILE!, "") } : {}),
       distanceOf,
       log: (m) => log(m),
     });
@@ -232,6 +230,8 @@ const app = await buildApp({
     aiPick: (searches, candidates) => pickRomeWithAi(ollama, searches, candidates),
   },
   appUrl: env.APP_URL,
+  // Lancé par « Lancer Job Radar.cmd » : ce fichier demande au lanceur (qui le surveille) de tout arrêter.
+  ...(e.JOB_RADAR_STOP_FILE ? { stopApp: () => writeFileSync(e.JOB_RADAR_STOP_FILE!, "") } : {}),
   secureCookie: env.NODE_ENV === "production",
   logger:
     env.NODE_ENV === "development"
