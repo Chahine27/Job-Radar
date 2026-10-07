@@ -234,6 +234,10 @@ et l'IA ne vérifie pas ces offres, pour ne pas juger sur un bout de texte.
 - Sinon : **Compléter l'annonce** sur la page de l'offre, puis Ctrl + A, Ctrl + C sur l'annonce et colle.
 Le score, l'analyse IA et la lettre utilisent alors l'annonce complète (la collecte ne l'écrase jamais).
 
+**Une info fausse ou manquante sur une offre ?** Page de l'offre → **Modifier les infos** (intitulé, entreprise, ville,
+département, contrat, télétravail, salaire, expérience). Tes corrections priment sur la source, la collecte ne les écrase
+jamais, et le score est recalculé. « Revenir aux infos de la source » les annule.
+
 **Lettre de motivation**
 1. Menu **CV & lettre** : colle ton CV (texte), une lettre que tu as déjà écrite (pour le style), ton en-tête → **Enregistrer**.
 2. Page d'une offre, carte **Lettre de motivation** → **Écrire la lettre avec l'IA**. L'IA écrit jusqu'à 3 brouillons, les relit

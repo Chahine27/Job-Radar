@@ -1,4 +1,4 @@
-import type { SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
+import type { JobEdits, SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -158,6 +158,7 @@ export const api = {
     request<LetterState>("PUT", `/api/jobs/${encodeURIComponent(id)}/letter`, { content }),
   findAbridged: (page: { url?: string; title?: string; company?: string }) =>
     request<{ job: { id: string; title: string; company: string | null; sources: string[] } | null }>("POST", "/api/jobs/find-abridged", page),
+  editJob: (id: string, edits: JobEdits) => request<JobDetail>("PUT", `/api/jobs/${encodeURIComponent(id)}/edits`, edits),
   completeJob: (
     id: string,
     text: string,

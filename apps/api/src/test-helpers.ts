@@ -4,6 +4,7 @@ import type { Mailer, Notifier, OutgoingMail } from "@job-radar/notifications";
 import { buildManualJob } from "@job-radar/pipeline";
 import { buildApp } from "./app";
 import type { SettingsService } from "./routes/settings";
+import { applyEdits } from "./stores";
 import type {
   HomeLocation,
   LeadRow,
@@ -116,6 +117,7 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
   const leadRows = new Map<string, LeadRow>();
   const analysisRows = new Map<string, { inputHash: string; model: string; result: unknown; createdAt: Date }>();
   const kitRows = new Map<string, LetterKit>();
+  const beforeEdits = new Map<string, JobRow>();
   const originals = new Map<string, Pick<JobRow, "description" | "contentHash" | "experienceMinYrs" | "contractType">>();
   const letterRows = new Map<string, StoredLetter>();
   const appRows = new Map<string, StoredApplication>();
@@ -290,6 +292,15 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
         }
         j.sources = j.sources.filter((s) => s.source !== "manual");
         return "unlinked";
+      },
+      setEdits: async (id, edits) => {
+        const j = jobs.get(id);
+        if (!j) return null;
+        const before = beforeEdits.get(id) ?? structuredClone(j);
+        beforeEdits.set(id, before);
+        Object.assign(j, structuredClone(before), { userEdits: null, userEditsAt: null });
+        if (edits) applyEdits(j, edits, new Date());
+        return j;
       },
       setFullText: async (id, full) => {
         const j = jobs.get(id);

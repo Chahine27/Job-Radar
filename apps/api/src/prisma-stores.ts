@@ -3,23 +3,25 @@ import { buildManualJob, removeManualJob, saveManualJob } from "@job-radar/pipel
 import { travelModeOf } from "@job-radar/routing";
 import { contractOfJob, salaryOfJob } from "@job-radar/scoring";
 import { LetterKitSchema, ProfileSchema } from "@job-radar/shared";
-import type { FullTextInfo, HomeLocation, JobRow, ProfileRecord, Stores } from "./stores";
+import { applyEdits, type FullTextInfo, type HomeLocation, type JobEdits, type JobRow, type ProfileRecord, type Stores } from "./stores";
 
 const jobInclude = {
   sources: { select: { source: true, sourceUrl: true } },
   travel: { select: { minutes: true, provider: true } },
 } as const;
 
-type JobWithRelations = Omit<JobRow, "sources" | "travelMinutes" | "travelMode"> & {
+type JobWithRelations = Omit<JobRow, "sources" | "travelMinutes" | "travelMode" | "userEdits" | "userEditsAt"> & {
   sources: Array<{ source: string; sourceUrl: string }>;
   travel: { minutes: number | null; provider: string | null } | null;
   fullText: string | null;
   fullExperienceYrs: number | null;
   fullInfo: unknown;
+  userEdits: unknown;
+  userEditsAt: Date | null;
 };
 
 function toJobRow(j: JobWithRelations): JobRow {
-  const { sources, travel, fullText, fullExperienceYrs, fullInfo, ...rest } = j;
+  const { sources, travel, fullText, fullExperienceYrs, fullInfo, userEdits, ...rest } = j;
   const row: JobRow = {
     ...rest,
     sources: sources.map((s) => ({ source: s.source, url: s.sourceUrl })),
@@ -46,6 +48,9 @@ function toJobRow(j: JobWithRelations): JobRow {
   // Même règles que le score : les pastilles « Contrat » et « Salaire » affichent ce que le score utilise.
   row.contractType = contractOfJob(row);
   Object.assign(row, salaryOfJob(row));
+  // Corrections saisies à la main : priment sur tout le reste (score et IA recalculés grâce au contentHash).
+  const edits = (userEdits && typeof userEdits === "object" ? userEdits : null) as JobEdits | null;
+  if (edits && j.userEditsAt) applyEdits(row, edits, j.userEditsAt);
   return row;
 }
 
@@ -76,6 +81,8 @@ const jobSelect = {
   fullTextAt: true,
   fullExperienceYrs: true,
   fullInfo: true,
+  userEdits: true,
+  userEditsAt: true,
   ...jobInclude,
 } as const;
 
@@ -394,6 +401,15 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
         return n ? saveManualJob(prisma, n) : null;
       },
       removeManual: (id) => removeManualJob(prisma, id),
+      async setEdits(id, edits) {
+        const r = await prisma.job.updateMany({
+          where: { id },
+          data: edits ? { userEdits: edits as object, userEditsAt: new Date() } : { userEdits: Prisma.DbNull, userEditsAt: null },
+        });
+        if (r.count === 0) return null;
+        const row = await prisma.job.findUnique({ where: { id }, select: jobSelect });
+        return row ? toJobRow(row) : null;
+      },
       async setFullText(id, full) {
         const r = await prisma.job.updateMany({
           where: { id },

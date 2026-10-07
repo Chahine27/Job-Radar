@@ -40,6 +40,22 @@ const FullTextBody = z.object({
     })
     .nullish(),
 });
+/** Corrections saisies à la main : un champ absent garde la valeur de la source. */
+const EditsBody = z
+  .object({
+    title: z.string().trim().min(1).max(300),
+    company: z.string().trim().min(1).max(200),
+    city: z.string().trim().min(1).max(120),
+    department: z.string().trim().regex(/^(\d{2,3}|2[AB])$/i, "Département : numéro (ex. 69)").transform((d) => d.toUpperCase()),
+    contractType: z.enum(["CDI", "CDD", "INTERIM", "ALTERNANCE", "STAGE", "FREELANCE"]),
+    remoteType: z.enum(["remote", "hybrid", "onsite", "unknown"]),
+    salaryMin: z.number().int().min(8000).max(500_000),
+    salaryMax: z.number().int().min(8000).max(500_000),
+    experienceMinYrs: z.number().int().min(0).max(30),
+  })
+  .partial()
+  .strict()
+  .refine((e) => !e.salaryMin || !e.salaryMax || e.salaryMin <= e.salaryMax, "Salaire minimum supérieur au maximum");
 const FindBody = z.object({
   url: z.string().max(2000).optional(),
   title: z.string().max(300).optional(),
@@ -160,6 +176,18 @@ export async function jobRoutes(
     if (!body.success) return reply.code(400).send({ error: "INVALID_BODY" });
     const job = await jobs.findAbridged(body.data);
     return { job: job ? { id: job.id, title: job.title, company: job.company, sources: job.sources.map((s) => s.source) } : null };
+  });
+
+  // ───── Infos corrigées à la main (entreprise, lieu, contrat, salaire… manquants ou faux) ─────
+  app.put("/api/jobs/:id/edits", async (request, reply) => {
+    const params = IdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_ID" });
+    const body = EditsBody.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "INVALID_EDITS", message: body.error.issues[0]?.message ?? "Infos invalides." });
+    const empty = Object.keys(body.data).length === 0;
+    const row = await opts.stores.jobs.setEdits(params.data.id, empty ? null : body.data);
+    if (!row) return reply.code(404).send({ error: "JOB_NOT_FOUND" });
+    return jobs.get(request.userId!, params.data.id);
   });
 
   app.delete("/api/jobs/:id/full-text", async (request, reply) => {

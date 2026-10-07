@@ -8,7 +8,7 @@ import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
 import { BREAKDOWN_LABELS, SOURCE_LABELS, REMOTE_LABELS, STATUS_LABELS, formatSalary, linkLabel, mapsUrl, safeUrl, scoreTone, timeAgo, travelLabel } from "../format";
 import { goBack } from "../router";
-import type { JobDetail, JobStatus } from "../types";
+import type { JobDetail, JobEdits, JobStatus, RemoteType } from "../types";
 
 const props = defineProps<{ id: string }>();
 const job = ref<JobDetail | null>(null);
@@ -55,6 +55,56 @@ async function complete() {
     fullText.value = "";
   } catch (e) {
     completeError.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+// ───── Infos corrigées à la main (entreprise, lieu, contrat, salaire… manquants ou faux) ─────
+const CONTRACTS = ["CDI", "CDD", "INTERIM", "ALTERNANCE", "STAGE", "FREELANCE"];
+const editing = ref(false);
+const editError = ref<string | null>(null);
+const form = ref({ title: "", company: "", city: "", department: "", contractType: "", remoteType: "" as RemoteType | "", salaryMin: "", salaryMax: "", experienceMinYrs: "" });
+
+/** Valeurs affichées actuellement : seules celles que tu changes deviennent des corrections. */
+function currentValues(j: JobDetail) {
+  const exp = j.userEdits?.experienceMinYrs ?? Number(j.experienceText?.match(/\d+/)?.[0] ?? NaN);
+  return {
+    title: j.title,
+    company: j.company ?? "",
+    city: j.city ?? "",
+    department: j.department ?? "",
+    contractType: j.contractType ?? "",
+    remoteType: j.remoteType === "unknown" ? "" : j.remoteType,
+    salaryMin: j.salaryMin?.toString() ?? "",
+    salaryMax: j.salaryMax?.toString() ?? "",
+    experienceMinYrs: Number.isNaN(exp) ? "" : String(exp),
+  } as typeof form.value;
+}
+
+function startEdit() {
+  form.value = currentValues(job.value!);
+  editError.value = null;
+  editing.value = true;
+}
+
+async function saveEdits(reset = false) {
+  const before = currentValues(job.value!);
+  const edits: Record<string, string | number> = reset ? {} : { ...job.value!.userEdits };
+  if (!reset) {
+    for (const [k, v] of Object.entries(form.value) as Array<[keyof typeof before, string]>) {
+      const value = String(v).trim();
+      if (value === before[k] || !value) continue; // inchangé, ou vidé : garde la valeur de la source
+      edits[k] = ["salaryMin", "salaryMax", "experienceMinYrs"].includes(k) ? Number(value) : value;
+    }
+  }
+  busy.value = true;
+  editError.value = null;
+  try {
+    job.value = await api.editJob(props.id, edits as JobEdits);
+    editing.value = false;
+  } catch (e) {
+    editError.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
   } finally {
     busy.value = false;
   }
@@ -127,8 +177,43 @@ const bars = computed(() =>
           </span>
         </div>
       </div>
-      <ScoreBadge :value="job.score.final" large />
+      <div class="hero-side">
+        <ScoreBadge :value="job.score.final" large />
+        <button v-if="!editing" type="button" class="ghost small" @click="startEdit"><Icon name="edit" :size="14" />Modifier les infos</button>
+      </div>
     </section>
+
+    <section v-if="editing" class="card stack edit">
+      <div>
+        <h2 style="margin: 0"><Icon name="edit" :size="17" />Modifier les infos de l'offre</h2>
+        <p class="muted small" style="margin: 0.3rem 0 0">Complète ce qui manque ou corrige ce qui est faux : tes corrections priment sur la source et le score est recalculé. Un champ vidé reprend la valeur de la source.</p>
+      </div>
+      <div class="edit-grid">
+        <label class="wide">Intitulé<input v-model="form.title" /></label>
+        <label>Entreprise<input v-model="form.company" /></label>
+        <label>Ville<input v-model="form.city" /></label>
+        <label>Département<input v-model="form.department" placeholder="ex. 69" maxlength="3" /></label>
+        <label>Contrat
+          <select v-model="form.contractType"><option value="">Non précisé</option><option v-for="c in CONTRACTS" :key="c" :value="c">{{ c }}</option></select>
+        </label>
+        <label>Télétravail
+          <select v-model="form.remoteType"><option value="">Non précisé</option><template v-for="(l, k) in REMOTE_LABELS" :key="k"><option v-if="l && k !== 'unknown'" :value="k">{{ l }}</option></template></select>
+        </label>
+        <label>Salaire min (€ brut/an)<input v-model="form.salaryMin" type="number" min="8000" step="1000" /></label>
+        <label>Salaire max (€ brut/an)<input v-model="form.salaryMax" type="number" min="8000" step="1000" /></label>
+        <label>Expérience demandée (ans)<input v-model="form.experienceMinYrs" type="number" min="0" max="30" /></label>
+      </div>
+      <p v-if="editError" class="alert small"><Icon name="alert" :size="15" />{{ editError }}</p>
+      <div class="row">
+        <button type="button" class="primary" :disabled="busy" @click="saveEdits()"><Icon name="check" :size="16" />Enregistrer</button>
+        <button type="button" class="ghost" :disabled="busy" @click="editing = false">Annuler</button>
+        <button v-if="job.userEditsAt" type="button" class="ghost danger" :disabled="busy" @click="saveEdits(true)"><Icon name="undo" :size="16" />Revenir aux infos de la source</button>
+      </div>
+    </section>
+    <p v-else-if="job.userEditsAt" class="info small">
+      <Icon name="edit" :size="16" />
+      <span>Infos corrigées à la main {{ timeAgo(job.userEditsAt) }} : le score les utilise.</span>
+    </p>
 
     <section class="card actions">
       <a v-for="l in links" :key="l.url" class="btn primary" :href="l.safe!" target="_blank" rel="noopener noreferrer">
@@ -262,6 +347,10 @@ const bars = computed(() =>
 .back:hover { color: var(--accent); text-decoration: none; }
 .hero { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: 1.4rem 1.5rem; }
 .hero h1 { font-size: 1.55rem; }
+.hero-side { display: grid; justify-items: center; gap: 0.5rem; }
+.edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.7rem 1rem; }
+.edit-grid label { display: grid; gap: 0.3rem; font-size: 0.85rem; }
+.edit-grid .wide { grid-column: 1 / -1; }
 .company { display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; }
 .company span, .company a { display: inline-flex; align-items: center; gap: 0.4rem; }
 .company a { color: inherit; }

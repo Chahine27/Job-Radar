@@ -11,6 +11,19 @@ export type Breakdown = {
   transport: number;
 };
 
+/** Infos corrigées à la main : un champ absent garde la valeur de la source. */
+export type JobEdits = Partial<{
+  title: string;
+  company: string;
+  city: string;
+  department: string;
+  contractType: string;
+  remoteType: RemoteType;
+  salaryMin: number;
+  salaryMax: number;
+  experienceMinYrs: number;
+}>;
+
 export type JobSummary = {
   id: string;
   title: string;
@@ -55,6 +68,9 @@ export type JobDetail = JobSummary & {
   travelIssue?: string | null;
   /** Date où l'annonce complète a été collée. */
   fullTextAt: string | null;
+  /** Corrections saisies à la main (priment sur la source). */
+  userEditsAt: string | null;
+  userEdits: JobEdits | null;
   /** Comment le score final est obtenu (moyenne, puis plafonds). */
   scoreSteps: Array<{ label: string; value: number }>;
   /** Critère Technique calculé sur les compétences lues par l'IA. */

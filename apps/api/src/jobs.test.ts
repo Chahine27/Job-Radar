@@ -202,6 +202,23 @@ describe("compléter une offre avec l'annonce complète", () => {
   });
 });
 
+describe("corriger les infos d'une offre à la main", () => {
+  it("les corrections priment sur la source, recalculent le score, et peuvent être annulées", async () => {
+    const { get, cookies, app } = await setup();
+    const put = (payload: object) => app.inject({ method: "PUT", url: "/api/jobs/j-vue/edits", cookies, payload });
+    const before = (await get("/api/jobs/j-vue")).json();
+    const edited = (await put({ company: "Nordia", department: "44", contractType: "CDD", salaryMin: 38000, experienceMinYrs: 2 })).json();
+    expect(edited).toMatchObject({ company: "Nordia", department: "44", zone: "local", contractType: "CDD", salaryMin: 38000, salaryMax: 38000, experienceText: "2 ans minimum" });
+    expect(edited.userEditsAt).not.toBeNull();
+    expect(edited.score.hiddenReason).toBe("Contrat CDD hors profil"); // score recalculé avec le contrat corrigé
+    expect((await put({ salaryMin: 50000, salaryMax: 40000 })).statusCode).toBe(400);
+    expect((await put({ department: "Loire" })).statusCode).toBe(400);
+    expect((await put({ status: "APPLIED" })).statusCode).toBe(400); // seulement les infos de l'offre
+    const reset = (await put({})).json();
+    expect(reset).toMatchObject({ company: before.company, department: before.department, userEditsAt: null });
+  });
+});
+
 describe("candidatures (offres où j'ai postulé)", () => {
   async function setup() {
     const t = await createTestApp();

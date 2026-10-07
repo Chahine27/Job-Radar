@@ -71,6 +71,9 @@ export type JobRow = {
   sources: Array<{ source: string; url: string }>;
   /** Date où l'annonce complète a été collée (la description est alors l'annonce complète). */
   fullTextAt: Date | null;
+  /** Corrections saisies à la main (déjà appliquées aux champs ci-dessus). */
+  userEdits?: JobEdits | null;
+  userEditsAt?: Date | null;
 };
 
 export interface JobStore {
@@ -85,6 +88,34 @@ export interface JobStore {
   removeManual(id: string): Promise<"deleted" | "unlinked" | "not_found" | "not_manual">;
   /** Annonce complète collée à la main (null = on revient à l'extrait de la source). null si l'offre n'existe pas. */
   setFullText(id: string, full: { text: string; experienceYears: number | null; info?: FullTextInfo | null } | null): Promise<JobRow | null>;
+  /** Corrections saisies à la main (null = on revient aux infos de la source). null si l'offre n'existe pas. */
+  setEdits(id: string, edits: JobEdits | null): Promise<JobRow | null>;
+}
+
+/** Infos corrigées à la main : un champ absent garde la valeur de la source. Ce sont des faits sur l'offre. */
+export type JobEdits = {
+  title?: string;
+  company?: string;
+  city?: string;
+  department?: string;
+  contractType?: string;
+  remoteType?: RemoteType;
+  salaryMin?: number;
+  salaryMax?: number;
+  experienceMinYrs?: number;
+};
+
+/** Applique les corrections à la main sur l'offre lue (score et IA recalculés grâce au contentHash). */
+export function applyEdits(row: JobRow, edits: JobEdits, at: Date) {
+  Object.assign(row, edits);
+  if (edits.salaryMin !== undefined && edits.salaryMax === undefined) row.salaryMax = edits.salaryMin;
+  if (edits.experienceMinYrs !== undefined) {
+    const n = edits.experienceMinYrs;
+    row.experienceText = n === 0 ? "débutant accepté" : `${n} an${n > 1 ? "s" : ""} minimum`;
+  }
+  row.contentHash = `${row.contentHash}:edit${at.getTime()}`;
+  row.userEdits = edits;
+  row.userEditsAt = at;
 }
 
 /** Infos lues par l'IA dans l'annonce complète : complètent ce que la source ne donne pas. */

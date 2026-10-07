@@ -2,7 +2,7 @@ import { distanceKm } from "@job-radar/routing";
 import type { JobStatus, Profile } from "@job-radar/shared";
 import { DEFAULT_RULES, hashProfile, scoreJob, scoringInputFromJob, type ScoreResult, type ScoringRules } from "@job-radar/scoring";
 import { AI_SCORE_CAPS, type Adequation, analysisHash, isAbridged, readVerdict, toProfileInput } from "../ai-context";
-import type { JobRow, Stores } from "../stores";
+import type { JobEdits, JobRow, Stores } from "../stores";
 
 export { ABRIDGED_SOURCES, isAbridged } from "../ai-context";
 
@@ -62,6 +62,9 @@ export type JobDetail = JobSummary & {
   abridged: boolean;
   /** Date où l'annonce complète a été collée. */
   fullTextAt: Date | null;
+  /** Corrections saisies à la main (priment sur la source) et leur date. */
+  userEditsAt: Date | null;
+  userEdits: JobEdits | null;
   /** Comment le score final est obtenu (moyenne, puis plafonds). */
   scoreSteps: Array<{ label: string; value: number }>;
   /** Critère Technique calculé sur les compétences lues par l'IA. */
@@ -83,7 +86,8 @@ const aiSkillsOf = (v: Verdict) => (v && v.required.length + v.bonus.length > 0 
  * les règles se trompent sur les annonces ambiguës (« Exp. 1 à 7 ans » + « Exp. + 7 ans »).
  */
 const withAiExperience = (job: JobRow, v: Verdict): JobRow =>
-  v && v.experience !== null && (v.experience !== job.experienceMinYrs || !job.experienceText)
+  // Expérience corrigée à la main : elle prime sur celle lue par l'IA.
+  v && v.experience !== null && job.userEdits?.experienceMinYrs === undefined && (v.experience !== job.experienceMinYrs || !job.experienceText)
     ? {
         ...job,
         experienceMinYrs: v.experience,
@@ -269,6 +273,8 @@ export function createJobService(stores: Stores, rules: ScoringRules = DEFAULT_R
         rulesVersion: s.rulesVersion,
         abridged: isAbridged(job),
         fullTextAt: job.fullTextAt,
+        userEditsAt: job.userEditsAt ?? null,
+        userEdits: job.userEdits ?? null,
         scoreSteps,
         aiSkills: !!aiSkillsOf(verdict),
       };

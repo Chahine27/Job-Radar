@@ -90,6 +90,9 @@ model Job {
   fullExperienceYrs Int?
   /// Infos lues par l'IA dans l'annonce complète (contrat, télétravail, salaire) : complètent la source quand elle ne les donne pas.
   fullInfo          Json?
+  /// Infos corrigées à la main (intitulé, entreprise, lieu, contrat, salaire, expérience) : priment sur la source, jamais écrasées
+  userEdits         Json?
+  userEditsAt       DateTime?
   contractType      String?
   experienceText    String?
   experienceMinYrs  Int?
