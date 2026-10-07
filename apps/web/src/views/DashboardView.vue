@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onActivated, onMounted, onUnmounted, ref, watch } from "vue";
 import { api, type JobQuery } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -44,7 +44,7 @@ async function load(keepCount = false) {
   loading.value = !keepCount;
   error.value = null;
   try {
-    const limit = keepCount ? Math.max(PAGE_SIZE, jobs.value.length) : PAGE_SIZE;
+    const limit = keepCount ? Math.min(200, Math.max(PAGE_SIZE, jobs.value.length)) : PAGE_SIZE; // 200 = plafond de l'API
     const res = await api.listJobs({ ...filters, limit, offset: 0 });
     jobs.value = res.items;
     total.value = res.total;
@@ -215,6 +215,13 @@ onMounted(async () => {
   slowPoll = setInterval(loadStatus, 30_000);
   api.getProfile().then((p) => (threshold.value = p.profile.minScoreForNotification)).catch(() => {});
   api.settingsKeys().then((s) => (noSourceKey.value = !anyJobSourceConfigured(s))).catch(() => {});
+});
+
+// Retour depuis une offre : son statut a pu changer, on recharge sans perdre les pages déjà affichées.
+let mounted = false;
+onActivated(() => {
+  if (mounted) void load(true);
+  mounted = true;
 });
 
 onUnmounted(() => {

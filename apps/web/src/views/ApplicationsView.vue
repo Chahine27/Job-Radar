@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef } from "vue";
+import { computed, onActivated, ref, toRef } from "vue";
 import { api } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { timeAgo } from "../format";
+import { mapsUrl, timeAgo } from "../format";
 import { usePrefs } from "../prefs";
 import type { Application, JobStatus } from "../types";
 
@@ -27,7 +27,7 @@ async function load() {
     loading.value = false;
   }
 }
-onMounted(load);
+onActivated(load); // aussi au retour depuis une offre
 
 const waiting = computed(() => items.value.filter((j) => j.status === "APPLIED"));
 const rejected = computed(() => items.value.filter((j) => j.status === "REJECTED"));
@@ -81,7 +81,7 @@ const place = (j: Application) =>
         </div>
         <div class="company muted small">
           <span><Icon name="building" :size="14" />{{ j.company ?? "Entreprise non précisée" }}</span>
-          <span><Icon name="pin" :size="14" />{{ place(j) || "Lieu non précisé" }}</span>
+          <span><Icon name="pin" :size="14" /><a v-if="place(j)" class="map" :href="mapsUrl(j.company, place(j))" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">{{ place(j) }}</a><template v-else>Lieu non précisé</template></span>
           <span v-if="j.appliedAt"><Icon name="send" :size="14" />Postulé {{ timeAgo(j.appliedAt) }}</span>
         </div>
         <p v-if="needsFollowUp(j)" class="follow small">

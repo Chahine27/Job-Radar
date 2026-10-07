@@ -68,3 +68,16 @@ export type RawJob = {
   data: unknown;
   collectedAt: Date;
 };
+
+/** Sources dont l'API ne donne qu'un extrait de l'annonce. */
+export const ABRIDGED_SOURCES = ["adzuna", "jooble"];
+
+/** La source n'a donné aucune description : il n'y a rien à lire. */
+export const hasNoDescription = (j: { description: string }) => j.description.trim() === "";
+
+/**
+ * Annonce incomplète (source à extraits, ou aucune description), annonce complète pas encore collée :
+ * son score n'est que provisoire et l'IA ne la vérifie pas.
+ */
+export const isAbridged = (j: { sources: Array<{ source: string }>; fullTextAt: Date | null; description: string }) =>
+  !j.fullTextAt && j.sources.length > 0 && (j.sources.every((s) => ABRIDGED_SOURCES.includes(s.source)) || hasNoDescription(j));

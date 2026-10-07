@@ -6,7 +6,8 @@ import CoverLetterCard from "../components/CoverLetterCard.vue";
 import Icon from "../components/Icon.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { BREAKDOWN_LABELS, SOURCE_LABELS, REMOTE_LABELS, STATUS_LABELS, formatSalary, linkLabel, safeUrl, scoreTone, timeAgo, travelLabel } from "../format";
+import { BREAKDOWN_LABELS, SOURCE_LABELS, REMOTE_LABELS, STATUS_LABELS, formatSalary, linkLabel, mapsUrl, safeUrl, scoreTone, timeAgo, travelLabel } from "../format";
+import { goBack } from "../router";
 import type { JobDetail, JobStatus } from "../types";
 
 const props = defineProps<{ id: string }>();
@@ -96,7 +97,7 @@ const bars = computed(() =>
 </script>
 
 <template>
-  <RouterLink to="/" class="back small"><Icon name="arrowLeft" :size="15" /> Retour aux offres</RouterLink>
+  <RouterLink to="/" class="back small" @click.prevent="goBack('/')"><Icon name="arrowLeft" :size="15" /> Retour</RouterLink>
   <p v-if="error" class="alert"><Icon name="alert" :size="16" />{{ error }}</p>
   <div v-else-if="!job" class="stack"><div class="skeleton" style="height: 180px" /><div class="skeleton" /></div>
 
@@ -110,8 +111,11 @@ const bars = computed(() =>
         <h1>{{ job.title }}</h1>
         <div class="company muted">
           <span><Icon name="building" :size="15" />{{ job.company ?? "Entreprise non précisée" }}</span>
-          <span v-if="job.address" title="Adresse du lieu de travail : le trajet est calculé jusqu'ici"><Icon name="pin" :size="15" />{{ job.address }}</span>
-          <span v-else><Icon name="pin" :size="15" />{{ job.city ?? "Lieu non précisé" }}<template v-if="job.department"> ({{ job.department }})</template></span>
+          <a v-if="job.address" :href="mapsUrl(job.address)" target="_blank" rel="noopener" title="Ouvrir dans Google Maps (le trajet est calculé jusqu'ici)"><Icon name="pin" :size="15" />{{ job.address }}</a>
+          <a v-else-if="job.city || job.department" :href="mapsUrl(job.company, job.city, job.department)" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">
+            <Icon name="pin" :size="15" />{{ job.city ?? "Département" }}<template v-if="job.department"> ({{ job.department }})</template>
+          </a>
+          <span v-else><Icon name="pin" :size="15" />Lieu non précisé</span>
         </div>
         <div class="row facts">
           <span class="chip"><Icon name="file" :size="13" />{{ job.contractType ?? "Contrat non précisé" }}</span>
@@ -147,7 +151,8 @@ const bars = computed(() =>
       <div class="complete-head">
         <Icon name="alert" :size="18" />
         <div class="stack" style="gap: 0.2rem">
-          <strong>Annonce incomplète : {{ job.sources.some((s) => s.source === "jooble") ? "Jooble" : "Adzuna" }} ne donne que le début du texte.</strong>
+          <strong v-if="!job.description.trim()">Annonce non récupérée : la source n'a donné que le titre, pas la description.</strong>
+          <strong v-else>Annonce incomplète : {{ job.sources.some((s) => s.source === "jooble") ? "Jooble" : "Adzuna" }} ne donne que le début du texte.</strong>
           <span class="muted small">
             Score approximatif, et l'IA ne le vérifie pas tant que l'annonce est incomplète.
             Le plus simple : « Voir l'offre », puis clique sur l'extension <strong>Envoyer à Job Radar</strong> → « Compléter l'offre existante ».
@@ -202,7 +207,8 @@ const bars = computed(() =>
 
         <section class="card">
           <h2><Icon name="file" :size="17" />Description</h2>
-          <p class="description">{{ job.description }}</p>
+          <p v-if="job.description.trim()" class="description">{{ job.description }}</p>
+          <p v-else class="muted">Aucune description récupérée par la source : utilise « Compléter l'annonce » ci-dessus.</p>
           <p class="muted small" style="margin: 0">Règles de score : version {{ job.rulesVersion }}</p>
         </section>
       </div>
@@ -257,7 +263,8 @@ const bars = computed(() =>
 .hero { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: 1.4rem 1.5rem; }
 .hero h1 { font-size: 1.55rem; }
 .company { display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; }
-.company span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.company span, .company a { display: inline-flex; align-items: center; gap: 0.4rem; }
+.company a { color: inherit; }
 .facts { margin-top: 0.2rem; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.8rem 1rem; }
 .actions .sep { flex: 1; }

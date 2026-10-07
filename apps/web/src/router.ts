@@ -1,10 +1,22 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteLocationRaw } from "vue-router";
 import { ensureSession, hasAccount, needsSetup } from "./session";
 
 export const router = createRouter({
   history: createWebHistory(),
-  // Lien vers une carte précise (ex. /reglages#email).
-  scrollBehavior: (to) => (to.hash ? { el: to.hash } : undefined),
+  // Lien vers une carte précise (ex. /reglages#email). Retour arrière : on revient à la position quittée ; les listes sont
+  // gardées en mémoire (cf. App.vue), les autres pages rechargent leur contenu : on attend qu'il soit assez haut (2 s max).
+  scrollBehavior: (to, _from, saved) => {
+    if (to.hash) return { el: to.hash };
+    if (!saved) return { top: 0 };
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const tick = () =>
+        document.documentElement.scrollHeight >= saved.top + window.innerHeight || Date.now() - start > 2000
+          ? resolve(saved)
+          : requestAnimationFrame(tick);
+      tick();
+    });
+  },
   routes: [
     { path: "/login", name: "login", component: () => import("./views/LoginView.vue"), meta: { public: true } },
     { path: "/bienvenue", name: "welcome", component: () => import("./views/WelcomeView.vue"), meta: { public: true, bare: true } },
@@ -32,3 +44,8 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !loggedIn) return { name: "login", query: { redirect: to.fullPath } };
   if (to.name === "login" && loggedIn) return { name: "jobs" };
 });
+
+/** Lien « Retour » : revient à la page précédente (et à sa position) ; page ouverte directement → `fallback`. */
+export function goBack(fallback: RouteLocationRaw) {
+  return window.history.state?.back ? router.back() : router.push(fallback);
+}

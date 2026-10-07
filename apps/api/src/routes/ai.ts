@@ -46,9 +46,14 @@ const ReadBody = z.object({
 const AutoBody = z.object({ jobIds: z.array(z.string().min(1).max(64)).max(30) });
 const FeedBody = z.object({ limit: z.number().int().min(1).max(50).default(30), retry: z.boolean().default(false) });
 
+const NO_DESCRIPTION_MESSAGE =
+  "La source n'a donné aucune description : l'IA n'a rien à lire. Colle l'annonce complète (bouton « Compléter l'annonce »).";
+
 const errorReply = (err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
-  const unavailable = (err as { code?: string }).code === "AI_UNAVAILABLE";
+  const code = (err as { code?: string }).code;
+  if (code === "NO_DESCRIPTION") return { status: 422, body: { error: code, message } };
+  const unavailable = code === "AI_UNAVAILABLE";
   return { status: unavailable ? 503 : 502, body: { error: unavailable ? "AI_UNAVAILABLE" : "AI_FAILED", message } };
 };
 
@@ -88,6 +93,8 @@ export async function aiRoutes(
     return withLock(async () => {
       const ctx = await context(userId, jobId);
       if (!ctx) return null;
+      // Sans description, l'IA inventerait les missions à partir du titre.
+      if (!ctx.input.description.trim()) throw Object.assign(new Error(NO_DESCRIPTION_MESSAGE), { code: "NO_DESCRIPTION" });
       const latest = await stores.analyses.latest(jobId);
       if (latest && latest.inputHash === ctx.inputHash && !force) return { analysis: latest, cached: true as const };
       const { result, model, durationMs } = await ai.analyze(ctx.input, ctx.profile);
@@ -112,6 +119,8 @@ export async function aiRoutes(
     if (!params.success) return reply.code(400).send({ error: "INVALID_ID" });
     const ctx = await context(request.userId!, params.data.id);
     if (!ctx) return reply.code(404).send({ error: "JOB_NOT_FOUND" });
+    // Annonce sans description : une ancienne analyse (faite sur le titre seul) n'est pas montrée.
+    if (!ctx.input.description.trim()) return { analysis: null, upToDate: false, noDescription: true };
     const latest = await stores.analyses.latest(params.data.id);
     return { analysis: latest, upToDate: latest?.inputHash === ctx.inputHash };
   });

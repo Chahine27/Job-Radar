@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { goBack } from "../router";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
@@ -137,7 +138,7 @@ async function send() {
     :subtitle="state ? `${state.lead.name} · ${state.lead.nafLabel ?? 'secteur inconnu'} · ${state.lead.city ?? ''}` : ''"
   >
     <template #actions>
-      <RouterLink to="/entreprises" class="btn ghost"><Icon name="undo" :size="16" />Entreprises</RouterLink>
+      <RouterLink to="/entreprises" class="btn ghost" @click.prevent="goBack('/entreprises')"><Icon name="undo" :size="16" />Retour</RouterLink>
     </template>
   </PageHeader>
 

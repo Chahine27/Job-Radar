@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRef, watch } from "vue";
+import { computed, onActivated, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
 import LeadZoneCard from "../components/LeadZoneCard.vue";
@@ -48,10 +48,11 @@ const drafts = ref<Record<string, string>>({});
 const emails = ref<Record<string, string>>({});
 const emailError = ref<Record<string, string | null>>({});
 
-async function load(append = false) {
-  if (!append) loading.value = true;
+async function load(append = false, keepCount = false) {
+  if (!append && !keepCount) loading.value = true;
   try {
-    const res = await api.listLeads(filter.value, sort.value, append ? leads.value.length : 0, PAGE, emailFilter.value);
+    const limit = keepCount ? Math.min(100, Math.max(PAGE, leads.value.length)) : PAGE; // 100 = plafond de l'API
+    const res = await api.listLeads(filter.value, sort.value, append ? leads.value.length : 0, limit, emailFilter.value);
     leads.value = append ? [...leads.value, ...res.items] : res.items;
     total.value = res.total;
     lastRefreshAt.value = res.lastRefreshAt;
@@ -65,7 +66,12 @@ async function load(append = false) {
     loading.value = false;
   }
 }
-onMounted(() => load());
+// 1ʳᵉ visite : chargement ; retour depuis une candidature : rechargé sans perdre les pages déjà affichées.
+let mounted = false;
+onActivated(() => {
+  void load(false, mounted);
+  mounted = true;
+});
 watch([filter, sort, emailFilter], () => load());
 
 async function refresh() {
@@ -96,7 +102,7 @@ function scheduleAddresses(pending: boolean) {
   addressTimer = setTimeout(async () => {
     addressTries++;
     try {
-      const res = await api.listLeads(filter.value, sort.value, 0, Math.max(PAGE, leads.value.length), emailFilter.value);
+      const res = await api.listLeads(filter.value, sort.value, 0, Math.min(100, Math.max(PAGE, leads.value.length)), emailFilter.value);
       for (const u of res.items) {
         const l = leads.value.find((x) => x.id === u.id);
         if (l) Object.assign(l, { address: u.address, addressCheckedAt: u.addressCheckedAt });

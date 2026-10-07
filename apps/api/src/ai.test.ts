@@ -309,3 +309,20 @@ describe("détail du score cohérent avec l'IA", () => {
     expect(before.aiSkills).toBe(false);
   });
 });
+
+describe("offre sans description (la source n'a donné que le titre)", () => {
+  it("l'IA ne l'analyse pas (elle inventerait les missions) ; une ancienne analyse n'est pas montrée", async () => {
+    const t = await setup();
+    const { req, aiCalls } = t;
+    await req("POST", "/api/jobs/j-vue/analysis"); // analyse faite quand la description existait
+    const base = t.jobs.get("j-vue")!;
+    t.jobs.set("j-vue", { ...base, description: "", contentHash: "vide", fullTextAt: null });
+
+    expect((await req("GET", "/api/jobs/j-vue/analysis")).json()).toMatchObject({ analysis: null, noDescription: true });
+    const res = await req("POST", "/api/jobs/j-vue/analysis?force=true");
+    expect(res.statusCode).toBe(422);
+    expect(res.json().error).toBe("NO_DESCRIPTION");
+    expect(aiCalls).toHaveLength(1);
+    expect((await req("GET", "/api/jobs/j-vue")).json().abridged).toBe(true); // « Compléter l'annonce » proposé
+  });
+});

@@ -1,12 +1,9 @@
 import { createHash } from "node:crypto";
 import { ANALYSIS_PROMPT_VERSION, type AnalysisJobInput, type AnalysisProfileInput } from "@job-radar/ai";
-import { letterKitReady, type LetterKit, type Profile } from "@job-radar/shared";
+import { isAbridged, letterKitReady, type LetterKit, type Profile } from "@job-radar/shared";
 import type { JobRow } from "./stores";
 
-/** Sources dont l'API ne donne qu'un extrait de l'annonce. */
-export const ABRIDGED_SOURCES = ["adzuna", "jooble"];
-export const isAbridged = (j: Pick<JobRow, "sources" | "fullTextAt">) =>
-  !j.fullTextAt && j.sources.length > 0 && j.sources.every((s) => ABRIDGED_SOURCES.includes(s.source));
+export { ABRIDGED_SOURCES, isAbridged } from "@job-radar/shared";
 
 export function toJobInput(job: JobRow): AnalysisJobInput {
   return {

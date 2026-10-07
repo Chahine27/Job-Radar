@@ -94,7 +94,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 9. ✅ Mises à jour automatiques au lancement (dernière « Release » GitHub), sans git ni téléchargement à la main.
 10. ✅ Score plus juste : contrat hors profil à 0 (lu aussi dans le titre et l'annonce), salaire lu dans l'annonce, rayon de recherche et rubriques de zone, seuils du profil respectés.
 11. ✅ Dédoublonnage : une offre vue sur plusieurs sites = une seule offre avec tous ses liens (`pnpm jobs:dedupe` pour l'existant).
-12. ⏳ Tests complets avec des profils variés.
+12. ✅ Navigation : retour à la même position dans les listes, lieux cliquables (Google Maps), annonce sans description signalée « à compléter ».
+13. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

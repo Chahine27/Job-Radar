@@ -92,7 +92,10 @@ async function logout() {
         Job Radar
       </div>
       <main class="page">
-        <RouterView />
+        <!-- Listes gardées en mémoire : filtres, onglets, offres déjà chargées et défilement retrouvés au retour. -->
+        <RouterView v-slot="{ Component }">
+          <KeepAlive include="DashboardView,ApplicationsView,LeadsView"><component :is="Component" /></KeepAlive>
+        </RouterView>
       </main>
     </div>
   </div>

@@ -121,3 +121,8 @@ export function travelLabel(minutes: number | null, mode: "transit" | "car" | nu
   const how = mode === "transit" ? " en transports" : mode === "car" ? " en voiture" : "";
   return `≈ ${minutes} min${how}`;
 }
+
+/** Recherche Google Maps : adresse précise ou simple ville, Maps fait au mieux. */
+export function mapsUrl(...parts: Array<string | null | undefined>): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.filter(Boolean).join(" "))}`;
+}

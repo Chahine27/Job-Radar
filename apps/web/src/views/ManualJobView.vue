@@ -5,7 +5,7 @@ import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
-import { SOURCE_LABELS, STATUS_LABELS, originLabel, timeAgo } from "../format";
+import { SOURCE_LABELS, STATUS_LABELS, mapsUrl, originLabel, timeAgo } from "../format";
 import { usePrefs } from "../prefs";
 import type { JobDetail, JobSummary, JobTextAnalysis, ManualJobForm, RemoteType } from "../types";
 
@@ -651,7 +651,7 @@ const manualUrl = (j: JobSummary) => j.sources.find((s) => s.source === "manual"
           <ScoreBadge :value="j.score.final" />
           <div class="body">
             <RouterLink :to="{ name: 'job', params: { id: j.id } }" class="title">{{ j.title }}</RouterLink>
-            <span class="muted small">{{ j.company ?? "Entreprise ?" }}<template v-if="place(j)"> · {{ place(j) }}</template></span>
+            <span class="muted small">{{ j.company ?? "Entreprise ?" }}<template v-if="place(j)"> · <a class="map" :href="mapsUrl(j.company, place(j))" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">{{ place(j) }}</a></template></span>
             <span class="row small">
               <span v-if="originLabel(manualUrl(j))" class="chip">{{ originLabel(manualUrl(j)) }}</span>
               <span class="chip">{{ STATUS_LABELS[j.status] }}</span>
