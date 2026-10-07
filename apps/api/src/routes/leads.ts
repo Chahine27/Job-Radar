@@ -160,6 +160,18 @@ export async function leadRoutes(app: FastifyInstance, opts: LeadsOptions) {
     },
   );
 
+  /** Page Candidatures, onglet « Spontanées » : les candidatures envoyées, avec l'entreprise et son suivi. */
+  app.get("/api/leads/applications", async () => {
+    const sent = await stores.applications.listSent();
+    const items = await Promise.all(
+      sent.map(async (a) => {
+        const lead = await stores.leads.get(a.leadId);
+        return lead ? { ...a, lead } : null;
+      }),
+    );
+    return { items: items.filter((x) => x !== null) };
+  });
+
   app.get("/api/leads/settings", async (request, reply) => {
     const rec = await stores.profiles.get(request.userId!);
     if (!rec) return reply.code(404).send({ error: "PROFILE_NOT_FOUND" });

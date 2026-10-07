@@ -70,6 +70,10 @@ describe("candidature spontanée", () => {
     expect(sentMails[0]!.attachments[0]!.content.subarray(0, 5).toString()).toBe("%PDF-");
     expect(sent.json().application).toMatchObject({ sentTo: "rh@alpha.fr" });
     expect(sent.json().lead).toMatchObject({ status: "CONTACTED", contactEmail: "rh@alpha.fr" });
+    // Page Candidatures, onglet « Spontanées ».
+    const list = (await req("GET", "/api/leads/applications")).json().items;
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ leadId: lead.id, sentTo: "rh@alpha.fr", lead: { status: "CONTACTED" } });
 
     // Pas de double envoi par erreur : il faut le demander explicitement.
     const again = await req("POST", `/api/leads/${lead.id}/application/send`, mail);

@@ -138,6 +138,9 @@ export type SourceItem = {
 
 export type LeadStatus = "TO_CONTACT" | "CONTACTED" | "FOLLOWED_UP" | "INTERVIEW" | "NOT_INTERESTED" | "IGNORED";
 
+/** Candidature spontanée envoyée (page Candidatures). */
+export type SentSpontaneous = { leadId: string; sentAt: string; sentTo: string | null; lead: Lead };
+
 export type Lead = {
   id: string;
   siret: string;

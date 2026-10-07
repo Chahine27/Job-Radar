@@ -7,7 +7,7 @@ import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
 import { mapsUrl, timeAgo } from "../format";
 import { usePrefs } from "../prefs";
-import type { Application, JobStatus } from "../types";
+import type { Application, JobStatus, SentSpontaneous } from "../types";
 
 /** Au-delà, pas de nouvelles : un petit rappel pour relancer. */
 const FOLLOW_UP_DAYS = 10;
@@ -15,12 +15,18 @@ const FOLLOW_UP_DAYS = 10;
 const items = ref<Application[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const tab = toRef(usePrefs<{ tab: "waiting" | "rejected" }>("candidatures", { tab: "waiting" }), "tab");
+const prefs = usePrefs<{ tab: "waiting" | "rejected"; kind: "offers" | "spontaneous" }>("candidatures", { tab: "waiting", kind: "offers" });
+const tab = toRef(prefs, "tab");
+/** « Sur une offre » ou « Spontanées » (candidatures envoyées depuis la page Entreprises). */
+const kind = toRef(prefs, "kind");
+const spontaneous = ref<SentSpontaneous[]>([]);
 const busy = ref<string | null>(null);
 
 async function load() {
   try {
-    items.value = (await api.listApplications()).items;
+    const [offers, sent] = await Promise.all([api.listApplications(), api.listSpontaneous()]);
+    items.value = offers.items;
+    spontaneous.value = sent.items;
   } catch {
     error.value = "Impossible de charger tes candidatures.";
   } finally {
@@ -46,6 +52,9 @@ async function setStatus(j: Application, status: JobStatus) {
   }
 }
 
+const leadPlace = (s: SentSpontaneous) => [s.lead.postcode, s.lead.city].filter(Boolean).join(" ");
+const day = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
 const place = (j: Application) =>
   [j.city, j.department && !j.city?.includes(j.department) ? `(${j.department})` : null].filter(Boolean).join(" ");
 </script>
@@ -54,6 +63,42 @@ const place = (j: Application) =>
   <PageHeader title="Candidatures" subtitle="Les offres où tu as postulé. Elles n'apparaissent plus dans « Offres » pour ne pas t'encombrer." />
 
   <div class="stack">
+    <div class="tabs" role="tablist" aria-label="Type de candidature">
+      <button type="button" role="tab" :aria-selected="kind === 'offers'" :class="{ active: kind === 'offers' }" @click="kind = 'offers'">
+        Sur une offre <span class="count">{{ items.length }}</span>
+      </button>
+      <button type="button" role="tab" :aria-selected="kind === 'spontaneous'" :class="{ active: kind === 'spontaneous' }" @click="kind = 'spontaneous'">
+        Spontanées <span class="count">{{ spontaneous.length }}</span>
+      </button>
+    </div>
+
+    <template v-if="kind === 'spontaneous'">
+      <template v-if="loading"><div v-for="n in 3" :key="n" class="skeleton" /></template>
+      <div v-else-if="spontaneous.length === 0" class="empty">
+        <Icon name="building" :size="40" />
+        <strong>Aucune candidature spontanée envoyée</strong>
+        <span class="small">Page « Entreprises » → « Préparer la candidature » : une fois envoyée, elle arrive ici.</span>
+      </div>
+      <article v-for="s in spontaneous" :key="s.leadId" class="card app">
+        <div class="body">
+          <RouterLink :to="{ name: 'spontaneous', params: { id: s.leadId } }" class="title">{{ s.lead.name }}</RouterLink>
+          <div class="company muted small">
+            <span v-if="s.lead.nafLabel"><Icon name="briefcase" :size="14" />{{ s.lead.nafLabel }}</span>
+            <span v-if="leadPlace(s)"><Icon name="pin" :size="14" /><a class="map" :href="mapsUrl(s.lead.name, leadPlace(s))" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">{{ leadPlace(s) }}</a></span>
+            <span><Icon name="send" :size="14" />Envoyée le {{ day(s.sentAt) }}</span>
+            <span v-if="s.sentTo"><Icon name="mail" :size="14" />{{ s.sentTo }}</span>
+          </div>
+          <p v-if="(daysSince(s.sentAt) ?? 0) >= FOLLOW_UP_DAYS && s.lead.status === 'CONTACTED'" class="follow small">
+            <Icon name="clock" :size="14" /> Pas de nouvelles depuis {{ daysSince(s.sentAt) }} jours : c'est le bon moment pour relancer.
+          </p>
+          <div class="row actions">
+            <RouterLink :to="{ name: 'spontaneous', params: { id: s.leadId } }" class="btn small"><Icon name="eye" :size="14" />Voir la candidature</RouterLink>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template v-else>
     <div class="tabs" role="tablist" aria-label="Candidatures">
       <button type="button" role="tab" :aria-selected="tab === 'waiting'" :class="{ active: tab === 'waiting' }" @click="tab = 'waiting'">
         En attente de réponse <span class="count">{{ waiting.length }}</span>
@@ -82,7 +127,7 @@ const place = (j: Application) =>
         <div class="company muted small">
           <span><Icon name="building" :size="14" />{{ j.company ?? "Entreprise non précisée" }}</span>
           <span><Icon name="pin" :size="14" /><a v-if="place(j)" class="map" :href="mapsUrl(j.company, place(j))" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">{{ place(j) }}</a><template v-else>Lieu non précisé</template></span>
-          <span v-if="j.appliedAt"><Icon name="send" :size="14" />Postulé {{ timeAgo(j.appliedAt) }}</span>
+          <span v-if="j.appliedAt" :title="timeAgo(j.appliedAt)"><Icon name="send" :size="14" />Postulé le {{ day(j.appliedAt) }}</span>
         </div>
         <p v-if="needsFollowUp(j)" class="follow small">
           <Icon name="clock" :size="14" /> Pas de réponse depuis {{ daysSince(j.appliedAt) }} jours : c'est le bon moment pour relancer le recruteur.
@@ -99,6 +144,7 @@ const place = (j: Application) =>
         </div>
       </div>
     </article>
+    </template>
   </div>
 </template>
 

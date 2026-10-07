@@ -259,6 +259,8 @@ export interface ApplicationStore {
   save(leadId: string, a: { inputHash: string; model: string; letter: string }): Promise<StoredApplication>;
   edit(leadId: string, letter: string): Promise<StoredApplication | null>;
   markSent(leadId: string, to: string, at: Date): Promise<void>;
+  /** Candidatures spontanées envoyées (page Candidatures), la plus récente d'abord. */
+  listSent(): Promise<Array<{ leadId: string; sentAt: Date; sentTo: string | null }>>;
 }
 
 export type Stores = {

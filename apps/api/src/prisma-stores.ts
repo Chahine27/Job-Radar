@@ -219,6 +219,14 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
       async markSent(leadId, to, at) {
         await prisma.spontaneousApplication.update({ where: { leadId }, data: { sentAt: at, sentTo: to } });
       },
+      async listSent() {
+        const rows = await prisma.spontaneousApplication.findMany({
+          where: { sentAt: { not: null } },
+          orderBy: { sentAt: "desc" },
+          select: { leadId: true, sentAt: true, sentTo: true },
+        });
+        return rows.map((r) => ({ leadId: r.leadId, sentAt: r.sentAt!, sentTo: r.sentTo }));
+      },
     },
     leads: {
       list: () => prisma.companyLead.findMany({ orderBy: [{ hiringPotential: "desc" }, { name: "asc" }] }),

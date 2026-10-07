@@ -1,4 +1,4 @@
-import type { JobEdits, SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
+import type { JobEdits, SentSpontaneous, SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -132,6 +132,7 @@ export const api = {
   aiReadJob: (text: string, hints?: { title?: string | null; company?: string | null }) =>
     request<AiReadResult>("POST", "/api/jobs/manual/ai-read", { text, hints: hints ?? null }),
   analyzeJobText: (text: string) => request<JobTextAnalysis>("POST", "/api/jobs/manual/analyze", { text }),
+  listSpontaneous: () => request<{ items: SentSpontaneous[] }>("GET", "/api/leads/applications"),
   listApplications: () => request<{ items: Application[] }>("GET", "/api/jobs/applications"),
   listManualJobs: () => request<{ items: JobSummary[] }>("GET", "/api/jobs/manual"),
   addManualJob: (form: ManualJobForm) =>

@@ -128,6 +128,11 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
       set: async (userId, page, value) => void prefRows.set(userId, { ...(prefRows.get(userId) ?? {}), [page]: structuredClone(value) }),
     },
     applications: {
+      listSent: async () =>
+        [...appRows.entries()]
+          .filter(([, a]) => a.sentAt)
+          .map(([leadId, a]) => ({ leadId, sentAt: a.sentAt!, sentTo: a.sentTo }))
+          .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime()),
       get: async (leadId) => appRows.get(leadId) ?? null,
       save: async (leadId, a) => {
         const now = new Date();
