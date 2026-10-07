@@ -70,6 +70,9 @@ function buildKeyed() {
     joobleQuota,
     lbb: new LaBonneBoiteClient(ftCreds),
     romeo: new RomeoClient(ftCreds),
+    // Lettre de motivation : un modèle plus gros (OLLAMA_LETTER_MODEL, ex. gemma4:12b) écrit mieux mais plus lentement ;
+    // sans réglage, le même modèle que le reste.
+    letterAi: e.OLLAMA_LETTER_MODEL?.trim() ? new OllamaClient({ baseUrl: e.OLLAMA_URL, model: e.OLLAMA_LETTER_MODEL, timeoutMs: 300_000 }) : null,
     configured: {
       "france-travail": Boolean(ftCreds.clientId && ftCreds.clientSecret),
       adzuna: Boolean(e.ADZUNA_APP_ID?.trim() && e.ADZUNA_APP_KEY?.trim()),
@@ -90,7 +93,7 @@ const settings: SettingsService = {
     keyed = buildKeyed();
     log(`Réglages enregistrés : ${Object.keys(updates).join(", ")}`);
   },
-  test: (service) => testService(service, settings.values(), { joobleQuota: (key) => prismaJoobleQuota(prisma, key) }),
+  test: (service) => testService(service, settings.values(), { joobleQuota: (key) => prismaJoobleQuota(prisma, key), ollamaUrl: e.OLLAMA_URL }),
 };
 
 const notifiers = [
@@ -210,7 +213,7 @@ const app = await buildApp({
     model: ollama.model,
     status: () => ollama.status(),
     analyze: (job, profile) => analyzeJobWithAi(ollama, job, profile),
-    writeLetter: (job, kit, opts) => writeCoverLetter(ollama, job, kit, new Date(), opts),
+    writeLetter: (job, kit, opts) => writeCoverLetter(keyed.letterAi ?? ollama, job, kit, new Date(), opts),
     readJob: (text, hints) => readJobWithAi(ollama, text, hints),
     readCv: (cvText) => readCvWithAi(ollama, cvText),
   },

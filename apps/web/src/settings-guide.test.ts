@@ -17,7 +17,7 @@ const state: SettingsState = {
 
 describe("page Réglages", () => {
   it("chaque service a un lien officiel, des étapes et des champs", () => {
-    expect(SETTING_CARDS.map((c) => c.id)).toEqual(["france-travail", "adzuna", "jooble", "email", "prim"]);
+    expect(SETTING_CARDS.map((c) => c.id)).toEqual(["france-travail", "adzuna", "jooble", "email", "prim", "ai"]);
     for (const c of SETTING_CARDS) {
       expect(c.link.href).toMatch(/^https:\/\//);
       expect(c.steps.length).toBeGreaterThan(1);

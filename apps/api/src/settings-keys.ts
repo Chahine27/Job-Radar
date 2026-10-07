@@ -7,6 +7,7 @@ export const SETTING_SERVICES = {
   jooble: ["JOOBLE_API_KEY"],
   email: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "NOTIFY_EMAIL_TO"],
   prim: ["PRIM_API_KEY"],
+  ai: ["OLLAMA_LETTER_MODEL"],
 } as const;
 
 export type SettingService = keyof typeof SETTING_SERVICES;
@@ -21,10 +22,11 @@ export const REQUIRED_KEYS: Record<SettingService, SettingKey[]> = {
   jooble: ["JOOBLE_API_KEY"],
   email: ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD"],
   prim: ["PRIM_API_KEY"],
+  ai: ["OLLAMA_LETTER_MODEL"],
 };
 
 /** Valeurs non secrètes : affichées en entier (serveur, port, adresses). Les autres sont masquées. */
-const PUBLIC_KEYS = new Set<SettingKey>(["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_FROM", "NOTIFY_EMAIL_TO"]);
+const PUBLIC_KEYS = new Set<SettingKey>(["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_FROM", "NOTIFY_EMAIL_TO", "OLLAMA_LETTER_MODEL"]);
 
 export const isSecretKey = (key: SettingKey) => !PUBLIC_KEYS.has(key);
 
@@ -60,6 +62,7 @@ const RULES: Record<SettingKey, z.ZodType<string>> = {
   SMTP_FROM: z.string().max(200, "trop long"),
   NOTIFY_EMAIL_TO: email,
   PRIM_API_KEY: token("Clé PRIM"),
+  OLLAMA_LETTER_MODEL: z.string().regex(/^[a-z0-9][a-z0-9._\/-]*(:[a-z0-9._-]+)?$/i, "nom de modèle invalide (ex. gemma4:12b)").max(100, "trop long"),
 };
 
 /** Vérifie une valeur avant de l'écrire dans .env. Renvoie le message d'erreur, ou null si elle est bonne. */

@@ -1,3 +1,4 @@
+import { OllamaClient } from "@job-radar/ai";
 import { type Mailer, type Notifier, type SmtpConfig, verifySmtp } from "@job-radar/notifications";
 import { PrimRoutingService, type RoutingService } from "@job-radar/routing";
 import {
@@ -74,6 +75,8 @@ export type TestDeps = {
   joobleQuota: (apiKey: string) => JoobleQuotaStore;
   fetch?: FetchLike;
   verifySmtp?: (cfg: SmtpConfig) => Promise<void>;
+  /** Adresse d'Ollama (OLLAMA_URL), pour tester le modèle de la lettre. */
+  ollamaUrl?: string | undefined;
 };
 
 const LABELS: Record<SettingKey, string> = {
@@ -89,6 +92,7 @@ const LABELS: Record<SettingKey, string> = {
   SMTP_FROM: "Nom d'expéditeur",
   NOTIFY_EMAIL_TO: "Adresse de réception",
   PRIM_API_KEY: "Clé PRIM",
+  OLLAMA_LETTER_MODEL: "Modèle pour la lettre",
 };
 
 const errText = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -175,6 +179,13 @@ async function runTest(
         throw err;
       }
       return { ok: true, message: `Connexion réussie à ${cfg.host} avec ${cfg.user}. Les emails peuvent partir.` };
+    }
+    case "ai": {
+      const model = v("OLLAMA_LETTER_MODEL")!;
+      const s = await new OllamaClient({ baseUrl: deps.ollamaUrl, model, ...fetchOpt }).status();
+      if (!s.available) return { ok: false, message: s.message ?? "Ollama ne répond pas." };
+      if (!s.installed) return { ok: false, message: s.message ?? `Modèle « ${model} » absent.` };
+      return { ok: true, message: `Le modèle « ${model} » est installé : il écrira les lettres de motivation.` };
     }
     case "prim": {
       try {

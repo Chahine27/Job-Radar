@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assembleLetter, buildLetterPrompt, checkLetter, cleanDraft, cvEntities, findLetterIssues, spontaneousJobInput, strengthsAndGaps, writeCoverLetter } from "./cover-letter";
+import { assembleLetter, buildLetterPrompt, checkLetter, cleanDraft, cvEntities, dropFlaggedSentences, dropOffTopicSentences, findLetterIssues, inventedNeeds, spontaneousJobInput, strengthsAndGaps, writeCoverLetter } from "./cover-letter";
 import { OllamaClient } from "./ollama";
 
 const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { "content-type": "application/json" } });
@@ -35,12 +35,14 @@ const JOB = {
   salaryMax: null,
   description: "Logistik, éditeur de logiciels de transport, recrute un développeur Vue.js / Java Spring Boot. Kafka apprécié.",
 };
+// Les lettres doivent faire au moins 200 mots : un paragraphe neutre complète les brouillons de test.
+const FILLER = "L'équipe travaille en binôme sur chaque sujet. Les revues se font à l'oral, autour d'un écran. ".repeat(12);
 const DRAFT = {
   objet: "Candidature au poste de Développeur Vue.js / Java (H/F)",
   paragraphes: [
     "Madame, Monsieur,",
     "1. Diplômé d'un Licence professionnelle, je candidate au poste de développeur Vue.js / Java chez Logistik.",
-    "Chez Nordia, j'ai développé des interfaces en Vue.js et TypeScript et des API REST en Java Spring Boot.",
+    "Chez Nordia, j'ai développé des interfaces en Vue.js et TypeScript et des API REST en Java Spring Boot. " + FILLER,
     "Votre activité dans le transport m'attire, et je souhaite découvrir Kafka.",
     "Je serais heureux d'échanger avec vous.",
     "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
@@ -100,11 +102,11 @@ describe("lettre de motivation (IA locale)", () => {
     expect(content).toContain("Chez Nordia");
   });
 
-  it("réponse hors format : redemandée une fois, puis erreur claire", async () => {
+  it("réponse hors format : redemandée (3 brouillons), puis erreur claire", async () => {
     let calls = 0;
     const client = new OllamaClient({ fetch: async () => (calls++, json({ message: { content: '{"objet":"x"}' } })) });
     await expect(writeCoverLetter(client, JOB, KIT)).rejects.toThrow(/hors format/);
-    expect(calls).toBe(2);
+    expect(calls).toBe(3);
   });
 });
 
@@ -191,7 +193,7 @@ describe("relecture automatique (cas : Go / gRPC / NestJS)", () => {
     expect(findLetterIssues("J'ai développé des API REST en Java Spring Boot, en microservices, avec React et PostgreSQL. Je n'ai pas encore utilisé Go.", kit, job)).toEqual([]);
   });
 
-  it("lettre fautive → corrigée une fois par l'IA avec la liste des problèmes ; la version corrigée est gardée", async () => {
+  it("lettre fautive → corrigée par l'IA avec la liste des problèmes ; la meilleure version est gardée", async () => {
     const bodies: any[] = [];
     const BAD = { correspondances: [], objet: "Candidature au poste de Développeur", paragraphes: ["Je maîtrise Java et je souhaite approfondir Go (Golang).", "Cette opportunité me motive.", "Je serais heureux d'échanger avec vous."] };
     const GOOD2 = { correspondances: [], objet: "Candidature au poste de Développeur", paragraphes: ["J'ai développé des API REST en Java Spring Boot chez Nordia.", "Je n'ai pas encore utilisé Go ; je compte m'y former.", "Je serais heureux d'échanger avec vous."] };
@@ -203,7 +205,7 @@ describe("relecture automatique (cas : Go / gRPC / NestJS)", () => {
       },
     });
     const { content } = await writeCoverLetter(client, { ...JOB, description: job }, kit);
-    expect(bodies).toHaveLength(2);
+    expect(bodies.length).toBeGreaterThanOrEqual(2);
     expect(bodies[1].messages[1].content).toMatch(/PROBLÈMES À CORRIGER/);
     expect(bodies[1].messages[1].content).toMatch(/maîtrise/);
     expect(content).toContain("Je n'ai pas encore utilisé Go");
@@ -434,5 +436,48 @@ describe("règles longues du candidat et style « j'ai »", () => {
     const all = findLetterIssues("Chez Nordia — en Vue.js — j'ai notamment créé un écran. J'ai notamment migré un module.", KIT, "Vue.js").join("\n");
     expect(all).toMatch(/tiret long/);
     expect(all).toMatch(/Supprime un « notamment »/);
+  });
+});
+
+describe("dernier filet : phrases interdites retirées", () => {
+  it("retire la phrase au cliché, garde le reste ; ne vide jamais la lettre", () => {
+    const d = { objet: "x", paragraphes: ["Chez Nordia, j'ai tenu la caisse. Cela démontre ma rigueur. J'ouvrais le magasin seule.", "Cette opportunité me motive.", "Je serais ravie d'échanger."] };
+    expect(dropFlaggedSentences(d, { bannedWords: "" }).paragraphes).toEqual(["Chez Nordia, j'ai tenu la caisse. J'ouvrais le magasin seule.", "Je serais ravie d'échanger."]);
+    const only = { objet: "x", paragraphes: ["Cette opportunité me motive.", "Cela démontre ma motivation."] };
+    expect(dropFlaggedSentences(only, { bannedWords: "" })).toBe(only);
+  });
+});
+
+describe("dernier filet : phrases hors sujet retirées", () => {
+  const kit = { cvText: "Vue.js, TypeScript, Vitest, .NET 8, Docker", mastered: "" };
+  const long = "Chez Nordia, j'ai développé des interfaces de suivi pour des équipes qui les utilisent chaque jour. ".repeat(12);
+  it("retire la phrase qui ne cite que des compétences hors annonce, garde les autres", () => {
+    const d = { objet: "x", paragraphes: [`${long}Les images tournent sous Docker.`, "J'ai écrit des interfaces Vue.js."] };
+    const out = dropOffTopicSentences(d, kit, "Développeur Vue.js. Interfaces web.");
+    expect(out.paragraphes.join(" ")).not.toContain("Docker");
+    expect(out.paragraphes.join(" ")).toContain("Vue.js");
+  });
+  it("ne raccourcit pas une lettre déjà courte", () => {
+    const d = { objet: "x", paragraphes: ["Les images tournent sous Docker.", "J'ai écrit des interfaces Vue.js."] };
+    expect(dropOffTopicSentences(d, kit, "Développeur Vue.js.")).toBe(d);
+  });
+});
+
+describe("besoins inventés", () => {
+  const job = "La Clinique du Parc recrute des aides-soignants de nuit. Transmissions écrites et accompagnement des familles.";
+  it("repère un besoin que l'annonce n'écrit pas", () => {
+    expect(inventedNeeds("Mon expérience répond au besoin de formation des stagiaires que vous décrivez.", job)).toHaveLength(1);
+  });
+  it("accepte un besoin écrit dans l'annonce", () => {
+    expect(inventedNeeds("Cela correspond à votre besoin d'accompagnement des familles.", job)).toEqual([]);
+  });
+});
+
+describe("candidature spontanée : rien n'est « hors sujet »", () => {
+  it("citer des compétences du CV n'est pas signalé comme récitation (pas d'annonce)", () => {
+    const body = "Chez Nordia, j'ai développé des interfaces Vue.js. J'ai aussi conteneurisé l'application avec Docker et déployé sur .NET 8.";
+    const job = "Développeur Vue.js\nEntreprise du secteur transport.";
+    expect(findLetterIssues(body, KIT, job).some((i) => i.startsWith("Retire"))).toBe(true);
+    expect(findLetterIssues(body, KIT, job, { spontaneous: true }).some((i) => i.startsWith("Retire"))).toBe(false);
   });
 });

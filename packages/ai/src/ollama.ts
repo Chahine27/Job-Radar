@@ -70,7 +70,7 @@ export class OllamaClient {
    * Demande une réponse au format JSON imposé (schéma JSON), sans la « réflexion » du modèle (plus rapide).
    * Renvoie le JSON brut (à valider par l'appelant).
    */
-  async chatJson(system: string, user: string, jsonSchema: object, opts: { temperature?: number } = {}): Promise<unknown> {
+  async chatJson(system: string, user: string, jsonSchema: object, opts: { temperature?: number; contextTokens?: number } = {}): Promise<unknown> {
     let res: Response;
     try {
       res = await this.fetch(`${this.baseUrl}/api/chat`, {
@@ -82,7 +82,7 @@ export class OllamaClient {
           stream: false,
           think: false,
           format: jsonSchema,
-          options: { temperature: opts.temperature ?? 0.2, num_ctx: this.contextTokens },
+          options: { temperature: opts.temperature ?? 0.2, num_ctx: opts.contextTokens ?? this.contextTokens },
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },

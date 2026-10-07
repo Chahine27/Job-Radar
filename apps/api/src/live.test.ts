@@ -114,6 +114,15 @@ describe("bouton Tester", () => {
     expect(bad.message).toContain("PRIM refuse la clé");
   });
 
+  it("modèle de la lettre : installé, ou à télécharger", async () => {
+    const tags = json({ models: [{ name: "gemma4:e4b" }, { name: "gemma4:12b" }] });
+    const ok = await testService("ai", { OLLAMA_LETTER_MODEL: "gemma4:12b" }, { ...deps, fetch: async () => tags });
+    expect(ok).toEqual({ ok: true, message: "Le modèle « gemma4:12b » est installé : il écrira les lettres de motivation." });
+    const absent = await testService("ai", { OLLAMA_LETTER_MODEL: "gemma4:26b" }, { ...deps, fetch: async () => json({ models: [] }) });
+    expect(absent.ok).toBe(false);
+    expect(absent.message).toContain("ollama pull gemma4:26b");
+  });
+
   it("Adzuna : clé refusée", async () => {
     const r = await testService("adzuna", { ADZUNA_APP_ID: "1a2b3c4d", ADZUNA_APP_KEY: "0123456789abcdef" }, { ...deps, fetch: async () => json({}, 401) });
     expect(r).toEqual({ ok: false, message: "Adzuna refuse la clé : vérifie l'Application ID et l'Application key." });

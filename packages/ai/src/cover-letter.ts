@@ -5,7 +5,7 @@ import type { AnalysisJobInput } from "./job-analysis";
 import type { OllamaClient } from "./ollama";
 
 /** Changer ce numéro quand la consigne change : les lettres existantes seront signalées « à refaire ». */
-export const LETTER_PROMPT_VERSION = "2026-10-06.1";
+export const LETTER_PROMPT_VERSION = "2026-10-07.1";
 
 /** Ce que l'IA écrit : l'objet et le corps. L'en-tête, « Madame, Monsieur » et la politesse sont ajoutés par le code. */
 export const LetterDraftSchema = z.object({
@@ -196,7 +196,9 @@ const SPONTANEOUS_RULES = `CANDIDATURE SPONTANÉE (priorité sur tout le reste)
 - Il n'y a PAS d'offre : n'écris jamais « votre offre », « votre annonce », « le poste que vous proposez ». Objet : « Candidature spontanée – » + l'intitulé visé.
 - Si les RÈGLES DU CANDIDAT prévoient une phrase sur « votre offre », remplace-la par l'envie de rejoindre l'entreprise, avec une raison liée à son SECTEUR (seule info connue).
 - N'invente RIEN sur l'entreprise : ni produit, ni client, ni projet, ni valeur, ni actualité. Seuls le nom, le secteur, la ville et la taille sont connus.
-- Présente les expériences les plus solides du CV (pas de compétences « demandées » : il n'y en a pas).
+- La lettre doit VENDRE : 2 ou 3 réalisations précises du CV, les plus proches du métier visé, chacune avec ce qui a été fait, dans quel contexte et avec quels outils ou savoir-faire. Ici, citer les compétences du CV est normal (pas d'annonce à laquelle se limiter). Une expérience résumée en une demi-phrase ne sert à rien : développe-la ou retire-la.
+- N'écris pas que le secteur « t'attire par sa variété » : c'est vide. Dis ce que tu apportes à une entreprise de ce secteur, prouvé par un fait du CV.
+- Taille connue : petite structure → polyvalence et autonomie ; grande → travail en équipe et cadre. Toujours prouvé par un fait du CV.
 `;
 
 export function buildLetterPrompt(job: AnalysisJobInput, kit: LetterKit, opts: LetterOptions = {}): string {
@@ -302,7 +304,7 @@ export function checkLetter(letter: string, kit: LetterKit, jobText: string, job
     warnings.push(`« ${label} » n'est pas dans ton CV : vérifie que la lettre ne dit pas que tu le maîtrises.`);
   }
   // « je souhaite apprendre Python » alors que Python est dans le CV : la lettre se sous-vend.
-  for (const m of letter.matchAll(/(?:apprendre|découvrir|me former (?:à|sur)|monter en compétences? (?:sur|en))\s+(?:le |la |l'|les )?([^.,;\n]{2,60})/gi)) {
+  for (const m of letter.matchAll(/(?:apprendre|découvrir|me former (?:à|sur)|monter en compétences? (?:sur|en))\s+(?!m['’]appuy)(?:le |la |l'|les )?([^.,;\n]{2,60})/gi)) {
     for (const id of extractSkills(m[1]!, extraSkills)) {
       if (!inCv.has(id)) continue;
       const label = skillLabel(id, extraSkills);
@@ -316,7 +318,8 @@ export function checkLetter(letter: string, kit: LetterKit, jobText: string, job
   }
   // Compétences du CV citées dans la lettre mais absentes de l'annonce : la lettre récite le CV au lieu de répondre à l'offre.
   const inJob = new Set(extractSkills(jobText, extraSkills));
-  const offTopicIds = offTopicSkills(letter, inCv, inJob, extraSkills);
+  // Candidature spontanée : pas d'annonce, donc rien n'est « hors sujet ».
+  const offTopicIds = opts.spontaneous ? [] : offTopicSkills(letter, inCv, inJob, extraSkills);
   const offTopic = offTopicIds.map((id) => skillLabel(id, extraSkills));
   if (familiesOf(offTopicIds, extraSkills) >= 2) {
     warnings.push(`La lettre cite ${offTopic.join(", ")}, absents de l'annonce : garde seulement ce qui répond à l'offre (sinon ça ressemble à une récitation du CV).`);
@@ -384,6 +387,10 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [word("ce qui souligne|ce qui t[ée]moigne"), "« ce qui souligne / témoigne » (importance annoncée sans preuve)"],
   [word("plus qu['’]un (?:simple )?(?:poste|emploi|m[ée]tier)"), "« plus qu'un poste, c'est… » (formule toute faite)"],
   [/—/, "le tiret long « — » (mets une virgule ou un point)"],
+  [word("ma capacit[ée] (?:à|de)"), "« ma capacité à » (importance annoncée sans preuve : dis ce que tu as fait)"],
+  [word("(?:confirme|d[ée]montre|prouve)(?:nt)? (?:ma|mon|mes|la|l['’]|que)"), "« confirme / démontre ma… » (dis le fait, sans le commenter)"],
+  [word("ce qui me (?:donne|familiarise|rend|place)"), "« ce qui me donne / familiarise » (faux lien de cause)"],
+  [word("m['’](?:a|ont) permis de"), "« m'a permis de » (faux lien de cause : décris ce qu'il a fait)"],
 ];
 /** Mots utiles une fois, mais qui sonnent « robot » quand ils reviennent. */
 const ONCE = ["particulièrement", "notamment", "également", "aussi"];
@@ -500,6 +507,28 @@ export function copiedFromJob(body: string, jobText: string, jobTitle = ""): str
   return found;
 }
 
+/** Erreur de vérité (faux, inventé, mal attribué) : plus grave qu'une question de style. */
+const isFactIssue = (i: string) => /n'est pas (écrit pour|dans le CV|dans l'annonce)|maîtrise|Nomme l'entreprise|chiffre|manques/.test(i);
+
+const NEED = /(?:besoins?|attentes?|exigences?|recherchez|cherchez|d[ée]crivez|mentionnez)\s+(?:de |d['’]|en |en mati[èe]re de )?([^.;:\n]{3,70})/gi;
+const FILLER_WORDS = new Set(["vous", "votre", "vos", "nous", "notre", "equipe", "projet", "projets", "produit", "produits", "entreprise", "poste", "mission", "missions", "avec", "pour", "dans", "cette", "leurs"]);
+const plain = (w: string) => w.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const stem = (w: string) => plain(w).slice(0, 5);
+
+/**
+ * « … répond au besoin de sécurisation que vous décrivez » : si aucun mot de ce besoin n'est dans l'annonce, la lettre
+ * invente ce que l'entreprise cherche.
+ */
+export function inventedNeeds(body: string, jobText: string): string[] {
+  const job = new Set(jobText.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4).map(stem));
+  const out: string[] = [];
+  for (const m of body.matchAll(NEED)) {
+    const words = m[1]!.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 6 && !FILLER_WORDS.has(plain(w)));
+    if (words.length && !words.some((w) => job.has(stem(w)))) out.push(m[1]!.trim().slice(0, 60));
+  }
+  return out;
+}
+
 export function findLetterIssues(body: string, kit: LetterKit, jobText: string, opts: LetterOptions = {}): string[] {
   const issues: string[] = [];
   const extraSkills = customSkills(masteredLabels(kit));
@@ -528,7 +557,7 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   for (const m of body.matchAll(/(?:apprendre|découvrir|me former (?:à|sur))\s+(?:le |la |l'|les )?([^.,;\n]{2,60})/gi)) {
     for (const id of extractSkills(m[1]!, extraSkills)) if (inCv.has(id)) issues.push(`${label(id)} est dans le CV : ne dis pas vouloir l'apprendre, dis qu'il l'a pratiqué.`);
   }
-  const offIds = offTopicSkills(body, inCv, inJob, extraSkills);
+  const offIds = opts.spontaneous ? [] : offTopicSkills(body, inCv, inJob, extraSkills);
   const offTopic = offIds.map(label);
   if (familiesOf(offIds) >= 2) issues.push(`Retire ${offTopic.join(", ")} : sans rapport avec l'annonce, ça fait récitation du CV.`);
   // Débuts de phrase répétitifs (« J'ai … J'ai … J'ai … »).
@@ -570,14 +599,17 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   const gapsCited = [...new Set(extractSkills(body, extraSkills))].filter((id) => !inCv.has(id) && inJob.has(id) && !inTitle.has(id));
   if (gapsCited.length >= 2) issues.push(`Ne liste pas tes manques (${gapsCited.map(label).join(", ")}) : au plus un, seulement s'il est central dans l'annonce.`);
   // Chiffres inventés.
-  const sources = `${kit.cvText}\n${kit.rules ?? ""}\n${jobText}\n${kit.closing ?? ""}`;
+  const sources = `${kit.cvText}\n${kit.rules ?? ""}\n${jobText}\n${kit.closing ?? ""}\n${kit.header}`;
   // On ignore les versions (« Vue 3 », « .NET 8 », « OAuth2 ») et les dates.
   const numbersText = body.replace(/\p{Lu}[\p{L}.#+]*\s?\d+(?:\.\d+)*/gu, " ").replace(/[\p{L}]\d+/gu, " ").replace(/\d+(?:[/.]\d+)+/g, " ");
   for (const n of new Set(numbersText.match(/\d+/g) ?? [])) {
     if (!new RegExp(`(^|\\D)${n}(\\D|$)`).test(sources)) issues.push(`Le chiffre « ${n} » n'est ni dans le CV ni dans l'annonce : supprime-le.`);
   }
-  // Phrases recopiées de l'annonce.
-  for (const s of copiedFromJob(body, jobText.split("\n").slice(1).join("\n"), title).slice(0, 2)) {
+  for (const need of inventedNeeds(body, jobText).slice(0, 2)) {
+    issues.push(`« ${need} » n'est pas dans l'annonce : ne prête pas à l'entreprise un besoin qu'elle n'a pas écrit ; supprime la phrase ou cite ce que l'annonce dit vraiment.`);
+  }
+  // Phrases recopiées de l'annonce (en spontané, la « annonce » n'est que la fiche entreprise : le prompt l'interdit déjà).
+  if (!opts.spontaneous) for (const s of copiedFromJob(body, jobText.split("\n").slice(1).join("\n"), title).slice(0, 2)) {
     issues.push(`Phrase recopiée de l'annonce : dis-le avec tes mots (« ${s}… »).`);
   }
   // La dernière entreprise doit être nommée.
@@ -596,8 +628,7 @@ export function findLetterIssues(body: string, kit: LetterKit, jobText: string, 
   const connectors = body.match(/\b(De plus|Parall[èe]lement|En outre|Par ailleurs)\b/g) ?? [];
   if (connectors.length > 1) issues.push("Trop de connecteurs (« De plus », « Parallèlement »…) : un seul maximum.");
   // Les erreurs de vérité d'abord (la liste est coupée à 10).
-  const truth = (i: string) => (/n'est pas (écrit pour|dans le CV)|maîtrise|Nomme l'entreprise|chiffre|manques/.test(i) ? 0 : 1);
-  return [...new Set(issues)].sort((x, y) => truth(x) - truth(y)).slice(0, 10);
+  return [...new Set(issues)].sort((x, y) => Number(isFactIssue(y)) - Number(isFactIssue(x))).slice(0, 10);
 }
 
 /** Écrit la lettre avec l'IA. Une réponse hors format est redemandée une fois. */
@@ -611,27 +642,51 @@ export function withClosing(draft: LetterBody, kit: Pick<LetterKit, "closing">, 
   return { ...draft, paragraphes: [...paragraphes, closing] };
 }
 
-export async function writeCoverLetter(
-  client: Pick<OllamaClient, "chatJson" | "model">,
-  job: AnalysisJobInput,
-  kit: LetterKit,
-  now: Date = new Date(),
-  opts: LetterOptions = {},
-): Promise<{ content: string; model: string; durationMs: number }> {
-  const started = Date.now();
-  const prompt = buildLetterPrompt(job, kit, opts);
-  let lastError = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const raw = await client.chatJson(LETTER_SYSTEM_PROMPT, prompt, LETTER_JSON_SCHEMA, { temperature: 0.5 });
-    const parsed = LetterDraftSchema.safeParse(raw);
-    if (parsed.success) {
-      let draft = cleanDraft(parsed.data, kit.signature);
-      if (draft.paragraphes.length >= 2) {
-        // Relecture : si la lettre enfreint des règles, on la fait corriger une fois, avec la liste précise.
-        const jobText = `${job.title}\n${job.description}`;
-        const issues = findLetterIssues(`${draft.objet}\n${draft.paragraphes.join("\n")}`, kit, jobText, opts);
-        if (issues.length) {
-          const fix = `${prompt}
+/**
+ * Dernier filet : les phrases qui contiennent encore un mot ou une formule interdits (clichés, faux liens de cause…)
+ * sont retirées par le code, car le petit modèle les remet parfois malgré les corrections. Une lettre un peu plus
+ * courte vaut mieux qu'une lettre qui sonne faux. Garde l'original si la lettre tomberait à moins de 2 paragraphes.
+ */
+export function dropFlaggedSentences(draft: LetterBody, kit: Pick<LetterKit, "bannedWords">): LetterBody {
+  const banned = [...FORBIDDEN, ...ownBanned(kit)].map(([re]) => re);
+  const paragraphes = draft.paragraphes
+    .map((p) => p.split(/(?<=[.!?])\s+/).filter((sentence) => !banned.some((re) => re.test(sentence))).join(" "))
+    .filter(Boolean);
+  return paragraphes.length >= 2 ? { ...draft, paragraphes } : draft;
+}
+
+/**
+ * Autre filet : une phrase qui ne parle QUE de compétences du CV sans rapport avec l'annonce fait « récitation du CV » ;
+ * elle est retirée tant que la lettre garde au moins 170 mots.
+ */
+export function dropOffTopicSentences(draft: LetterBody, kit: Pick<LetterKit, "cvText" | "mastered">, jobText: string): LetterBody {
+  const extraSkills = customSkills(masteredLabels(kit));
+  const inCv = new Set(extractSkills(kit.cvText, extraSkills));
+  const inJob = new Set(extractSkills(jobText, extraSkills));
+  const keep = (sentence: string) => {
+    const ids = extractSkills(sentence, extraSkills);
+    return ids.length === 0 || ids.some((id) => inJob.has(id)) || offTopicSkills(sentence, inCv, inJob, extraSkills).length === 0;
+  };
+  const paragraphes = draft.paragraphes.map((p) => p.split(/(?<=[.!?])\s+/).filter(keep).join(" ")).filter(Boolean);
+  const words = paragraphes.join(" ").split(/\s+/).length;
+  return paragraphes.length >= 2 && words >= 170 ? { ...draft, paragraphes } : draft;
+}
+
+/** Mémoire de travail pour la lettre : prompt (consignes + CV + exemple + annonce) et réponse tiennent largement. */
+const LETTER_CONTEXT = 16_384;
+/** Durée maximale de recherche de la meilleure lettre ; on s'arrête avant si une lettre n'a plus aucun défaut. */
+const LETTER_BUDGET_MS = 150_000;
+const MIN_WORDS = 200;
+const MAX_WORDS = 350;
+const MAX_DRAFTS = 3;
+const MAX_FIXES = 3;
+
+type Candidate = { draft: LetterBody; issues: string[] };
+/** Note d'une lettre (plus bas = mieux) : une erreur de vérité pèse trois fois un défaut de style. */
+const penalty = (c: Candidate) => c.issues.reduce((n, i) => n + (isFactIssue(i) ? 3 : 1), 0);
+
+function fixPrompt(prompt: string, draft: LetterBody, issues: string[]): string {
+  return `${prompt}
 
 PREMIÈRE VERSION DE LA LETTRE (à corriger)
 """
@@ -642,22 +697,67 @@ PROBLÈMES À CORRIGER (réécris toute la lettre en les corrigeant, sans en cr�
 ${issues.map((i) => `- ${i}`).join("\n")}
 
 RELECTURE HUMAINE (en réécrivant) : garde tous les faits vrais, supprime les phrases qui n'en contiennent pas, ne répète pas une idée déjà dite, ne rajoute aucun détail absent du CV. Relis chaque phrase : une vraie personne la dirait-elle à voix haute à un recruteur ? Sinon, réécris-la simplement.`;
-          const second = LetterDraftSchema.safeParse(
-            await client.chatJson(LETTER_SYSTEM_PROMPT, fix, LETTER_JSON_SCHEMA, { temperature: 0.3 }).catch(() => null),
-          );
-          if (second.success) {
-            const fixed = cleanDraft(second.data, kit.signature);
-            if (fixed.paragraphes.length >= 2) draft = fixed;
-          }
-        }
-        draft = withClosing(draft, kit, job.company);
-        if (opts.spontaneous) draft = { ...draft, objet: `Candidature spontanée – ${job.title}` };
-        return { content: fixTypos(assembleLetter(kit, draft, now)), model: client.model, durationMs: Date.now() - started };
-      }
-      lastError = "lettre trop courte";
-    } else {
+}
+
+/**
+ * Écrit la lettre avec l'IA : jusqu'à 3 brouillons, chacun corrigé (jusqu'à 3 fois) tant qu'il s'améliore,
+ * dans un budget de 150 s ; la meilleure lettre est gardée.
+ */
+export async function writeCoverLetter(
+  client: Pick<OllamaClient, "chatJson" | "model">,
+  job: AnalysisJobInput,
+  kit: LetterKit,
+  now: Date = new Date(),
+  opts: LetterOptions = {},
+): Promise<{ content: string; model: string; durationMs: number }> {
+  const started = Date.now();
+  const prompt = buildLetterPrompt(job, kit, opts);
+  const jobText = `${job.title}\n${job.description}`;
+  let lastError = "";
+
+  /** Une version de la lettre, nettoyée et relue (null = réponse hors format ou trop courte). */
+  const generate = async (user: string, temperature: number): Promise<Candidate | null> => {
+    const raw = await client.chatJson(LETTER_SYSTEM_PROMPT, user, LETTER_JSON_SCHEMA, { temperature, contextTokens: LETTER_CONTEXT });
+    const parsed = LetterDraftSchema.safeParse(raw);
+    if (!parsed.success) {
       lastError = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(" ; ");
+      return null;
     }
+    const draft = cleanDraft(parsed.data, kit.signature);
+    if (draft.paragraphes.length < 2) {
+      lastError = "lettre trop courte";
+      return null;
+    }
+    const issues = findLetterIssues(`${draft.objet}\n${draft.paragraphes.join("\n")}`, kit, jobText, opts);
+    const words = draft.paragraphes.join(" ").split(/\s+/).length;
+    if (words < MIN_WORDS) issues.push(`Lettre trop courte (${words} mots) : écris ${MIN_WORDS} à ${MAX_WORDS} mots, un fait précis du CV par paragraphe.`);
+    if (words > MAX_WORDS + 40) issues.push(`Lettre trop longue (${words} mots) : ${MIN_WORDS} à ${MAX_WORDS} mots.`);
+    return { draft, issues };
+  };
+
+  // Plusieurs brouillons ; chacun est corrigé tant qu'il s'améliore ; on garde la meilleure lettre.
+  let best: Candidate | null = null;
+  for (let d = 0; d < MAX_DRAFTS && Date.now() - started < LETTER_BUDGET_MS && best?.issues.length !== 0; d++) {
+    let first: Candidate | null;
+    try {
+      first = await generate(prompt, d === 0 ? 0.5 : 0.8);
+    } catch (e) {
+      if (!best) throw e; // IA injoignable dès le début : on le dit ; sinon on garde ce qu'on a
+      break;
+    }
+    if (!first) continue;
+    let cur: Candidate = first;
+    for (let f = 0; f < MAX_FIXES && cur.issues.length && Date.now() - started < LETTER_BUDGET_MS; f++) {
+      const fixed: Candidate | null = await generate(fixPrompt(prompt, cur.draft, cur.issues), 0.3).catch(() => null);
+      if (!fixed || penalty(fixed) >= penalty(cur)) break; // plus d'amélioration : on s'arrête
+      cur = fixed;
+    }
+    if (!best || penalty(cur) < penalty(best)) best = cur;
   }
-  throw new Error(`Réponse de l'IA hors format : ${lastError}`);
+  if (!best) throw new Error(`Réponse de l'IA hors format : ${lastError}`);
+
+  const clean = dropFlaggedSentences(best.draft, kit);
+  let draft = withClosing(opts.spontaneous ? clean : dropOffTopicSentences(clean, kit, jobText), kit, job.company);
+  if (opts.spontaneous) draft = { ...draft, objet: `Candidature spontanée – ${job.title}` };
+  return { content: fixTypos(assembleLetter(kit, draft, now)), model: client.model, durationMs: Date.now() - started };
 }

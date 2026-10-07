@@ -99,6 +99,19 @@ export const SETTING_CARDS: SettingCard[] = [
     ],
     fields: [{ key: "PRIM_API_KEY", label: "Jeton (clé API)" }],
   },
+  {
+    id: "ai",
+    title: "Lettre de motivation : modèle d'IA plus gros",
+    purpose:
+      "Facultatif. Par défaut, la lettre est écrite par le même modèle que le reste (gemma4:e4b, rapide). Un modèle plus gros écrit nettement mieux, mais met 2 à 3 minutes par lettre et demande un PC plus puissant (16 Go de mémoire conseillés).",
+    link: { href: "https://ollama.com/library/gemma4", label: "ollama.com — modèles Gemma 4" },
+    steps: [
+      "Ouvre le menu Démarrer, tape « cmd » et ouvre l'Invite de commandes.",
+      "Tape « ollama pull gemma4:12b » puis Entrée, et attends la fin du téléchargement (environ 8 Go).",
+      "Écris « gemma4:12b » ci-dessous, puis Enregistrer et Tester. Pour revenir au modèle rapide, vide le champ et enregistre.",
+    ],
+    fields: [{ key: "OLLAMA_LETTER_MODEL", label: "Modèle pour la lettre", placeholder: "gemma4:12b" }],
+  },
 ];
 
 /** Champs dont on affiche la valeur actuelle (pas un secret). */
