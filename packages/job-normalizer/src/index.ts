@@ -32,3 +32,4 @@ export function normalize(raw: RawJob): NormalizedJob | null {
       return null;
   }
 }
+export * from "./dedupe";

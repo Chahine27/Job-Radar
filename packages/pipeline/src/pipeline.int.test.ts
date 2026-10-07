@@ -20,6 +20,14 @@ const raw = (data: object, source = "france-travail"): RawJob => ({
   collectedAt: new Date(),
 });
 
+/** Autre offre France Travail : chacune a son propre lien d'annonce (sinon c'est la même offre). */
+const ftOffer = (id: string, intitule: string) => ({
+  ...FT_SAMPLE_OFFER,
+  id,
+  intitule,
+  origineOffre: { ...FT_SAMPLE_OFFER.origineOffre, urlOrigine: `https://candidat.francetravail.fr/offres/recherche/detail/${id}` },
+});
+
 describe("source → normalisation → base (README §32)", () => {
   it("crée, reconnaît, met à jour et fusionne les doublons", async () => {
     const first = normalize(raw(FT_SAMPLE_OFFER))!;
@@ -42,7 +50,7 @@ describe("source → normalisation → base (README §32)", () => {
   it("collecte complète : une source en erreur n'arrête pas les autres, tout est tracé", async () => {
     const ok: JobSource = {
       name: "france-travail",
-      search: async (q) => (q.department === "69" ? [raw(FT_SAMPLE_OFFER), raw({ ...FT_SAMPLE_OFFER, id: "2", intitule: "Développeur Java" })] : []),
+      search: async (q) => (q.department === "69" ? [raw(FT_SAMPLE_OFFER), raw(ftOffer("2", "Développeur Java"))] : []),
       healthCheck: async () => ({ status: "OK" }),
     };
     const broken: JobSource = {
@@ -71,8 +79,8 @@ describe("source → normalisation → base (README §32)", () => {
     const now = new Date();
     const old = new Date(now.getTime() - 10 * 86_400_000);
     await ingestJob(prisma, normalize(raw(FT_SAMPLE_OFFER))!, old);
-    await ingestJob(prisma, normalize(raw({ ...FT_SAMPLE_OFFER, id: "ENCORE", intitule: "Dev encore en ligne" }))!, old);
-    await ingestJob(prisma, normalize(raw({ ...FT_SAMPLE_OFFER, id: "SAUVEE", intitule: "Dev sauvegardé" }))!, old);
+    await ingestJob(prisma, normalize(raw(ftOffer("ENCORE", "Dev encore en ligne")))!, old);
+    await ingestJob(prisma, normalize(raw(ftOffer("SAUVEE", "Dev sauvegardé")))!, old);
     await prisma.job.updateMany({ where: { title: "Dev sauvegardé" }, data: { status: "SAVED" } });
 
     const asked: string[] = [];
@@ -137,7 +145,7 @@ describe("source → normalisation → base (README §32)", () => {
     const form = {
       title: "Développeur Vue.js",
       company: "Acme Manuel",
-      location: "Vénissieux",
+      location: "Vénissieux (69)",
       description: "Vue.js et TypeScript, CDI, 2 ans d'expérience minimum.",
     };
     const a = await saveManualJob(prisma, buildManualJob(form)!);

@@ -77,6 +77,8 @@ model Job {
   id                String            @id @default(cuid())
   /// entreprise + titre + ville normalisés (dédoublonnage niveau 3)
   fingerprint       String            @unique
+  /// entreprise + titre nettoyés (sans contrat, (H/F)…) : repère la même offre écrite autrement par une autre source
+  dedupeKey         String?
   /// change si le contenu de l'offre change
   contentHash       String
   title             String
@@ -123,6 +125,7 @@ model Job {
   @@index([status, lastSeenAt])
   @@index([department])
   @@index([publishedAt])
+  @@index([dedupeKey])
 }
 
 model JobSourceLink {

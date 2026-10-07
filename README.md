@@ -93,7 +93,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 8. ✅ Temps de trajet partout en France : en voiture (IGN, sans clé), en transports en commun en Île-de-France (PRIM).
 9. ✅ Mises à jour automatiques au lancement (dernière « Release » GitHub), sans git ni téléchargement à la main.
 10. ✅ Score plus juste : contrat hors profil à 0 (lu aussi dans le titre et l'annonce), salaire lu dans l'annonce, rayon de recherche et rubriques de zone, seuils du profil respectés.
-11. ⏳ Tests complets avec des profils variés.
+11. ✅ Dédoublonnage : une offre vue sur plusieurs sites = une seule offre avec tous ses liens (`pnpm jobs:dedupe` pour l'existant).
+12. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 
@@ -101,4 +102,5 @@ Monorepo pnpm (API Fastify, site Vue 3, PostgreSQL intégré, Prisma). Dans le d
 
 - `pnpm dev` : lance l'API et le site (http://localhost:5173).
 - `pnpm check` : vérifie les types et lance les tests.
+- `pnpm jobs:dedupe` : fusionne les doublons déjà en base (`--apply` pour appliquer).
 - `pnpm db:demo` : ajoute des offres de démonstration (`pnpm db:demo:clear` pour les retirer).

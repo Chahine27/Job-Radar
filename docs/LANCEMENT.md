@@ -60,9 +60,16 @@ Pour tout arrêter : `Ctrl + C` dans le terminal. La base lancée par le lanceur
 |--------------------------------------------|-------------------------------------------|
 | Lancer une collecte tout de suite          | `pnpm collect`                            |
 | Voir la base de données dans un tableau    | `pnpm db:studio`                          |
+| Fusionner les doublons déjà en base        | `pnpm jobs:dedupe` (liste), puis `pnpm jobs:dedupe --apply` |
 | Voir les offres expirées                   | Tableau de bord → filtre statut « Expirées » |
 | Chercher des entreprises (candidature spontanée) | Page « Entreprises »                |
 | Garder une offre vue sur LinkedIn, Indeed…  | Page « Ajouter une offre » : colle le titre et le texte |
+
+### Une offre vue sur plusieurs sites
+
+La même offre trouvée sur France Travail, Adzuna et Jooble n'apparaît **qu'une fois**, avec un lien par site.
+Elle est reconnue par le lien de l'annonce, ou par l'entreprise + l'intitulé (sans « (H/F) » ni le contrat) + la ville.
+Deux villes différentes, ou « CDI » d'un côté et « CDD » de l'autre, restent deux offres.
 
 ### Quand une offre est-elle « expirée » ?
 

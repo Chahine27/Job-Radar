@@ -6,6 +6,7 @@
   "scripts": {
     "ft:test": "tsx src/ft-test.ts",
     "collect": "tsx src/collect-cli.ts",
+    "dedupe": "tsx src/dedupe-cli.ts",
     "setup:push": "tsx src/setup-push.ts",
     "sources:test": "tsx src/sources-test.ts",
     "travel:test": "tsx src/travel-test.ts",

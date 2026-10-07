@@ -70,3 +70,31 @@ export function parseParisDate(value: string | null | undefined): Date | null {
   const asUtc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0), Number(m[6] ?? 0));
   return new Date(asUtc - parisOffsetMs(asUtc));
 }
+
+/** Paramètres de suivi (même offre, lien différent) : retirés de la clé. */
+const TRACKING_PARAMS = /^(utm_.*|refid|trackingid|trk|position|pagenum|ref|fbclid|gclid|originalsubdomain|src|from)$/i;
+
+/**
+ * Clé d'URL d'une offre, pour reconnaître la même annonce trouvée par deux chemins (collecte, ajout manuel…).
+ * LinkedIn : l'identifiant suffit (fr./www., titre dans le lien, paramètres de suivi n'y changent rien).
+ * Ailleurs : domaine sans « www. » + chemin + paramètres utiles (triés) + route « #/… ». null si ce n'est pas une URL.
+ */
+export function urlKey(url: string | null | undefined): string | null {
+  let u: URL;
+  try {
+    u = new URL(url ?? "");
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(u.protocol)) return null;
+  const host = u.hostname.toLowerCase().replace(/^www\./, "");
+  if (host === "linkedin.com" || host.endsWith(".linkedin.com")) {
+    const id = u.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d{6,})\/?$/)?.[1] ?? u.searchParams.get("currentJobId");
+    if (id && /^\d{6,}$/.test(id)) return `linkedin.com/jobs/view/${id}`;
+  }
+  const params = [...u.searchParams].filter(([k]) => !TRACKING_PARAMS.test(k)).sort(([a], [b]) => a.localeCompare(b));
+  const query = params.length ? `?${new URLSearchParams(params).toString()}` : "";
+  // Applications d'une seule page : l'offre est dans le fragment (« #/apply/job/so1tfzjse98/… »).
+  const route = /^#!?\//.test(u.hash) ? u.hash : "";
+  return `${host}${decodeURIComponent(u.pathname).replace(/\/+$/, "")}${query}${route}`;
+}

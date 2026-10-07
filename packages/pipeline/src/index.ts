@@ -6,3 +6,4 @@ export * from "./quota";
 export * from "./expire";
 export * from "./api-quota";
 export * from "./manual";
+export * from "./dedupe";
