@@ -262,10 +262,10 @@ export function createPrismaStores(prisma: PrismaClient): Stores {
         const states = await prisma.sourceState.findMany({ orderBy: { source: "asc" } });
         const last = await Promise.all(
           states.map((st) =>
-            prisma.sourceRun.findFirst({ where: { source: st.source }, orderBy: { createdAt: "desc" }, select: { status: true, error: true } }),
+            prisma.sourceRun.findFirst({ where: { source: st.source }, orderBy: { createdAt: "desc" }, select: { status: true, error: true, createdAt: true } }),
           ),
         );
-        return states.map((st, i) => ({ ...st, lastStatus: last[i]?.status ?? null, lastError: last[i]?.error ?? null }));
+        return states.map((st, i) => ({ ...st, lastStatus: last[i]?.status ?? null, lastError: last[i]?.error ?? null, lastRunAt: last[i]?.createdAt ?? null }));
       },
       async update(source, data) {
         const exists = await prisma.sourceState.findUnique({ where: { source } });

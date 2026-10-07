@@ -6,6 +6,8 @@ import { requireAuth } from "../auth";
 export interface Collector {
   start(trigger: "manual"): Promise<StartResult | null>;
   status(): Promise<CollectionStatus>;
+  /** Relance une seule source (page Réglages), sans changer son rythme. null → source inconnue ou inactive. */
+  startSource(source: string): Promise<StartResult | null>;
 }
 
 export async function collectionRoutes(app: FastifyInstance, opts: { collector: Collector }) {
@@ -18,6 +20,17 @@ export async function collectionRoutes(app: FastifyInstance, opts: { collector: 
     async (_request, reply) => {
       const res = await opts.collector.start("manual");
       if (!res) return reply.code(409).send({ error: "NO_ENABLED_SOURCE" });
+      return reply.code(202).send(res);
+    },
+  );
+
+  app.post(
+    "/api/sources/:source/refresh",
+    { config: { rateLimit: { max: 12, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const { source } = request.params as { source: string };
+      const res = await opts.collector.startSource(source);
+      if (!res) return reply.code(409).send({ error: "SOURCE_DISABLED", message: "Source inactive (page Sources) ou non configurée." });
       return reply.code(202).send(res);
     },
   );

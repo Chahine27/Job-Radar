@@ -99,7 +99,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 14. ✅ Lettre de motivation : plusieurs brouillons relus et corrigés, modèle plus gros au choix (Réglages).
 15. ✅ Entreprises : recherche par nom, filtre « avec email saisi », prompt des emails plus fiable, résultat d'envoi près du bouton.
 16. ✅ « Modifier les infos » d'une offre : tes corrections priment sur la source et recalculent le score.
-17. ⏳ Tests complets avec des profils variés.
+17. ✅ Lancement en arrière-plan, bouton « Arrêter Job Radar », relance d'une source depuis Réglages.
+18. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

@@ -134,6 +134,13 @@ code { background: var(--surface-2); padding: 0.05rem 0.35rem; border-radius: 5p
 .nav-link.router-link-active .icon { color: #a5b4fc; }
 .sidebar .spacer { flex: 1; }
 .side-footer { display: grid; gap: 0.7rem; border-top: 1px solid var(--side-border); padding-top: 0.9rem; }
+.stop-btn {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem; border-radius: 10px;
+  background: transparent; border: 1px solid var(--side-border); color: var(--side-muted); font-weight: 550; cursor: pointer;
+}
+.stop-btn:hover { color: var(--side-text); background: var(--side-hover); }
+.stopped { display: grid; place-items: center; min-height: 100vh; padding: 1rem; }
+.stopped .card { max-width: 460px; }
 .user-row { display: flex; align-items: center; gap: 0.6rem; padding: 0 0.35rem; min-width: 0; }
 .avatar {
   display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%;

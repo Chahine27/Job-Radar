@@ -7,6 +7,8 @@ coverage/
 .env.*
 !.env.example
 *.log
+# Demande d'arrêt du bouton « Arrêter Job Radar » (lue par le lanceur)
+job-radar.stop
 .DS_Store
 
 # Captures d'écran envoyées par Claude (pas du code)

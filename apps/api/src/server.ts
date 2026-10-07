@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { OllamaClient, analyzeJobWithAi, pickRomeWithAi, readCvWithAi, readJobWithAi, writeCoverLetter } from "@job-radar/ai";
 import { createPrismaClient } from "@job-radar/db";
 import {
@@ -163,6 +164,8 @@ const runner = new CollectionRunner({
       profile,
       since: run.startedAt,
       appUrl: env.APP_URL,
+  // Lancé par « Lancer Job Radar.cmd » : ce fichier demande au lanceur (qui le surveille) de tout arrêter.
+  ...(e.JOB_RADAR_STOP_FILE ? { stopApp: () => writeFileSync(e.JOB_RADAR_STOP_FILE!, "") } : {}),
       distanceOf,
       log: (m) => log(m),
     });
@@ -171,7 +174,11 @@ const runner = new CollectionRunner({
 
 const app = await buildApp({
   stores: createPrismaStores(prisma),
-  collector: runner,
+  collector: {
+    start: (trigger) => runner.start(trigger),
+    status: () => runner.status(),
+    startSource: (source) => runner.start("manual", [source], true),
+  },
   notifiers,
   // Offre « à compléter » complétée : « à postuler » si le score recalculé (celui affiché) reste bon.
   // Lettre de motivation terminée (offre ou candidature spontanée) : notification du navigateur.

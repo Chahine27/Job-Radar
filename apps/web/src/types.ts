@@ -132,6 +132,7 @@ export type SourceItem = {
   nextRunAt: string;
   lastStatus: string | null;
   lastError: string | null;
+  lastRunAt: string | null;
 };
 
 

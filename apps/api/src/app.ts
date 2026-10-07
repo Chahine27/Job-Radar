@@ -2,7 +2,7 @@ import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyServerOptions, LogController } from "fastify";
-import { SESSION_COOKIE, resolveSession } from "./auth";
+import { SESSION_COOKIE, requireAuth, resolveSession } from "./auth";
 import { createJobService, type JobDetail } from "./jobs/service";
 import { type AiService, type LetterNotice, aiRoutes } from "./routes/ai";
 import { authRoutes } from "./routes/auth";
@@ -34,6 +34,8 @@ export type AppOptions = {
   onJobCompleted?: (job: JobDetail) => Promise<unknown>;
   /** Lettre de motivation IA terminée : notification du navigateur (sauf si la page est ouverte). */
   onLetterReady?: (n: LetterNotice) => Promise<unknown>;
+  /** Bouton « Arrêter Job Radar » : demande au lanceur de tout arrêter. Absent (lancé avec « pnpm dev ») → 404. */
+  stopApp?: () => void;
   vapidPublicKey?: string | null;
   /** Identifiants présents dans .env, par source (affichage page Sources). Fonction = valeur à jour. */
   sourcesConfigured?: Record<string, boolean> | (() => Record<string, boolean>);
@@ -97,6 +99,14 @@ export async function buildApp(opts: AppOptions) {
   });
 
   app.get("/api/health", async () => ({ status: "ok" }));
+
+  if (opts.stopApp) {
+    const stopApp = opts.stopApp;
+    app.post("/api/system/stop", { preHandler: requireAuth }, async (_request, reply) => {
+      stopApp();
+      return reply.code(202).send({ status: "stopping" });
+    });
+  }
 
   await app.register(authRoutes, { stores: opts.stores, secureCookie: opts.secureCookie });
   await app.register(setupRoutes, { stores: opts.stores, secureCookie: opts.secureCookie, ...(opts.geocoder ? { geocoder: opts.geocoder } : {}) });

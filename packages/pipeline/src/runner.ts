@@ -53,6 +53,7 @@ export type Collect = (args: {
   sources: JobSource[];
   profile: Profile;
   publishedSinceDays: PublishedDays;
+  keepSchedule?: boolean;
 }) => Promise<CollectReport>;
 
 export type RunnerOptions = {
@@ -91,7 +92,8 @@ export class CollectionRunner {
     await this.current?.done;
   }
 
-  async start(trigger: RunTrigger, only?: string[]): Promise<StartResult | null> {
+  /** `keepSchedule` : relance à la main d'une source (page Réglages), sans toucher au rythme des collectes automatiques. */
+  async start(trigger: RunTrigger, only?: string[], keepSchedule = false): Promise<StartResult | null> {
     if (this.current) return { status: "already_running", runId: this.current.runId };
     const other = await this.opts.repo.findActiveRun(new Date(this.now().getTime() - STALE_RUN_MS));
     if (other) return { status: "already_running", runId: other };
@@ -112,7 +114,7 @@ export class CollectionRunner {
       try {
         const profile = await this.opts.repo.loadProfile();
         this.log(`Collecte ${trigger} : ${wanted.map((s) => s.name).join(", ")} (${days} j)`);
-        const report = await this.opts.collect({ runId, trigger, sources: wanted, profile, publishedSinceDays: days });
+        const report = await this.opts.collect({ runId, trigger, sources: wanted, profile, publishedSinceDays: days, keepSchedule });
         this.log(`Collecte terminée : ${report.status}, ${report.created} nouvelle(s)`, report);
         await this.opts.onFinished?.(report);
       } catch (err) {
@@ -223,6 +225,6 @@ export function createPrismaRunRepo(prisma: PrismaClient): RunRepo {
 
 /** Fonction de collecte réelle (PostgreSQL). */
 export function prismaCollect(prisma: PrismaClient, defaultIntervalMinutes = 5, log?: (l: string) => void): Collect {
-  return ({ runId, trigger, sources, profile, publishedSinceDays }) =>
-    collectOnce({ prisma, runId, trigger, sources, profile, publishedSinceDays, defaultIntervalMinutes, ...(log ? { log } : {}) });
+  return ({ runId, trigger, sources, profile, publishedSinceDays, keepSchedule }) =>
+    collectOnce({ prisma, runId, trigger, sources, profile, publishedSinceDays, defaultIntervalMinutes, keepSchedule, ...(log ? { log } : {}) });
 }

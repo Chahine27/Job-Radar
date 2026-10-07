@@ -49,6 +49,7 @@ export type JobQuery = {
 export const api = {
   login: (email: string, password: string) =>
     request<{ user: { email: string } }>("POST", "/api/auth/login", { email, password }),
+  stopApp: () => request<{ status: "stopping" }>("POST", "/api/system/stop"),
   logout: () => request<{ ok: true }>("POST", "/api/auth/logout"),
   me: () => request<{ user: { email: string } }>("GET", "/api/auth/me"),
 
@@ -117,6 +118,8 @@ export const api = {
   sendApplication: (id: string, data: { to: string; subject: string; message: string; letter: string; force?: boolean }) =>
     request<SpontaneousApplicationState>("POST", `/api/leads/${encodeURIComponent(id)}/application/send`, data),
   listSources: () => request<{ items: SourceItem[] }>("GET", "/api/sources"),
+  refreshSource: (source: string) =>
+    request<{ status: "started" | "already_running"; runId: string }>("POST", `/api/sources/${encodeURIComponent(source)}/refresh`),
   updateSource: (source: string, data: { enabled: boolean; intervalMinutes: number }) =>
     request<unknown>("PUT", `/api/sources/${encodeURIComponent(source)}`, data),
   getNotificationSettings: () => request<NotificationSettings>("GET", "/api/notifications/settings"),

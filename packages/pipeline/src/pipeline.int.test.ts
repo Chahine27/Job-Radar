@@ -47,6 +47,22 @@ describe("source → normalisation → base (README §32)", () => {
     expect(events).toEqual(["CREATED", "SOURCE_ADDED", "UPDATED"]);
   });
 
+  it("relance à la main (keepSchedule) : un échec ne repousse pas la prochaine collecte prévue", async () => {
+    const broken: JobSource = {
+      name: "adzuna",
+      search: async () => {
+        throw new Error("HTTP 500");
+      },
+      healthCheck: async () => ({ status: "ERROR", message: "x" }),
+    };
+    const planned = new Date(Date.now() + 60 * 60_000);
+    await prisma.sourceState.create({ data: { source: "adzuna", enabled: true, intervalMinutes: 60, failures: 0, nextRunAt: planned } });
+    await collectOnce({ prisma, sources: [broken], profile: EXAMPLE_PROFILE, trigger: "manual", publishedSinceDays: 7, keepSchedule: true });
+    const st = await prisma.sourceState.findUniqueOrThrow({ where: { source: "adzuna" } });
+    expect(st.failures).toBe(0);
+    expect(st.nextRunAt).toEqual(planned);
+  });
+
   it("collecte complète : une source en erreur n'arrête pas les autres, tout est tracé", async () => {
     const ok: JobSource = {
       name: "france-travail",

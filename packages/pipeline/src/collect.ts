@@ -17,6 +17,8 @@ export type CollectOptions = {
   defaultIntervalMinutes?: number;
   publishedSinceDays?: SearchParams["publishedSinceDays"];
   maxResultsPerSearch?: number;
+  /** Relance à la main d'une source (page Réglages) : le rythme des collectes automatiques n'est pas touché. */
+  keepSchedule?: boolean;
   log?: (line: string) => void;
 };
 
@@ -166,7 +168,13 @@ export async function collectOnce(opts: CollectOptions): Promise<CollectReport> 
       minIntervalFor(source.name, queries.length),
     );
     const failures = ok ? 0 : (state?.failures ?? 0) + 1;
-    const next = computeNextRunAt(now, interval, failures);
+    let next = computeNextRunAt(now, interval, failures);
+    // Relance à la main : un échec ne ralentit pas les collectes automatiques (rien ne change) ; une réussite efface
+    // seulement le ralentissement dû aux échecs, sans repousser la prochaine collecte prévue.
+    if (opts.keepSchedule && state) {
+      if (!ok) continue;
+      if (state.nextRunAt < next) next = state.nextRunAt;
+    }
     await prisma.sourceState.upsert({
       where: { source: source.name },
       create: { source: source.name, intervalMinutes: interval, failures, nextRunAt: next, lastSuccessAt: ok ? now : null },

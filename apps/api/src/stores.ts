@@ -160,6 +160,8 @@ export type SourceRow = {
   nextRunAt: Date;
   lastStatus: string | null;
   lastError: string | null;
+  /** Fin de la dernière collecte de la source, réussie ou non (page Réglages : relance terminée ?). */
+  lastRunAt: Date | null;
 };
 
 export interface SourceStore {

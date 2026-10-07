@@ -2,7 +2,7 @@ import { hash } from "@node-rs/argon2";
 import { EXAMPLE_PROFILE, type LetterKit, type Profile } from "@job-radar/shared";
 import type { Mailer, Notifier, OutgoingMail } from "@job-radar/notifications";
 import { buildManualJob } from "@job-radar/pipeline";
-import { buildApp } from "./app";
+import { type AppOptions, buildApp } from "./app";
 import type { SettingsService } from "./routes/settings";
 import { applyEdits } from "./stores";
 import type {
@@ -110,7 +110,7 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
   const sourceRows = new Map(
     ["france-travail", "adzuna"].map((source) => [
       source,
-      { source, enabled: source === "france-travail", intervalMinutes: 5, failures: 0, lastSuccessAt: null, nextRunAt: new Date(), lastStatus: null, lastError: null },
+      { source, enabled: source === "france-travail", intervalMinutes: 5, failures: 0, lastSuccessAt: null, nextRunAt: new Date(), lastStatus: null, lastError: null, lastRunAt: null },
     ]),
   );
 
@@ -363,6 +363,11 @@ export function createFakeCollector() {
       starts.push(trigger);
       return { status: starts.length === 1 ? ("started" as const) : ("already_running" as const), runId: "run-1" };
     },
+    async startSource(source: string) {
+      if (source === "off") return null;
+      starts.push(source);
+      return { status: "started" as const, runId: "run-2" };
+    },
     async status() {
       return {
         running: starts.length > 0,
@@ -375,7 +380,7 @@ export function createFakeCollector() {
   return collector;
 }
 
-export async function createTestApp(opts: { noUser?: boolean } = {}) {
+export async function createTestApp(opts: { noUser?: boolean } & Partial<AppOptions> = {}) {
   const mem = await createMemoryStores(opts);
   const collector = createFakeCollector();
   const tests: string[] = [];
@@ -408,7 +413,9 @@ export async function createTestApp(opts: { noUser?: boolean } = {}) {
     },
     test: async (service) => (settingsTests.push(service), { ok: true, message: `${service} répond` }),
   };
+  const { noUser: _noUser, ...extra } = opts;
   const app = await buildApp({
+    ...extra,
     mailer,
     settings,
     stores: mem.stores,

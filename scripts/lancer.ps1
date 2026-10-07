@@ -1,17 +1,20 @@
 ﻿# Lance Job Radar en un double-clic : mise à jour du programme, Ollama (IA), modules, base de données (intégrée, sans Docker), puis « pnpm dev ».
-# Appelé par « Lancer Job Radar.cmd » à la racine du projet. Fermer cette fenêtre (ou Ctrl + C) arrête l'appli.
+# Appelé par « Lancer Job Radar.cmd » à la racine du projet, en arrière-plan (aucune fenêtre) :
+# le journal de l'appli va dans job-radar.log, et le bouton « Arrêter Job Radar » du site arrête tout.
+# Lancé à la main dans PowerShell, il marche aussi (les messages s'affichent en plus).
 # « Continue » : avec « Stop », Windows PowerShell 5 s'arrête dès qu'un programme écrit sur sa sortie d'erreur.
 $ErrorActionPreference = "Continue"
+# Titre obligatoire : avec un titre de console vide, Node plante (« Assertion failed: process_title »).
 $Host.UI.RawUI.WindowTitle = "Job Radar"
 Set-Location (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $PSScriptRoot "db.ps1")
 $url = "http://localhost:5173"
 
 function Step($text) { Write-Host ""; Write-Host "==> $text" -ForegroundColor Cyan }
+# Pas de fenêtre pour afficher l'erreur : un message à l'écran.
 function Fail($text) {
-  Write-Host ""
-  Write-Host "PROBLÈME : $text" -ForegroundColor Red
-  Read-Host "Appuie sur Entrée pour fermer"
+  Add-Type -AssemblyName System.Windows.Forms
+  [void][Windows.Forms.MessageBox]::Show("Job Radar ne démarre pas : $text", "Job Radar", "OK", "Error")
   exit 1
 }
 function Responds($address) {
@@ -97,8 +100,15 @@ Start-Job -ArgumentList $url -ScriptBlock {
   Start-Process $u
 } | Out-Null
 
+# Tourne caché jusqu'au bouton « Arrêter Job Radar » du site : le serveur crée alors job-radar.stop, et on arrête
+# tout ce que « pnpm dev » a lancé (serveur + site). Sa sortie (pour comprendre un problème) va dans job-radar.log.
 Step "Job Radar démarre ($url s'ouvrira tout seul)"
-Write-Host "Laisse cette fenêtre ouverte : la collecte et les alertes tournent tant qu'elle est ouverte." -ForegroundColor Yellow
-Write-Host "Pour arrêter : ferme la fenêtre (ou Ctrl + C)." -ForegroundColor Yellow
-pnpm dev
-Read-Host "Job Radar est arrêté. Appuie sur Entrée pour fermer"
+$log = Join-Path (Get-Location) "job-radar.log"
+$stopFile = Join-Path (Get-Location) "job-radar.stop"
+Remove-Item $stopFile -ErrorAction SilentlyContinue
+$env:JOB_RADAR_STOP_FILE = $stopFile
+Set-Content $log "Job Radar — lancement du $(Get-Date)" -Encoding UTF8
+$app = Start-Process cmd.exe -ArgumentList "/d /c pnpm dev >> `"$log`" 2>&1" -WindowStyle Hidden -PassThru
+while (-not $app.HasExited -and -not (Test-Path $stopFile)) { Start-Sleep -Seconds 1 }
+taskkill /PID $app.Id /T /F 2>&1 | Out-Null
+Remove-Item $stopFile -ErrorAction SilentlyContinue

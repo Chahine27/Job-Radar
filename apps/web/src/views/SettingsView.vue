@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from "vue";
 import { ApiError, api } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
+import SourceRelaunchCard from "../components/SourceRelaunchCard.vue";
 import { SETTING_CARDS, type SettingCard, initialDrafts, pendingChanges } from "../settings-guide";
 import type { SettingsState } from "../types";
 
@@ -149,6 +150,7 @@ const configured = (id: string) => Boolean(state.value?.services[id]?.configured
         <Icon :name="results[card.id]!.ok ? 'check' : 'alert'" :size="16" />{{ results[card.id]!.text }}
       </p>
     </section>
+    <SourceRelaunchCard />
   </div>
 </template>
 

@@ -19,6 +19,27 @@ describe("collecte", () => {
     expect(collector.starts).toEqual(["manual", "manual"]);
   });
 
+  it("POST /api/sources/:source/refresh relance une seule source ; source inactive → 409", async () => {
+    const { app, collector } = await createTestApp();
+    const cookies = await login(app);
+    expect((await app.inject({ method: "POST", url: "/api/sources/adzuna/refresh" })).statusCode).toBe(401);
+    const ok = await app.inject({ method: "POST", url: "/api/sources/adzuna/refresh", cookies });
+    expect(ok.statusCode).toBe(202);
+    expect(collector.starts).toEqual(["adzuna"]);
+    expect((await app.inject({ method: "POST", url: "/api/sources/off/refresh", cookies })).statusCode).toBe(409);
+  });
+
+  it("POST /api/system/stop : demande l'arrêt au lanceur ; absente quand Job Radar est lancé avec pnpm dev", async () => {
+    let stops = 0;
+    const { app } = await createTestApp({ stopApp: () => stops++ });
+    expect((await app.inject({ method: "POST", url: "/api/system/stop" })).statusCode).toBe(401);
+    const cookies = await login(app);
+    expect((await app.inject({ method: "POST", url: "/api/system/stop", cookies })).statusCode).toBe(202);
+    expect(stops).toBe(1);
+    const manual = await createTestApp();
+    expect((await manual.app.inject({ method: "POST", url: "/api/system/stop", cookies: await login(manual.app) })).statusCode).toBe(404);
+  });
+
   it("GET /api/collection/status renvoie l'état", async () => {
     const { app } = await createTestApp();
     const cookies = await login(app);
