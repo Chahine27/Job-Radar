@@ -53,6 +53,10 @@ export const ProfileSchema = z
     contracts: z.array(z.string().min(1)).min(1),
     experienceMin: z.number().int().min(0),
     experienceMax: z.number().int().min(0),
+    /** Ton expérience réelle en années (décimales acceptées, ex. 2.5). null = non renseignée : on compare à ta cible max. */
+    experienceYears: z.number().min(0).max(50).nullable().default(null),
+    /** Plafond du score quand l'annonce exige des années d'expérience sur une techno / un produit absent de ton profil. */
+    productExperienceCap: z.number().int().min(0).max(100).default(40),
     salaryTarget: z.number().int().positive().nullable(),
     salaryMinimum: z.number().int().positive().nullable(),
     locations: z.array(LocationTargetSchema),
@@ -95,6 +99,8 @@ export const EXAMPLE_PROFILE: Profile = {
   contracts: ["CDI"],
   experienceMin: 1,
   experienceMax: 5,
+  experienceYears: null,
+  productExperienceCap: 40,
   salaryTarget: 40000,
   salaryMinimum: 36000,
   locations: [
@@ -141,6 +147,8 @@ export const DEFAULT_PROFILE: Profile = {
   contracts: ["CDI"],
   experienceMin: 0,
   experienceMax: 5,
+  experienceYears: null,
+  productExperienceCap: 40,
   salaryTarget: null,
   salaryMinimum: null,
   locations: [],

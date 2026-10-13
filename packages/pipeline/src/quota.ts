@@ -13,6 +13,7 @@ export function adzunaMinIntervalMinutes(callsPerRun: number): number {
 export function minIntervalFor(source: string, callsPerRun: number): number {
   if (source === "adzuna") return adzunaMinIntervalMinutes(callsPerRun);
   // Jooble : 500 appels à vie par clé gratuite → une collecte par jour au plus.
+  if (source === "company-careers") return 30;
   if (source === "jooble") return 1440;
   // JobScraper : sites scrapés (pas d'API). En dessous de 20 min, risque de blocage de l'adresse IP.
   if (source.startsWith("jobscraper:")) return 20;

@@ -20,3 +20,6 @@ CLAUDE.md
 # Mise à jour automatique (écrits chez chaque utilisateur)
 .update-version
 .update-manifest.json
+
+# État du démarrage lu par la page de chargement (écrit par scripts/lancer.ps1)
+scripts/demarrage-etat.js

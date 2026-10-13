@@ -7,3 +7,4 @@ export * from "./expire";
 export * from "./api-quota";
 export * from "./manual";
 export * from "./dedupe";
+export * from "./renormalize";

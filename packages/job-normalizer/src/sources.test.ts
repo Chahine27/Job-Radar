@@ -1,4 +1,4 @@
-import type { RawJob } from "@job-radar/source-connectors";
+import type { AtsPosting, RawJob } from "@job-radar/source-connectors";
 import { describe, expect, it } from "vitest";
 import { annualEuros, contractFromLabel, htmlToText, normalize } from "./index";
 
@@ -70,5 +70,47 @@ describe("normalize Adzuna", () => {
     const j = normalize(raw("adzuna", "4567", { ...base, salary_is_predicted: "1" }))!;
     expect(j.salaryMin).toBeNull();
     expect(j.salaryMax).toBeNull();
+  });
+});
+
+describe("normalize sites carrières", () => {
+  const posting: AtsPosting = {
+    ats: "ashby",
+    boardKey: "solenne",
+    companyName: "Solenne",
+    id: "a1",
+    title: "Backend Engineer (Node.js)",
+    description: "Node.js, TypeScript, PostgreSQL. 3 ans d'expérience.",
+    descriptionIsHtml: false,
+    location: "Paris, Île-de-France",
+    postalCode: null,
+    country: "France",
+    employmentType: "FullTime",
+    remote: "hybrid",
+    url: "https://jobs.ashbyhq.com/solenne/a1",
+    publishedAt: "2026-09-20T00:00:00Z",
+    salary: { min: 45000, max: 55000, currency: "EUR", period: "year" },
+  };
+
+  it("convertit une offre", () => {
+    const j = normalize(raw("company-careers", "ashby:solenne:a1", posting))!;
+    expect(j).toMatchObject({
+      company: "Solenne",
+      department: "75",
+      contractType: null,
+      salaryMin: 45000,
+      experienceMinYrs: 3,
+      remoteType: "hybrid",
+      sourceJobId: "ashby:solenne:a1",
+    });
+  });
+
+  it("poste à l'étranger → département 99 (hors zone)", () => {
+    const j = normalize(raw("company-careers", "x", { ...posting, location: "Berlin", country: "DE" }))!;
+    expect(j.department).toBe("99");
+  });
+
+  it("offre sans lien http → ignorée", () => {
+    expect(normalize(raw("company-careers", "x", { ...posting, url: "javascript:alert(1)" }))).toBeNull();
   });
 });

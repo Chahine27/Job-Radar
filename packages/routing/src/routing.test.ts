@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { geocode } from "./geocode";
 import { PrimRoutingService, nextWeekdayMorning } from "./prim";
 import { originKeyOf, routeKeyOf } from "./travel";
+import { communeOf } from "./departments";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
@@ -104,5 +105,25 @@ describe("PRIM", () => {
     expect(originKeyOf(origin)).toBe("45.771,5.247");
     expect(routeKeyOf("prim-idfm", origin, dest)).toBe("prim-idfm|45.771,5.247|48.88,2.36");
     expect(routeKeyOf("prim-idfm", origin, { lat: 48.8791, lng: 2.3571 })).toBe(routeKeyOf("prim-idfm", origin, dest));
+  });
+});
+
+describe("commune → département", () => {
+  const f = (name: string, citycode: string, coordinates?: [number, number]) => ({ properties: { name, citycode }, ...(coordinates ? { geometry: { coordinates } } : {}) });
+  const api = (features: object[]) => (async () => new Response(JSON.stringify({ features }), { status: 200 })) as never;
+  it("nom identique, un seul résultat : département et centre", async () => {
+    const r = await communeOf("Vitry-Sur-Seine", [], api([f("Vitry-sur-Seine", "94081", [2.39, 48.79])]));
+    expect(r).toEqual({ department: "94", lat: 48.79, lng: 2.39 });
+  });
+  it("homonymes : celle de tes zones, sinon rien", async () => {
+    const stDenis = api([f("Saint-Denis", "97411"), f("Saint-Denis", "93066"), f("Saint-Denis", "11339")]);
+    expect((await communeOf("Saint-Denis", ["93"], stDenis))?.department).toBe("93");
+    expect(await communeOf("Saint-Denis", ["60"], stDenis)).toBeNull();
+    expect((await communeOf("Montigny", ["18"], api([f("Montigny", "76446"), f("Montigny", "18151")])))?.department).toBe("18");
+    expect(await communeOf("Montigny", ["60"], api([f("Montigny", "76446"), f("Montigny", "18151")]))).toBeNull();
+    expect((await communeOf("Ajaccio", [], api([f("Ajaccio", "2A004")])))?.department).toBe("2A");
+  });
+  it("nom approchant seulement : rien", async () => {
+    expect(await communeOf("Lyon", [], api([f("Cognat-Lyonne", "03080")]))).toBeNull();
   });
 });

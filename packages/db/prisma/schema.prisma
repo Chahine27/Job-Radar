@@ -288,6 +288,18 @@ model ApiQuota {
   updatedAt  DateTime  @updatedAt
 }
 
+/// Entreprises dont on suit le site carrières (source « company-careers »).
+model CompanyTarget {
+  id       String  @id @default(cuid())
+  name     String
+  /// greenhouse | lever | ashby | recruitee
+  ats      String
+  boardKey String
+  enabled  Boolean @default(true)
+
+  @@unique([ats, boardKey])
+}
+
 // ───────────── Notifications ─────────────
 
 model Notification {

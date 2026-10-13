@@ -9,9 +9,11 @@ export * from "./jooble";
 export * from "./manual";
 export * from "./manual-analyze";
 export * from "./jobscraper";
+export * from "./careers";
 
 import type { RawJob } from "@job-radar/source-connectors";
-import { ADZUNA_SOURCE, FT_SOURCE, JOOBLE_SOURCE } from "@job-radar/source-connectors";
+import { ADZUNA_SOURCE, CAREERS_SOURCE, FT_SOURCE, JOOBLE_SOURCE } from "@job-radar/source-connectors";
+import { normalizeCareers } from "./careers";
 import { normalizeAdzuna } from "./adzuna";
 import { normalizeFranceTravail } from "./france-travail";
 import { normalizeJooble } from "./jooble";
@@ -30,6 +32,8 @@ export function normalize(raw: RawJob): NormalizedJob | null {
       return normalizeJooble(raw);
     case MANUAL_SOURCE:
       return normalizeManual(raw);
+    case CAREERS_SOURCE:
+      return normalizeCareers(raw);
     default:
       return raw.source.startsWith("jobscraper:") ? normalizeJobScraper(raw) : null;
   }

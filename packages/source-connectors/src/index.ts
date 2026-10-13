@@ -7,5 +7,7 @@ export * from "./adzuna/source";
 export * from "./labonneboite";
 export * from "./jooble";
 export * from "./jobscraper";
+export * from "./careers/ats";
+export * from "./careers/source";
 export * from "./romeo";
 export * from "./recherche-entreprises";

@@ -42,7 +42,8 @@ export async function ensureTravelTimes(opts: {
     where: {
       id: { in: opts.jobIds },
       remoteType: { not: "remote" },
-      department: { not: "99" },
+      // `not: "99"` seul exclurait aussi les départements inconnus (NULL en SQL) : la ville ne serait jamais localisée.
+      AND: [{ OR: [{ department: null }, { department: { not: "99" } }] }],
       OR: [{ travel: null }, { travel: { originKey: { not: originKey } } }, { travel: { originKey: null } }],
     },
     select: { id: true, latitude: true, longitude: true, city: true, department: true, address: true, locationPrecision: true },

@@ -1,4 +1,4 @@
-import type { JobEdits, SentSpontaneous, SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
+import type { JobEdits, SentSpontaneous, SpontaneousApplicationState, AiReadResult, Application, AiStatus, AutoCheckStatus, LetterKit, LetterState, StoredAiAnalysis, JobTextAnalysis, ManualJobForm, CollectionStatus, Lead, LeadStatus, SpontaneousSettings, NotificationSettings, Company, SourceItem, JobDetail, JobStatus, JobSummary, Profile, HomeLocation, ProfileRecord, CvProposal, SetupForm, SettingsState, RomeJob, RomeSuggestion } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -42,6 +42,8 @@ export type JobQuery = {
   source?: string;
   /** Rubrique du flux : dans ta zone, télétravail complet, lieu non précisé (vide = tout). */
   zone?: "" | "local" | "remote" | "unknown";
+  /** Un seul type de contrat (CDI, CDD…, « unknown » = non précisé ; vide = tous). */
+  contract?: string;
   limit?: number;
   offset?: number;
 };
@@ -118,6 +120,10 @@ export const api = {
   sendApplication: (id: string, data: { to: string; subject: string; message: string; letter: string; force?: boolean }) =>
     request<SpontaneousApplicationState>("POST", `/api/leads/${encodeURIComponent(id)}/application/send`, data),
   listSources: () => request<{ items: SourceItem[] }>("GET", "/api/sources"),
+  listCompanies: () => request<{ items: Company[] }>("GET", "/api/companies"),
+  addCompany: (name: string, url: string) => request<Company>("POST", "/api/companies", { name, url }),
+  setCompanyEnabled: (id: string, enabled: boolean) => request<Company>("PATCH", `/api/companies/${encodeURIComponent(id)}`, { enabled }),
+  removeCompany: (id: string) => request<{ ok: true }>("DELETE", `/api/companies/${encodeURIComponent(id)}`),
   refreshSource: (source: string) =>
     request<{ status: "started" | "already_running"; runId: string }>("POST", `/api/sources/${encodeURIComponent(source)}/refresh`),
   updateSource: (source: string, data: { enabled: boolean; intervalMinutes: number }) =>

@@ -108,11 +108,12 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
   const pushSubs = new Map<string, PushSubscriptionInput>();
 
   const sourceRows = new Map(
-    ["france-travail", "adzuna"].map((source) => [
+    ["france-travail", "adzuna", "company-careers"].map((source) => [
       source,
       { source, enabled: source === "france-travail", intervalMinutes: 5, failures: 0, lastSuccessAt: null, nextRunAt: new Date(), lastStatus: null, lastError: null, lastRunAt: null },
     ]),
   );
+  const companyRows = new Map<string, { id: string; name: string; ats: string; boardKey: string; enabled: boolean }>();
 
   const leadRows = new Map<string, LeadRow>();
   const analysisRows = new Map<string, { inputHash: string; model: string; result: unknown; createdAt: Date }>();
@@ -226,6 +227,22 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
         return row;
       },
     },
+    companies: {
+      list: async () => [...companyRows.values()],
+      add: async (data) => {
+        if ([...companyRows.values()].some((c) => c.ats === data.ats && c.boardKey === data.boardKey)) return null;
+        const row = { id: `c${companyRows.size + 1}`, enabled: true, ...data };
+        companyRows.set(row.id, row);
+        return row;
+      },
+      setEnabled: async (id, enabled) => {
+        const row = companyRows.get(id);
+        if (!row) return null;
+        row.enabled = enabled;
+        return row;
+      },
+      remove: async (id) => companyRows.delete(id),
+    },
     notifications: {
       getSettings: async () => notifSettings,
       saveSettings: async (s) => (notifSettings = s),
@@ -235,7 +252,7 @@ export async function createMemoryStores(opts: { noUser?: boolean } = {}) {
       recent: async () => [],
     },
     jobs: {
-      list: async () => [...jobs.values()],
+      list: async (statuses) => [...jobs.values()].filter((j) => !statuses || statuses.includes(j.status)),
       get: async (id) => jobs.get(id) ?? null,
       appliedDates: async () => new Map(events.filter((e) => e.to === "APPLIED").reverse().map((e) => [e.jobId, e.at])),
       setStatus: async (id, status) => {
@@ -376,6 +393,9 @@ export function createFakeCollector() {
     async status() {
       return {
         running: starts.length > 0,
+        step: null,
+        progress: [],
+        finishing: false,
         lastRun: null,
         sources: [],
         newJobs: 3,
@@ -393,7 +413,7 @@ export async function createTestApp(opts: { noUser?: boolean } & Partial<AppOpti
   const lbbSearches: unknown[] = [];
   /** Fausse IA : compte les appels, peut simuler Ollama éteint. */
   const aiCalls: Array<{ title: string; skills: string[] }> = [];
-  const aiState: { online: boolean; adequation: "forte" | "moyenne" | "faible" } = { online: true, adequation: "forte" };
+  const aiState: { online: boolean; adequation: "forte" | "moyenne" | "faible"; badFormat?: boolean } = { online: true, adequation: "forte" };
   /** Pages des notifications « lettre terminée » envoyées. */
   const letterNotices: string[] = [];
   const notifiers: Notifier[] = [
@@ -486,6 +506,7 @@ export async function createTestApp(opts: { noUser?: boolean } & Partial<AppOpti
       analyze: async (job, profile) => {
         if (!aiState.online) throw Object.assign(new Error("Ollama ne répond pas : lance l'appli Ollama sur ce PC."), { code: "AI_UNAVAILABLE" });
         aiCalls.push({ title: job.title, skills: profile.skills });
+        if (aiState.badFormat) throw new Error("Réponse de l'IA hors format : competences_obligatoires");
         return {
           model: "fake-model",
           durationMs: 5,

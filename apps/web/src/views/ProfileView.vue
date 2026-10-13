@@ -86,6 +86,8 @@ async function save() {
   const payload: Profile = {
     ...profile.value,
     searchRadiusKm: Number(profile.value.searchRadiusKm) || null, // champ vidé → ""
+    experienceYears: typeof profile.value.experienceYears === "number" ? profile.value.experienceYears : null, // champ vidé → ""
+    productExperienceCap: typeof profile.value.productExperienceCap === "number" ? Math.round(profile.value.productExperienceCap) : 40,
     preferredTechs: profile.value.preferredTechs.filter((p) => p.name.trim()),
     locations: profile.value.locations.filter((l) => l.label.trim() || l.department.trim()),
     scoringWeights: Object.fromEntries(WEIGHT_KEYS.map((k) => [k, (Number(weights.value[k]) || 0) / 100])) as Profile["scoringWeights"],
@@ -186,7 +188,11 @@ async function save() {
         <div class="row">
           <label>Min <input v-model.number="profile.experienceMin" type="number" min="0" max="30" /></label>
           <label>Max <input v-model.number="profile.experienceMax" type="number" min="0" max="30" /></label>
+          <label>Mon expérience réelle <input v-model.number="profile.experienceYears" type="number" min="0" max="50" step="0.5" placeholder="ex. 2,5" /></label>
+          <label>Plafond si expérience exigée sur un outil absent (%) <input v-model.number="profile.productExperienceCap" type="number" min="0" max="100" step="5" /></label>
         </div>
+        <p class="muted small hint">Une offre qui demande plus que ton expérience réelle passe en point de vigilance (le score suit ta cible).
+          Si l'annonce exige des années sur un outil ou un logiciel qui n'est pas dans ton profil, le score est plafonné.</p>
       </section>
 
       <section class="card stack">

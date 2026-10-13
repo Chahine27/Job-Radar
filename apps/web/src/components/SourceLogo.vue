@@ -9,6 +9,7 @@ const LOGOS: Record<string, string> = {
   adzuna: "/logos/adzuna.png",
   "jobscraper:linkedin": "/logos/linkedin.png",
   "jobscraper:wttj": "/logos/wttj.png",
+  "jobscraper:indeed": "/logos/indeed.png",
   "jobscraper:hellowork": "/logos/hellowork.png",
 };
 

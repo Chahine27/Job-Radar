@@ -25,6 +25,24 @@ tools/jobscraper/.venv/Scripts/python.exe -m pip install -e tools/jobscraper
    (recherche « développeur » à Paris, rien n'est enregistré).
 5. Relance Job Radar, puis page **Sources** : active les sites voulus, un à la fois.
 
+## Welcome to the Jungle : sans JobScraper
+
+JobScraper ignorait la date et le tri pour WTTJ (il renvoyait de vieilles offres, écartées ensuite). La source
+`jobscraper:wttj` interroge maintenant directement l'index de recherche public du site, trié par date, avec l'expression
+exacte des mots-clés. Python n'est plus nécessaire pour cette source. Le télétravail partiel compte comme hybride.
+
+## Indeed (JobSpy)
+
+JobScraper ne couvre pas Indeed. La source `jobscraper:indeed` lance à la place `packages/source-connectors/python/indeed.py`,
+qui utilise JobSpy (`python-jobspy`, licence MIT). Pour l'installer, dans le même environnement Python :
+
+```powershell
+tools/jobscraper/.venv/Scripts/python.exe -m pip install python-jobspy
+```
+
+Le salaire est converti en annuel (mensuel ×12, journalier ×218, horaire ×1607). Le lieu est passé au format d'Indeed
+« Nom (département) ». Puis page **Sources** : active « JobScraper · Indeed ».
+
 ## Ce qui n'est pas repris de la version perso
 
 File de collecte séparée, complétion des descriptions depuis les pages publiques, offres LinkedIn closes passées en

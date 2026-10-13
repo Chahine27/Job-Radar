@@ -5,7 +5,7 @@ import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, timeAgo, timeUntil } from "../format";
+import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, sourceBadge, timeAgo, timeUntil } from "../format";
 import { usePrefs } from "../prefs";
 import { useExtensionInstalled } from "../composables/useExtensionInstalled";
 import { anyJobSourceConfigured } from "../settings-guide";
@@ -15,7 +15,7 @@ type Filters = Required<Omit<JobQuery, "q" | "limit" | "offset">> & { q: string 
 /** Filtres retenus comme préférences (serveur + copie locale) : retrouvés après un rechargement. */
 const filters = usePrefs<Filters>(
   "offres",
-  { minScore: 0, status: "active", includeHidden: false, q: "", sort: "score", source: "", zone: "" },
+  { minScore: 0, status: "active", includeHidden: false, q: "", sort: "score", source: "", zone: "", contract: "" },
   { legacyKey: "jobradar.filters" },
 );
 // « Postulé » a sa propre page (Candidatures) : ancien filtre → flux normal.
@@ -161,7 +161,9 @@ async function loadStatus() {
   try {
     const s = await api.collectionStatus();
     const finishedNewRun = s.lastRun && s.lastRun.id !== lastRunId && s.lastRun.status !== "running";
-    if (finishedNewRun && lastRunId !== null) {
+    // Collecte JobScraper finie (elle n'est pas dans lastRun, réservé au bouton « Actualiser ») : flux rechargé aussi.
+    const scraperFinished = !!collection.value?.progress.length && s.progress.length === 0 && !s.running;
+    if ((finishedNewRun && lastRunId !== null) || scraperFinished) {
       await load(true);
       void feedCheck(false); // nouvelles offres : l'IA vérifie les meilleures
     }
@@ -170,10 +172,13 @@ async function loadStatus() {
     // Source mémorisée mais désactivée depuis : on revient à « Toutes les sources ».
     if (filters.source && filters.source !== "manual" && !s.sources.some((x) => x.enabled && x.source === filters.source)) filters.source = "";
     clock.value = new Date();
-    if (!s.running && fastPoll) {
+    // Une collecte tourne (« Actualiser » ou file JobScraper) : avancement rafraîchi toutes les 2 s.
+    const live = s.running || s.progress.length > 0;
+    if (live && !fastPoll) fastPoll = setInterval(loadStatus, 2000);
+    if (!live && fastPoll) {
       clearInterval(fastPoll);
       fastPoll = undefined;
-      if (s.lastRun) refreshMessage.value = `Collecte terminée : ${s.lastRun.created} nouvelle(s) offre(s).`;
+      if (s.lastRun && refreshMessage.value) refreshMessage.value = `Collecte terminée : ${s.lastRun.created} nouvelle(s) offre(s).`;
     }
   } catch {
     /* serveur momentanément injoignable : on réessaiera */
@@ -196,6 +201,14 @@ async function refreshNow() {
 }
 
 const running = computed(() => collection.value?.running ?? false);
+const runningText = computed(() => {
+  const c = collection.value;
+  const r = c?.lastRun?.status === "running" ? c.lastRun : null;
+  const since = r ? ` (lancée ${timeAgo(r.startedAt, clock.value)})` : "";
+  if (c?.finishing) return `Collecte terminée${since} — descriptions, vérification IA et notifications…`;
+  const step = c?.step ? ` — en cours : ${SOURCE_LABELS[c.step] ?? c.step}` : "";
+  return `Collecte en cours${since}${step}…`;
+});
 const lastRunText = computed(() => {
   const r = collection.value?.lastRun;
   if (!r) return "Aucune collecte pour l'instant.";
@@ -213,7 +226,15 @@ onMounted(async () => {
   await loadStatus();
   if (collection.value?.running) fastPoll = setInterval(loadStatus, 2000);
   slowPoll = setInterval(loadStatus, 30_000);
-  api.getProfile().then((p) => (threshold.value = p.profile.minScoreForNotification)).catch(() => {});
+  api
+    .getProfile()
+    .then((p) => {
+      threshold.value = p.profile.minScoreForNotification;
+      contracts.value = p.profile.contracts;
+      // Contrat mémorisé mais retiré du profil depuis : on revient à « Tous ».
+      if (filters.contract && filters.contract !== "unknown" && !contractTabs.value.some((t) => t.value === filters.contract)) filters.contract = "";
+    })
+    .catch(() => {});
   api.settingsKeys().then((s) => (noSourceKey.value = !anyJobSourceConfigured(s))).catch(() => {});
 });
 
@@ -241,7 +262,15 @@ const ZONE_TABS: Array<{ value: NonNullable<JobQuery["zone"]>; label: string }> 
   { value: "unknown", label: "Lieu non précisé" },
 ];
 
-const STATUS_TABS: Array<{ value: NonNullable<JobQuery["status"]>; label: string }> = [
+// Contrats cochés dans le profil (« Intérim » → INTERIM, comme le score) ; les autres sont masqués de toute façon.
+const contracts = ref<string[]>([]);
+const contractTabs = computed(() => [
+  { value: "", label: "Tous" },
+  ...contracts.value.map((c) => ({ value: c.normalize("NFD").replace(/\p{Diacritic}/gu, "").toUpperCase(), label: c })),
+  { value: "unknown", label: "Non précisé" },
+]);
+
+const STATUS_TABS:Array<{ value: NonNullable<JobQuery["status"]>; label: string }> = [
   { value: "active", label: "Actives" },
   { value: "NEW", label: "Nouvelles" },
   { value: "SAVED", label: "Sauvegardées" },
@@ -250,12 +279,9 @@ const STATUS_TABS: Array<{ value: NonNullable<JobQuery["status"]>; label: string
   { value: "all", label: "Toutes" },
 ];
 
-function sourceState(s: CollectionStatus["sources"][number]) {
-  if (s.lastStatus === "OK") return { tone: "good", text: "OK" };
-  if (s.lastStatus === "SOURCE_UNAVAILABLE") return { tone: "", text: "non configurée" };
-  if (s.lastStatus) return { tone: "bad", text: "erreur" };
-  return { tone: "", text: "jamais lancée" };
-}
+/** Pastille d'une source : avancement si elle fait partie d'une collecte en cours, sinon son dernier résultat. */
+const badgeOf = (s: CollectionStatus["sources"][number]) =>
+  sourceBadge(s, collection.value?.progress.find((p) => p.source === s.source));
 
 function place(job: JobSummary) {
   return [job.city, job.department && !job.city?.includes(job.department) ? `(${job.department})` : null]
@@ -270,7 +296,7 @@ function place(job: JobSummary) {
       <span v-if="collection?.newJobs" class="chip solid">{{ collection.newJobs }} nouvelle(s)</span>
     </template>
     <p class="subtitle">
-      <template v-if="running">Collecte en cours…</template>
+      <template v-if="running">{{ runningText }}</template>
       <template v-else>{{ lastRunText }}</template>
     </p>
     <template #actions>
@@ -315,8 +341,17 @@ function place(job: JobSummary) {
       >
         <SourceLogo :source="s.source" :size="22" />
         <strong>{{ SOURCE_LABELS[s.source] ?? s.source }}</strong>
-        <span class="dot" :class="sourceState(s).tone" />
-        <span class="muted">{{ sourceState(s).text }} · prochaine {{ timeUntil(s.nextRunAt, clock) }}</span>
+        <template v-if="badgeOf(s).busy">
+          <Icon name="refresh" :size="13" class="spin muted" />
+          <span class="muted">{{ badgeOf(s).text }}</span>
+          <span v-if="badgeOf(s).pct !== null" class="bar pill-bar" role="progressbar" :aria-valuenow="badgeOf(s).pct!" aria-valuemin="0" aria-valuemax="100">
+            <span class="good" :style="{ width: `${badgeOf(s).pct}%` }" />
+          </span>
+        </template>
+        <template v-else>
+          <span class="dot" :class="badgeOf(s).tone" />
+          <span class="muted">{{ badgeOf(s).text }} · prochaine {{ timeUntil(s.nextRunAt, clock) }}</span>
+        </template>
       </button>
       <button
         type="button"
@@ -360,6 +395,19 @@ function place(job: JobSummary) {
           {{ t.label }}
         </button>
       </div>
+      <div v-if="contracts.length" class="tabs" role="tablist" aria-label="Contrat">
+        <button
+          v-for="t in contractTabs"
+          :key="t.value"
+          type="button"
+          role="tab"
+          :aria-selected="filters.contract === t.value"
+          :class="{ active: filters.contract === t.value }"
+          @click="filters.contract = t.value"
+        >
+          {{ t.label }}
+        </button>
+      </div>
       </div>
       <div class="filters">
         <div class="field search">
@@ -391,7 +439,7 @@ function place(job: JobSummary) {
             <option value="date">Plus récentes</option>
           </select>
         </label>
-        <label class="switch"><input v-model="filters.includeHidden" type="checkbox" /> Offres masquées (CDD…)</label>
+        <label class="switch"><input v-model="filters.includeHidden" type="checkbox" /> Offres masquées (contrat hors profil, senior…)</label>
       </div>
     </section>
 
@@ -494,6 +542,8 @@ function place(job: JobSummary) {
 .toolbar { display: grid; gap: 0.9rem; padding: 0.9rem 1rem; }
 .filters { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(180px, 1.3fr) minmax(150px, 1fr) auto; gap: 0.9rem 1.1rem; align-items: end; }
 .filters .range span, .filters .sort span { display: flex; justify-content: space-between; gap: 0.5rem; }
+.pill-bar { display: inline-block; width: 56px; height: 5px; }
+.pill-bar > span { display: block; height: 100%; border-radius: 99px; transition: width 0.4s ease; }
 .tab-rows { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .min-scores { display: flex; gap: 0.5rem; margin-top: 0.3rem; }
 .min-score { padding: 0.15rem; border-radius: 50%; background: none; border: 2px solid transparent; cursor: pointer; opacity: 0.55; transition: opacity 0.15s, border-color 0.15s; }

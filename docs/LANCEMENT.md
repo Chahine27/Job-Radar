@@ -32,7 +32,7 @@ Toutes les commandes se tapent dans un terminal ouvert dans le dossier `jobRadar
 
 **Le plus simple : double-clic sur « Lancer Job Radar.cmd »** (à la racine de `jobRadar`), ou sur le raccourci « Job Radar » du Bureau.
 Il vérifie d'abord s'il existe une nouvelle version de Job Radar et l'installe toute seule (voir « 3. Mises à jour »). Il démarre ensuite la base de données (en arrière-plan, invisible), Ollama, installe les mises à jour (`pnpm install` si besoin,
-migrations de la base), lance `pnpm dev` et ouvre http://localhost:5173 tout seul. Si Job Radar tourne déjà, il arrête l'ancienne version et relance tout (pour toujours avoir la dernière version). Si le port 5173 ou 3000 est pris par un autre programme, il le dit et indique lequel.
+migrations de la base), lance `pnpm dev`. Une page de chargement s'ouvre tout de suite (étape en cours et barre) et bascule seule sur http://localhost:5173 quand tout est prêt. Un double-clic de plus pendant que Job Radar tourne ne relance rien : il rouvre simplement cette page. Si le port 5173 ou 3000 est pris par un autre programme, il le dit et indique lequel.
 Tout tourne **en arrière-plan, sans fenêtre**. Pour arrêter : bouton **Arrêter Job Radar** en bas du menu du site.
 Un problème au démarrage s'affiche dans une petite fenêtre ; le détail de ce qui se passe est dans le fichier `job-radar.log`.
 Une source en erreur ? Page **Réglages** → carte « Relancer une source ».
@@ -64,9 +64,11 @@ Pour tout arrêter : `Ctrl + C` dans le terminal. La base lancée par le lanceur
 | Lancer une collecte tout de suite          | `pnpm collect`                            |
 | Voir la base de données dans un tableau    | `pnpm db:studio`                          |
 | Fusionner les doublons déjà en base        | `pnpm jobs:dedupe` (liste), puis `pnpm jobs:dedupe --apply` |
+| Réappliquer les règles aux offres en base  | `pnpm jobs:renormalize` (liste), puis `--apply` (fait aussi à chaque démarrage) |
 | Voir les offres expirées                   | Tableau de bord → filtre statut « Expirées » |
 | Chercher des entreprises (candidature spontanée) | Page « Entreprises »                |
 | Garder une offre vue sur LinkedIn, Indeed…  | Page « Ajouter une offre » : colle le titre et le texte |
+| Suivre le site carrières d'une entreprise   | Page « Sources » → carte « Sites carrières d'entreprises » : colle l'adresse de sa page Greenhouse, Lever, Ashby ou Recruitee |
 
 ### Une offre vue sur plusieurs sites
 
@@ -77,8 +79,8 @@ Deux villes différentes, ou « CDI » d'un côté et « CDD » de l'autre, rest
 ### Quand une offre est-elle « expirée » ?
 
 - **France Travail** : l'offre n'est plus vue depuis 7 jours **et** l'API confirme qu'elle n'existe plus.
-- **Anciennes offres des pages carrières** (fonction retirée) : retirées toutes seules.
-- **Adzuna, Jooble** : l'offre a plus de 45 jours.
+- **Sites carrières d'entreprises** : l'offre n'apparaît plus sur la page carrières depuis 2 jours.
+- **Adzuna, Jooble, HelloWork, Welcome to the Jungle, Indeed** : l'offre a plus de 45 jours.
 
 Si une offre vient de plusieurs sources, elle n'expire que si **toutes** disent qu'elle a disparu.
 Les offres que tu as sauvegardées, auxquelles tu as postulé ou que tu as écartées ne sont jamais touchées.

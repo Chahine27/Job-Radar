@@ -2,7 +2,7 @@ import { neighborDepartments, type Profile, type RemoteType } from "@job-radar/s
 import { extractSkills, getSkill, resolveSkill } from "@job-radar/skills";
 import { DEFAULT_RULES, type ScoringRules } from "./rules";
 import { salaryOfJob } from "./salary";
-import { contractOfJob, detectSeniority, normalizeContract, type Seniority } from "./signals";
+import { contractOfJob, detectSeniority, normalizeContract, productExperienceRequired, type Seniority } from "./signals";
 
 /** Ce dont le score a besoin. Les champs inconnus sont `null` — jamais devinés. */
 export type ScoringInput = {
@@ -82,6 +82,11 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
   const ownedIds = new Set(owned.map((s) => s.id));
   const preferredIds = new Set(preferred.map((s) => s.id));
 
+  // Années exigées sur une compétence principale (pas un outil) absente de ton profil : critère bloquant.
+  const required = productExperienceRequired(input.title, input.description, customSkills);
+  const lacking = required?.ids.filter((id) => !ownedIds.has(id) && (getSkill(id)?.core ?? true)) ?? [];
+  const product: ProductExperience = required && lacking.length ? { labels: lacking.map(label), years: required.years } : null;
+
   // Compétences lues par l'IA : exigées (poids 1) et « un plus » (poids ½).
   const ai = input.aiSkills;
   if (ai && ai.required.length + ai.bonus.length > 0) {
@@ -119,6 +124,7 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
       matched: matchedAi,
       missing: missingAi,
       preferredFound: allIds.filter((id) => preferredIds.has(id)).map(aiLabel),
+      product,
     };
   }
 
@@ -140,12 +146,15 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
       `Mots-clés absents de ton profil : ${missing.join(", ")} — à ajouter au CV si tu les maîtrises`,
     );
   }
-  return { part, matched, missing, preferredFound };
+  return { part, matched, missing, preferredFound, product };
 }
+
+type ProductExperience = { labels: string[]; years: number } | null;
+const fr = (n: number) => String(n).replace(".", ",");
 
 // ───────── Expérience ─────────
 
-function scoreExperience(input: ScoringInput, profile: Profile, rules: ScoringRules): Part {
+function scoreExperience(input: ScoringInput, profile: Profile, rules: ScoringRules, product: ProductExperience): Part {
   const seniority = input.seniority !== undefined ? input.seniority : detectSeniority(input.title);
   const years = input.experienceMinYears;
   const { experienceMin: min, experienceMax: max } = profile;
@@ -159,9 +168,17 @@ function scoreExperience(input: ScoringInput, profile: Profile, rules: ScoringRu
     else if (years <= max + 4) byYears = 35;
     else byYears = 10;
 
-    if (years <= max) part.reasons.push(years === 0 ? "Débutant accepté" : `${years} an(s) d'expérience demandé(s)`);
-    else part.warnings.push(`Demande ${years} ans d'expérience (ta cible : ${min} à ${max})`);
+    // Ton expérience réelle (si renseignée) décide du vert ; sans effet sur le score, qui suit ta cible.
+    const real = profile.experienceYears ?? max;
+    if (years > max) part.warnings.push(`Demande ${years} ans d'expérience (ta cible : ${min} à ${max})`);
+    else if (product) {
+      // signalé ci-dessous
+    } else if (years === 0) part.reasons.push("Débutant accepté");
+    else if (years <= real) part.reasons.push(`${years} an(s) d'expérience demandé(s)`);
+    else part.warnings.push(`Demande ${years} ans d'expérience (tu en as ${fr(real)})`);
   }
+  if (product)
+    part.warnings.push(`Expérience exigée sur un outil ou produit que tu n'as pas : ${product.labels.join(", ")} (${product.years} ans demandés)`);
 
   let bySeniority: number | null = null;
   if (seniority === "junior") bySeniority = 100;
@@ -266,7 +283,7 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
   const tech = scoreTechnical(input, profile, rules);
   const parts = {
     technical: tech.part,
-    experience: scoreExperience(input, profile, rules),
+    experience: scoreExperience(input, profile, rules, tech.product),
     contract: scoreContract(input, profile, rules),
     salary: scoreSalary(input, profile, rules),
     location: scoreLocation(input, profile, rules),
@@ -308,6 +325,12 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
       final = cap;
       capLabel = `compétences trop peu correspondantes (${breakdown.technical} %) : le score ne dépasse pas les compétences + ${rules.technicalMargin} points`;
     }
+  }
+
+  const productCap = profile.productExperienceCap ?? 40;
+  if (tech.product && productCap < final) {
+    final = productCap;
+    capLabel = "expérience exigée sur un outil ou produit que tu n'as pas";
   }
 
   let hiddenReason: string | null = null;

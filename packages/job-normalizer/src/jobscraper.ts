@@ -28,12 +28,15 @@ export function normalizeJobScraper(raw: RawJob): NormalizedJob | null {
   const text = `${title}\n${description}\n${(job.skills ?? []).join(" ")}`;
   const skillLabels = extractSkills(text).map((id) => getSkill(id)?.label ?? id);
   const technologies = [...new Set([...(job.skills ?? []).filter((s) => typeof s === "string" && s.trim()), ...skillLabels])];
-  const remoteType = job.remote == null ? "unknown" : job.remote ? "remote" : "onsite";
+  // WTTJ « partial » : hybride (avant, compté comme télétravail complet).
+  const remoteType = job.workplace === "hybrid" ? "hybrid" : job.remote == null ? "unknown" : job.remote ? "remote" : "onsite";
   // LinkedIn n'a pas de type « CDI » : JobScraper traduit « Temps plein » (le temps de travail) en « cdi ».
   // Un stage à temps plein serait donc un CDI → inconnu ; le contrat est lu dans le titre ou la description.
   const contractType = provider === "linkedin" && job.contract_type === "cdi" ? null : contractFromLabel(job.contract_type);
   const publishedAt = job.posted_at ? parseParisDate(job.posted_at) : null;
-  const experienceText = job.experience_level ? `Niveau ${job.experience_level}` : null;
+  // LinkedIn « Mid-Senior level » / « Confirmé » (mis sur presque toutes les annonces) arrive en « senior » : ne dit rien.
+  const level = provider === "linkedin" && job.experience_level === "senior" ? null : job.experience_level;
+  const experienceText = level ? `Niveau ${level}` : null;
   const salaryText = [job.salary_min, job.salary_max].some((n) => typeof n === "number")
     ? `${job.salary_min ?? job.salary_max}–${job.salary_max ?? job.salary_min} ${job.salary_currency ?? ""}`.trim()
     : null;

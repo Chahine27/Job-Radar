@@ -92,8 +92,23 @@ export type SourceStatus = {
   lastError: string | null;
 };
 
+/** Avancement d'une source dans la collecte en cours. */
+export type SourceProgress = {
+  source: string;
+  state: "pending" | "running" | "done";
+  done: number;
+  total: number;
+  found: number;
+  status: string | null;
+};
+
 export type CollectionStatus = {
   running: boolean;
+  step: string | null;
+  /** Sources des collectes en cours (bouton « Actualiser » et file JobScraper), vide sinon. */
+  progress: SourceProgress[];
+  /** Toutes les sources sont passées : descriptions, IA et notifications en cours. */
+  finishing: boolean;
   lastRun: {
     id: string;
     trigger: string;
@@ -117,6 +132,9 @@ export type NotificationSettings = {
   vapidPublicKey: string | null;
   subscriptions: number;
 };
+
+/** Entreprise dont on suit le site carrières. */
+export type Company = { id: string; name: string; ats: string; boardKey: string; enabled: boolean };
 
 export type SourceItem = {
   source: string;

@@ -10,9 +10,19 @@ Set-Location (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $PSScriptRoot "db.ps1")
 $url = "http://localhost:5173"
 
+# Page de chargement ouverte tout de suite dans le navigateur : elle lit l'étape en cours dans demarrage-etat.js
+# et bascule d'elle-même sur le site dès que le site et le serveur répondent.
+$loadingPage = Join-Path $PSScriptRoot "demarrage.html"
+$statusFile = Join-Path $PSScriptRoot "demarrage-etat.js"
+
 function Step($text) { Write-Host ""; Write-Host "==> $text" -ForegroundColor Cyan }
-# Pas de fenêtre pour afficher l'erreur : un message à l'écran.
+# Étape affichée par la page de chargement (pct négatif = échec).
+function Progress($pct, $text) {
+  Set-Content $statusFile "window.jrStatus = $(@{ pct = $pct; text = $text } | ConvertTo-Json -Compress);" -Encoding UTF8
+}
+# Pas de fenêtre pour afficher l'erreur : un message à l'écran (et sur la page de chargement).
 function Fail($text) {
+  Progress -1 "Job Radar ne démarre pas : $text"
   Add-Type -AssemblyName System.Windows.Forms
   [void][Windows.Forms.MessageBox]::Show("Job Radar ne démarre pas : $text", "Job Radar", "OK", "Error")
   exit 1
@@ -21,7 +31,19 @@ function Responds($address) {
   try { Invoke-WebRequest $address -UseBasicParsing -TimeoutSec 2 | Out-Null; return $true } catch { return $false }
 }
 
-# 0. Déjà lancé ? On arrête l'ancienne version (sinon elle garde l'ancien code) avant de tout relancer.
+# Double-clic en trop : ce lanceur tourne tant que Job Radar tourne, le verrou dit s'il y en a déjà un.
+$lock = New-Object Threading.Mutex($false, "Local\JobRadarLauncher")
+try { $owned = $lock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true } # ancien lanceur tué
+if (-not $owned) {
+  # Déjà prêt : la page de chargement bascule tout de suite sur le site ; sinon elle montre où en est le démarrage.
+  Start-Process $loadingPage
+  exit 0
+}
+
+Progress 5 "Démarrage de Job Radar…"
+Start-Process $loadingPage
+
+# 0. Restes d'un lancement précédent (lanceur tué sans « Arrêter Job Radar ») : on les arrête avant de tout relancer.
 $root = (Get-Location).Path
 $old = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like "*$root*" }
 if ($old) {
@@ -44,6 +66,7 @@ if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) { Fail "pnpm est intr
 # 0 bis. Mise à jour automatique : dernière version publiée sur GitHub (« Releases »). Ne bloque jamais le lancement.
 if (-not $env:JOBRADAR_UPDATED) {
   Step "Recherche de mise à jour"
+  Progress 15 "Recherche de mise à jour…"
   node scripts\update.mjs
   if ($LASTEXITCODE -eq 10) {
     # Nouvelle version installée : on relance le lanceur à jour (il installe les modules et met la base à jour).
@@ -56,6 +79,7 @@ if (-not $env:JOBRADAR_UPDATED) {
 
 # 1. Ollama (IA locale) : lancé s'il ne tourne pas. Pas bloquant : l'appli marche sans.
 Step "IA locale (Ollama)"
+Progress 25 "IA locale (Ollama)…"
 if (Responds "http://127.0.0.1:11434/api/version") {
   Write-Host "Ollama tourne déjà." -ForegroundColor Green
 } else {
@@ -73,6 +97,7 @@ if (Responds "http://127.0.0.1:11434/api/version") {
 
 # 2. Après une mise à jour du code : modules et base de données à jour
 Step "Mises à jour et base de données"
+Progress 35 "Mises à jour et base de données…"
 $stamp = "node_modules\.modules.yaml"
 if (-not (Test-Path $stamp) -or (Get-Item "pnpm-lock.yaml").LastWriteTime -gt (Get-Item $stamp).LastWriteTime) {
   Write-Host "Installation des modules (pnpm install)..."
@@ -87,19 +112,7 @@ pnpm db:generate | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "prisma generate a échoué." }
 Write-Host "Tout est à jour." -ForegroundColor Green
 
-# 3. Ouvre le site quand le site ET le serveur répondent (en arrière-plan), puis lance l'appli dans cette fenêtre
-Start-Job -ArgumentList $url -ScriptBlock {
-  param($u)
-  for ($i = 0; $i -lt 90; $i++) {
-    try {
-      Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 2 | Out-Null
-      Invoke-WebRequest "$u/api/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
-      break
-    } catch { Start-Sleep -Seconds 1 }
-  }
-  Start-Process $u
-} | Out-Null
-
+# 3. Lance l'appli ; la page de chargement bascule sur le site quand le site ET le serveur répondent.
 # Tourne caché jusqu'au bouton « Arrêter Job Radar » du site : le serveur crée alors job-radar.stop, et on arrête
 # tout ce que « pnpm dev » a lancé (serveur + site). Sa sortie (pour comprendre un problème) va dans job-radar.log.
 Step "Job Radar démarre ($url s'ouvrira tout seul)"
@@ -109,6 +122,13 @@ Remove-Item $stopFile -ErrorAction SilentlyContinue
 $env:JOB_RADAR_STOP_FILE = $stopFile
 Set-Content $log "Job Radar — lancement du $(Get-Date)" -Encoding UTF8
 $app = Start-Process cmd.exe -ArgumentList "/d /c pnpm dev >> `"$log`" 2>&1" -WindowStyle Hidden -PassThru
+for ($i = 0; $i -lt 180 -and -not $app.HasExited; $i++) {
+  Progress ([Math]::Min(95, 50 + $i)) "Démarrage du serveur et du site…"
+  if ((Responds $url) -and (Responds "$url/api/health")) { break }
+  Start-Sleep -Seconds 1
+}
+if ($app.HasExited) { Fail "le serveur s'est arrêté au démarrage. Regarde le fichier job-radar.log pour le détail." }
+Progress 100 "Prêt"
 while (-not $app.HasExited -and -not (Test-Path $stopFile)) { Start-Sleep -Seconds 1 }
 taskkill /PID $app.Id /T /F 2>&1 | Out-Null
 Remove-Item $stopFile -ErrorAction SilentlyContinue

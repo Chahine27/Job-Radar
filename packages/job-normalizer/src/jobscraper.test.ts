@@ -39,4 +39,22 @@ describe("JobScraper normalization", () => {
     const wttj = normalize({ source: "jobscraper:wttj", sourceJobId: "w-7", collectedAt: new Date(), data: { ...base, id: "w-7", source: "wttj" } });
     expect(wttj?.contractType).toBe("CDI");
   });
+
+  it("LinkedIn : « senior » vient de « Mid-Senior level » (quasi systématique) → ignoré ; WTTJ le garde", () => {
+    const base = { id: "li-8", url: "https://example.test/jobs/8", title: "Dev Front", experience_level: "senior" };
+    const li = normalize({ source: "jobscraper:linkedin", sourceJobId: "li-8", collectedAt: new Date(), data: { ...base, source: "linkedin" } });
+    expect(li?.experienceText).toBeNull();
+    const wttj = normalize({ source: "jobscraper:wttj", sourceJobId: "w-8", collectedAt: new Date(), data: { ...base, id: "w-8", source: "wttj" } });
+    expect(wttj?.experienceText).toBe("Niveau senior");
+  });
+});
+
+describe("WTTJ : télétravail partiel", () => {
+  it("hybride, pas télétravail complet ; département lu dans « Cergy, Val-d'Oise »", () => {
+    const job = normalize({
+      source: "jobscraper:wttj", sourceJobId: "wttj_1", collectedAt: new Date(),
+      data: { id: "wttj_1", source: "wttj", url: "https://www.welcometothejungle.com/fr/companies/a/jobs/b", title: "Dev", company: "A", location: "Cergy, Val-d'Oise", remote: null, workplace: "hybrid" },
+    });
+    expect(job).toMatchObject({ remoteType: "hybrid", city: "Cergy", department: "95" });
+  });
 });

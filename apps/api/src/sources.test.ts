@@ -26,3 +26,32 @@ describe("sources", () => {
     expect((await req("PUT", "/api/sources/inconnue", { enabled: true, intervalMinutes: 120 })).statusCode).toBe(404);
   });
 });
+
+describe("entreprises (sites carrières)", () => {
+  it("ajout par adresse de page carrières, doublon refusé, activation, suppression", async () => {
+    const { req } = await setup();
+    const add = await req("POST", "/api/companies", { name: "Nordia", url: "https://jobs.lever.co/nordia" });
+    expect(add.statusCode).toBe(201);
+    expect(add.json()).toMatchObject({ name: "Nordia", ats: "lever", boardKey: "nordia", enabled: true });
+    expect((await req("POST", "/api/companies", { name: "Nordia bis", url: "https://jobs.lever.co/nordia/123" })).statusCode).toBe(409);
+
+    const bad = await req("POST", "/api/companies", { name: "X", url: "https://www.example.com/carrieres" });
+    expect(bad.statusCode).toBe(400);
+    expect(bad.json().message).toContain("Greenhouse, Lever, Ashby ou Recruitee");
+
+    expect((await req("POST", "/api/companies", { name: "Y", ats: "greenhouse", boardKey: "../../etc" })).statusCode).toBe(400);
+
+    const id = add.json().id;
+    expect((await req("PATCH", `/api/companies/${id}`, { enabled: false })).json().enabled).toBe(false);
+    expect((await req("DELETE", `/api/companies/${id}`)).statusCode).toBe(200);
+    expect((await req("GET", "/api/companies")).json().items).toEqual([]);
+  });
+
+  it("la source « sites carrières » devient configurée dès qu'une entreprise est active", async () => {
+    const { req } = await setup();
+    const careers = () => req("GET", "/api/sources").then((r) => r.json().items.find((i: { source: string }) => i.source === "company-careers"));
+    expect((await careers()).configured).toBe(false);
+    await req("POST", "/api/companies", { name: "Camélia", url: "https://jobs.ashbyhq.com/camelia" });
+    expect((await careers()).configured).toBe(true);
+  });
+});

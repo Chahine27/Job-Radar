@@ -77,7 +77,8 @@ export type JobRow = {
 };
 
 export interface JobStore {
-  list(): Promise<JobRow[]>;
+  /** `statuses` : seulement ces statuts, filtrés en base (le flux ne relit plus les expirées, ignorées…). */
+  list(statuses?: JobStatus[]): Promise<JobRow[]>;
   get(id: string): Promise<JobRow | null>;
   /** Change le statut et garde une trace dans l'historique. null si l'offre n'existe pas. */
   setStatus(id: string, status: JobStatus): Promise<JobRow | null>;
@@ -105,13 +106,15 @@ export type JobEdits = {
   experienceMinYrs?: number;
 };
 
+/** « 3 ans minimum », « débutant accepté ». */
+export const yearsText = (n: number) => (n === 0 ? "débutant accepté" : `${n} an${n > 1 ? "s" : ""} minimum`);
+
 /** Applique les corrections à la main sur l'offre lue (score et IA recalculés grâce au contentHash). */
 export function applyEdits(row: JobRow, edits: JobEdits, at: Date) {
   Object.assign(row, edits);
   if (edits.salaryMin !== undefined && edits.salaryMax === undefined) row.salaryMax = edits.salaryMin;
   if (edits.experienceMinYrs !== undefined) {
-    const n = edits.experienceMinYrs;
-    row.experienceText = n === 0 ? "débutant accepté" : `${n} an${n > 1 ? "s" : ""} minimum`;
+    row.experienceText = yearsText(edits.experienceMinYrs);
   }
   row.contentHash = `${row.contentHash}:edit${at.getTime()}`;
   row.userEdits = edits;
@@ -263,6 +266,17 @@ export interface ApplicationStore {
   listSent(): Promise<Array<{ leadId: string; sentAt: Date; sentTo: string | null }>>;
 }
 
+export type CompanyRow = { id: string; name: string; ats: string; boardKey: string; enabled: boolean };
+
+/** Entreprises dont on suit le site carrières. */
+export interface CompanyStore {
+  list(): Promise<CompanyRow[]>;
+  /** null si (outil, identifiant) existe déjà. */
+  add(data: Omit<CompanyRow, "id" | "enabled">): Promise<CompanyRow | null>;
+  setEnabled(id: string, enabled: boolean): Promise<CompanyRow | null>;
+  remove(id: string): Promise<boolean>;
+}
+
 export type Stores = {
   uiPrefs: UiPrefsStore;
   applications: ApplicationStore;
@@ -271,6 +285,7 @@ export type Stores = {
   letters: CoverLetterStore;
   leads: LeadStore;
   sources: SourceStore;
+  companies: CompanyStore;
   notifications: NotificationStore;
   users: UserStore;
   sessions: SessionStore;

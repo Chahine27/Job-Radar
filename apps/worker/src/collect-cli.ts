@@ -6,6 +6,7 @@
 import { createPrismaClient } from "@job-radar/db";
 import { collectOnce, prismaJoobleQuota } from "@job-radar/pipeline";
 import { ProfileSchema } from "@job-radar/shared";
+import { type AtsKind, CompanyCareersSource } from "@job-radar/source-connectors";
 import { adzunaFromEnv, franceTravailFromEnv, jobScraperFromEnv, joobleFromEnv } from "./env";
 
 const ALLOWED_DAYS = [1, 3, 7, 14, 31] as const;
@@ -34,6 +35,9 @@ try {
       adzunaFromEnv(),
       joobleFromEnv(prismaJoobleQuota(prisma, process.env.JOOBLE_API_KEY)),
       ...jobScraperFromEnv(),
+      new CompanyCareersSource({
+        companies: async () => (await prisma.companyTarget.findMany()).map((c) => ({ ...c, ats: c.ats as AtsKind })),
+      }),
     ].filter((s) => enabled.has(s.name)),
     trigger: "cli",
     publishedSinceDays: days,

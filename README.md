@@ -101,7 +101,9 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 16. ✅ « Modifier les infos » d'une offre : tes corrections priment sur la source et recalculent le score.
 17. ✅ Lancement en arrière-plan, bouton « Arrêter Job Radar », relance d'une source depuis Réglages.
 18. ✅ Page Candidatures : onglets « Sur une offre » et « Spontanées », date de candidature.
-19. ⏳ Tests complets avec des profils variés.
+19. ✅ Mise à jour du 13/10 : plafond du score si l'annonce exige des années sur un outil absent du profil, expérience réelle dans le profil, onglets par contrat, avancement des collectes en direct, page de chargement au lancement, règles réappliquées aux offres déjà en base, département déduit de la ville, analyses IA gardées quand le profil change.
+20. ✅ Sources ajoutées : Indeed (via JobSpy, avec JobScraper) et sites carrières d'entreprises (Greenhouse, Lever, Ashby, Recruitee), à ajouter dans la page Sources.
+21. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 
@@ -110,4 +112,5 @@ Monorepo pnpm (API Fastify, site Vue 3, PostgreSQL intégré, Prisma). Dans le d
 - `pnpm dev` : lance l'API et le site (http://localhost:5173).
 - `pnpm check` : vérifie les types et lance les tests.
 - `pnpm jobs:dedupe` : fusionne les doublons déjà en base (`--apply` pour appliquer).
+- `pnpm jobs:renormalize` : réapplique les règles actuelles aux offres déjà en base (`--apply` ; fait aussi au démarrage de l'API).
 - `pnpm db:demo` : ajoute des offres de démonstration (`pnpm db:demo:clear` pour les retirer).

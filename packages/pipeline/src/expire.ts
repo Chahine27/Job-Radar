@@ -4,7 +4,7 @@ import type { PrismaClient } from "@job-radar/db";
  * Offres expirées (plus en ligne). On ne devine pas : chaque source a sa règle.
  *  - France Travail : l'offre n'a pas été revue depuis 7 jours → on DEMANDE à France Travail si elle existe encore.
  *  - Sites carrières : chaque collecte récupère toutes les offres de l'entreprise → absente depuis 2 jours = retirée.
- *  - Adzuna, Jooble : pas de vérification possible → publiée (ou vue la 1ʳᵉ fois) il y a plus de 45 jours.
+ *  - Adzuna, Jooble, HelloWork, WTTJ, Indeed : pas de vérification possible → publiée (ou vue la 1ʳᵉ fois) il y a plus de 45 jours.
  *  - Démo : jamais.
  * Une offre trouvée sur plusieurs sources n'expire que si TOUTES ses sources la donnent retirée.
  * Seules les offres « Nouvelle » / « Vue » passent en « Expirée » : sauvegardées et postulées ne bougent pas.
@@ -28,11 +28,15 @@ export function linkVerdict(
     case "france-travail":
       if (unseenDays < EXPIRY.ftUnseenDays) return "online";
       return ftOnline === false ? "gone" : ftOnline === true ? "online" : "unknown";
-    // Anciennes offres des pages carrières (fonction retirée) : plus jamais revues, elles expirent seules.
+    // Sites carrières : chaque collecte relit toutes les offres de l'entreprise, une absente est retirée.
     case "company-careers":
       return unseenDays >= EXPIRY.careersUnseenDays ? "gone" : "online";
     case "adzuna":
-    case "jooble": {
+    case "jooble":
+    // Sites scrapés sur les dernières 24 h : une offre n'y est plus revue après sa 1ʳᵉ journée, l'absence ne dit rien.
+    case "jobscraper:hellowork":
+    case "jobscraper:wttj":
+    case "jobscraper:indeed": {
       const ageDays = (now.getTime() - (job.publishedAt ?? job.firstSeenAt).getTime()) / DAY;
       return ageDays > EXPIRY.adzunaMaxAgeDays && unseenDays >= 1 ? "gone" : "online";
     }

@@ -10,8 +10,8 @@ import {
   notifyNewMatches,
   notifyNotice,
 } from "@job-radar/notifications";
-import { CollectionRunner, createPrismaRunRepo, expireJobs, prismaCollect, prismaJoobleQuota } from "@job-radar/pipeline";
-import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, distanceKm, ensureTravelTimes, geocode, inIdf } from "@job-radar/routing";
+import { CollectionRunner, createPrismaRunRepo, expireJobs, prismaCollect, prismaJoobleQuota, renormalizeJobs } from "@job-radar/pipeline";
+import { FallbackRoutingService, IgnRoutingService, PrimRoutingService, distanceKm, ensureTravelTimes, fillDepartments, geocode, inIdf } from "@job-radar/routing";
 import { scoreJob, scoringInputFromJob } from "@job-radar/scoring";
 import { ProfileSchema } from "@job-radar/shared";
 import {
@@ -23,7 +23,7 @@ import {
   RomeoClient,
   RechercheEntreprisesClient,
 } from "@job-radar/source-connectors";
-import { JOBSCRAPER_SOURCE_NAMES, createJobScraperSources } from "@job-radar/source-connectors";
+import { type AtsKind, CompanyCareersSource, JOBSCRAPER_SOURCE_NAMES, createJobScraperSources } from "@job-radar/source-connectors";
 import { buildApp } from "./app";
 import { updateEnvFile } from "./env-file";
 import { ENV_PATH, loadEnv } from "./env";
@@ -119,6 +119,8 @@ const notifyRepo = createPrismaNotifyRepo(prisma);
 const routing = liveRouting(() => keyed.routing);
 /** Vérification des offres expirées : au plus toutes les 6 heures. */
 let lastExpiryAt = 0;
+/** Dernier passage complet après une collecte (trajets, notifications). */
+let lastAfterCollectAt = 0;
 // IA locale (Ollama, gratuite, sur ce PC). Réglages facultatifs : OLLAMA_URL, OLLAMA_MODEL.
 const ollama = new OllamaClient({ baseUrl: e.OLLAMA_URL, model: e.OLLAMA_MODEL });
 const sirene = new RechercheEntreprisesClient();
@@ -140,6 +142,10 @@ const runner = new CollectionRunner({
     liveSource(() => keyed.jooble),
     // ESSAI : JobScraper (outil Python à installer à part, voir docs/JOBSCRAPER.md). Désactivé tant que JOBSCRAPER_ENABLED≠true.
     ...jobScraper,
+    // Sites carrières des entreprises suivies (page Sources) : rien à faire tant qu'aucune n'est ajoutée.
+    new CompanyCareersSource({
+      companies: async () => (await prisma.companyTarget.findMany()).map((c) => ({ ...c, ats: c.ats as AtsKind })),
+    }),
   ],
   collect: prismaCollect(prisma, env.CRON_INTERVAL_MINUTES),
   // Après chaque collecte : annonce les nouvelles offres compatibles.
@@ -150,6 +156,11 @@ const runner = new CollectionRunner({
         log(`Expiration : ${String(err)}`),
       );
     }
+    // Rien de nouveau ni de modifié : tout est déjà fait. Un passage par heure quand même (avis en attente).
+    if (report.created + report.updated === 0 && Date.now() - lastAfterCollectAt < 3600_000) return;
+    lastAfterCollectAt = Date.now();
+    // Ville sans département : complété d'abord, le lieu, le score et le mode de trajet en dépendent.
+    await fillDepartments({ prisma, log: (m) => log(m) }).catch((err) => log(`Départements : ${String(err)}`));
     const run = await prisma.collectionRun.findUnique({ where: { id: report.runId }, select: { startedAt: true } });
     const row = await prisma.profile.findFirst();
     if (!run || !row) return;
@@ -263,6 +274,9 @@ log = (msg) => app.log.info(msg);
 
 // 127.0.0.1 : accessible uniquement depuis ton PC.
 await app.listen({ host: env.API_HOST, port: env.API_PORT });
+// Règles de normalisation changées depuis (contrat, expérience, compétences, salaire) : réappliquées aux offres déjà
+// en base, pour que les scores affichés suivent les règles du code. ~1 s, rien si à jour.
+void renormalizeJobs({ prisma, log: (m) => log(m) }).catch((err) => log(`Réapplication des règles : ${String(err)}`));
 
 const on = notifiers.filter((n) => n.isConfigured()).map((n) => n.channel);
 app.log.info(`Temps de trajet : ${routing.name.includes("prim") ? "transports en commun en Île-de-France (PRIM), voiture ailleurs (IGN)" : "voiture (IGN) ; clé PRIM dans Réglages pour les transports en Île-de-France"}`);
