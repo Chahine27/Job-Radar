@@ -5,7 +5,7 @@ import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, sourceBadge, timeAgo, timeUntil } from "../format";
+import { REMOTE_LABELS, SOURCE_LABELS, STATUS_LABELS, formatSalary, place, sourceBadge, timeAgo, timeUntil } from "../format";
 import { usePrefs } from "../prefs";
 import { useExtensionInstalled } from "../composables/useExtensionInstalled";
 import { anyJobSourceConfigured } from "../settings-guide";
@@ -283,11 +283,6 @@ const STATUS_TABS:Array<{ value: NonNullable<JobQuery["status"]>; label: string 
 const badgeOf = (s: CollectionStatus["sources"][number]) =>
   sourceBadge(s, collection.value?.progress.find((p) => p.source === s.source));
 
-function place(job: JobSummary) {
-  return [job.city, job.department && !job.city?.includes(job.department) ? `(${job.department})` : null]
-    .filter(Boolean)
-    .join(" ");
-}
 </script>
 
 <template>

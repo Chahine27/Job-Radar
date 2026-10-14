@@ -43,6 +43,17 @@ tools/jobscraper/.venv/Scripts/python.exe -m pip install python-jobspy
 Le salaire est converti en annuel (mensuel ×12, journalier ×218, horaire ×1607). Le lieu est passé au format d'Indeed
 « Nom (département) ». Puis page **Sources** : active « JobScraper · Indeed ».
 
+## Blocages LinkedIn (HTTP 429)
+
+LinkedIn bloque l'adresse IP après une rafale de recherches. `JobScraperSource` attend donc 10 à 15 s (aléatoire) entre
+deux recherches LinkedIn (`LINKEDIN_PAUSE_MS`) : une collecte LinkedIn dure quelques minutes. Si les blocages continuent,
+allonge l'intervalle de LinkedIn dans la page **Sources** (30 à 60 min).
+
+Optionnel, dans le clone JobScraper (non versionné, à refaire après un nouveau `git clone`) : ne pas réessayer une page
+refusée en 429 / 999, dans `tools/jobscraper/src/jobscraper/scrapers/base.py`, décorateur `@retry` de `_fetch_page` :
+`retry=retry_if_exception(lambda e: getattr(getattr(e, "response", None), "status_code", None) not in (429, 999))`
+et `reraise=True` (importer `retry_if_exception` depuis `tenacity`).
+
 ## Ce qui n'est pas repris de la version perso
 
 File de collecte séparée, complétion des descriptions depuis les pages publiques, offres LinkedIn closes passées en

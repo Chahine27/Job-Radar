@@ -103,7 +103,8 @@ Mode d'emploi complet et problèmes courants : [docs/LANCEMENT.md](docs/LANCEMEN
 18. ✅ Page Candidatures : onglets « Sur une offre » et « Spontanées », date de candidature.
 19. ✅ Mise à jour du 13/10 : plafond du score si l'annonce exige des années sur un outil absent du profil, expérience réelle dans le profil, onglets par contrat, avancement des collectes en direct, page de chargement au lancement, règles réappliquées aux offres déjà en base, département déduit de la ville, analyses IA gardées quand le profil change.
 20. ✅ Sources ajoutées : Indeed (via JobSpy, avec JobScraper) et sites carrières d'entreprises (Greenhouse, Lever, Ashby, Recruitee), à ajouter dans la page Sources.
-21. ⏳ Tests complets avec des profils variés.
+21. ✅ Mise à jour du 14/10 : départements acceptés en plus de tes zones (page Profil), compétences vues seulement en formation comptées à moitié, compétences citées comme « un plus » pesant moitié, avertissement « anglais courant exigé », compteur « N nouvelle(s) » juste, LinkedIn interrogé plus lentement, message d'erreur sur les boutons de la fiche offre.
+22. ⏳ Tests complets avec des profils variés.
 
 ## Pour les développeurs
 

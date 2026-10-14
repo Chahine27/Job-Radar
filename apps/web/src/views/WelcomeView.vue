@@ -2,7 +2,7 @@
 import { departmentFromPostalCode, departmentName } from "@job-radar/shared/geo";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ApiError, api } from "../api";
+import { ApiError, api, errorMessage } from "../api";
 import Icon from "../components/Icon.vue";
 import TagInput from "../components/TagInput.vue";
 import { currentEmail, hasAccount, needsSetup } from "../session";
@@ -105,7 +105,7 @@ async function upload(name: string, data: string) {
     await api.uploadCv(name, data);
   } catch (e) {
     busy.value = false;
-    error.value = e instanceof ApiError ? e.message : "Envoi impossible.";
+    error.value = errorMessage(e, "Envoi impossible.");
     return;
   }
   busy.value = false;
@@ -270,7 +270,7 @@ async function finish() {
     // Dernier écran : proposer d'ajouter les clés des sources d'offres (page Réglages).
     step.value = "done";
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
+    error.value = errorMessage(e, "Enregistrement impossible.");
   } finally {
     busy.value = false;
   }

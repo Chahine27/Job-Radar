@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { ApiError, api } from "../api";
+import { api, errorMessage } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import SourceRelaunchCard from "../components/SourceRelaunchCard.vue";
@@ -22,7 +22,7 @@ onMounted(async () => {
   try {
     state.value = await api.settingsKeys();
   } catch (e) {
-    loadError.value = e instanceof ApiError ? e.message : "Impossible de lire les réglages.";
+    loadError.value = errorMessage(e, "Impossible de lire les réglages.");
   }
   for (const card of SETTING_CARDS) {
     resetDrafts(card);
@@ -43,7 +43,7 @@ async function save(card: SettingCard) {
     resetDrafts(card);
     results[card.id] = { ok: true, text: "Enregistré. C'est pris en compte tout de suite : clique sur Tester pour vérifier." };
   } catch (e) {
-    results[card.id] = { ok: false, text: e instanceof ApiError ? e.message : "Enregistrement impossible." };
+    results[card.id] = { ok: false, text: errorMessage(e, "Enregistrement impossible.") };
   } finally {
     busy[card.id] = null;
   }
@@ -56,7 +56,7 @@ async function clearKey(card: SettingCard, key: string) {
     resetDrafts(card);
     results[card.id] = { ok: true, text: "Valeur effacée." };
   } catch (e) {
-    results[card.id] = { ok: false, text: e instanceof ApiError ? e.message : "Impossible d'effacer." };
+    results[card.id] = { ok: false, text: errorMessage(e, "Impossible d'effacer.") };
   } finally {
     busy[card.id] = null;
   }
@@ -69,7 +69,7 @@ async function test(card: SettingCard) {
     const r = await api.testSetting(card.id);
     results[card.id] = { ok: r.ok, text: r.message };
   } catch (e) {
-    results[card.id] = { ok: false, text: e instanceof ApiError ? e.message : "Le test n'a pas pu être lancé." };
+    results[card.id] = { ok: false, text: errorMessage(e, "Le test n'a pas pu être lancé.") };
   } finally {
     busy[card.id] = null;
   }

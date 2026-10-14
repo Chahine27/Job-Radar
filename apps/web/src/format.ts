@@ -161,3 +161,7 @@ export function sourceBadge(s: { lastStatus: string | null; lastError: string | 
   if (status) return { tone: "bad", text: "erreur", busy: false, pct: null };
   return { tone: "", text: "jamais lancée", busy: false, pct: null };
 }
+
+/** « Ville (dép.) » ; le département n'est pas répété s'il est déjà dans la ville (« Paris 75009 »). */
+export const place = (j: { city: string | null; department: string | null }) =>
+  [j.city, j.department && !j.city?.includes(j.department) ? `(${j.department})` : null].filter(Boolean).join(" ");

@@ -121,7 +121,7 @@ export async function buildApp(opts: AppOptions) {
     ...(opts.onJobCompleted ? { onJobCompleted: opts.onJobCompleted } : {}),
   });
   await app.register(aiRoutes, { stores: opts.stores, jobs: jobService, ...(opts.ai ? { ai: opts.ai } : {}), ...(opts.mailer ? { mailer: opts.mailer } : {}), ...(opts.onLetterReady ? { onLetterReady: opts.onLetterReady } : {}) });
-  if (opts.collector) await app.register(collectionRoutes, { collector: opts.collector });
+  if (opts.collector) await app.register(collectionRoutes, { collector: opts.collector, jobs: jobService });
   await app.register(leadRoutes, {
     stores: opts.stores,
     ...(opts.searchCompanies ? { searchCompanies: opts.searchCompanies } : {}),

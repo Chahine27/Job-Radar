@@ -40,11 +40,14 @@ describe("collecte", () => {
     expect((await manual.app.inject({ method: "POST", url: "/api/system/stop", cookies: await login(manual.app) })).statusCode).toBe(404);
   });
 
-  it("GET /api/collection/status renvoie l'état", async () => {
+  it("GET /api/collection/status : « N nouvelle(s) » = offres Nouvelles visibles du flux, pas toutes celles en base", async () => {
     const { app } = await createTestApp();
     const cookies = await login(app);
     const res = await app.inject({ method: "GET", url: "/api/collection/status", cookies });
     expect(res.statusCode).toBe(200);
-    expect(res.json().newJobs).toBe(3);
+    const feed = (await app.inject({ method: "GET", url: "/api/jobs?status=NEW&minScore=0", cookies })).json();
+    const visible = (Array.isArray(feed) ? feed : feed.items).length;
+    expect(res.json().newJobs).toBe(visible);
+    expect(visible).toBeLessThan(4); // le CDD hors profil est masqué
   });
 });

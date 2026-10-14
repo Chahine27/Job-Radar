@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
-import { ApiError, api } from "../api";
+import { api, errorMessage } from "../api";
 import { timeAgo } from "../format";
 import type { SourceItem } from "../types";
 import Icon from "./Icon.vue";
@@ -38,7 +38,7 @@ async function relaunch(s: SourceItem) {
     }
     pending.value[s.source] = clickedAt;
   } catch (e) {
-    message.value = { ok: false, text: `${s.label} : ${e instanceof ApiError ? e.message : "erreur inattendue."}` };
+    message.value = { ok: false, text: `${s.label} : ${errorMessage(e, "erreur inattendue.")}` };
   }
 }
 

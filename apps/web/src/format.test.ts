@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSalary, safeUrl, scoreTone, sourceBadge, timeAgo, travelLabel } from "./format";
+import { formatSalary, place, safeUrl, scoreTone, sourceBadge, timeAgo, travelLabel } from "./format";
 
 describe("format", () => {
   it("travelLabel : dit si le trajet est en transports ou en voiture", () => {
@@ -54,5 +54,13 @@ describe("pastille d'une source", () => {
     expect(sourceBadge({ lastStatus: "SOURCE_UNAVAILABLE", lastError: "JobScraper est désactivé." }).text).toBe("non configurée");
     expect(sourceBadge({ lastStatus: null, lastError: null }).text).toBe("jamais lancée");
     expect(sourceBadge({ lastStatus: "ERROR", lastError: "x" })).toMatchObject({ tone: "bad", text: "erreur" });
+  });
+});
+
+describe("place", () => {
+  it("« Ville (dép.) », sans répéter le département déjà dans la ville", () => {
+    expect(place({ city: "Nantes", department: "44" })).toBe("Nantes (44)");
+    expect(place({ city: "Paris 75009", department: "75" })).toBe("Paris 75009");
+    expect(place({ city: null, department: null })).toBe("");
   });
 });

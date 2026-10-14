@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ApiError, api } from "../api";
+import { ApiError, api, errorMessage } from "../api";
 import AiAnalysisCard from "../components/AiAnalysisCard.vue";
 import CoverLetterCard from "../components/CoverLetterCard.vue";
 import Icon from "../components/Icon.vue";
@@ -26,14 +26,26 @@ async function load() {
 }
 onMounted(load);
 
-async function setStatus(status: JobStatus) {
+/** Erreur d'une action (statut, compétence…) : sans elle, le bouton ne faisait rien en silence si le serveur échouait. */
+const actionError = ref<string | null>(null);
+
+/** Lance une action : bouton occupé pendant l'appel, message si le serveur refuse ou ne répond pas. */
+async function act(fn: () => Promise<void>) {
   busy.value = true;
+  actionError.value = null;
   try {
-    job.value = await api.setJobStatus(props.id, status);
+    await fn();
+  } catch (e) {
+    actionError.value = errorMessage(e, "Action impossible : le serveur ne répond pas. Réessaie dans un instant.");
   } finally {
     busy.value = false;
   }
 }
+
+const setStatus = (status: JobStatus) =>
+  act(async () => {
+    job.value = await api.setJobStatus(props.id, status);
+  });
 
 /** Après une analyse IA : le score a pu être corrigé. */
 async function reloadJob() {
@@ -54,7 +66,7 @@ async function complete() {
     completing.value = false;
     fullText.value = "";
   } catch (e) {
-    completeError.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
+    completeError.value = errorMessage(e, "Enregistrement impossible.");
   } finally {
     busy.value = false;
   }
@@ -104,35 +116,27 @@ async function saveEdits(reset = false) {
     job.value = await api.editJob(props.id, edits as JobEdits);
     editing.value = false;
   } catch (e) {
-    editError.value = e instanceof ApiError ? e.message : "Enregistrement impossible.";
+    editError.value = errorMessage(e, "Enregistrement impossible.");
   } finally {
     busy.value = false;
   }
 }
 
-async function resetFull() {
-  busy.value = true;
-  try {
+const resetFull = () =>
+  act(async () => {
     job.value = { ...(await api.resetFullText(props.id)), travelIssue: job.value?.travelIssue ?? null };
-  } finally {
-    busy.value = false;
-  }
-}
+  });
 
 /** « J'ai cette compétence » : l'ajoute au profil, le score se recalcule. */
-async function addSkill(skill: string) {
-  busy.value = true;
-  try {
+const addSkill = (skill: string) =>
+  act(async () => {
     const { profile } = await api.getProfile();
     if (!profile.skills.some((s) => s.toLowerCase() === skill.toLowerCase())) {
       await api.saveProfile({ ...profile, skills: [...profile.skills, skill] });
     }
     added.value.push(skill);
     job.value = await api.getJob(props.id);
-  } finally {
-    busy.value = false;
-  }
-}
+  });
 
 const links = computed(() =>
   (job.value?.sources ?? []).map((s) => ({ ...s, safe: safeUrl(s.url) })).filter((s) => s.safe),
@@ -215,6 +219,7 @@ const bars = computed(() =>
       <span>Infos corrigées à la main {{ timeAgo(job.userEditsAt) }} : le score les utilise.</span>
     </p>
 
+    <p v-if="actionError" class="alert" role="alert"><Icon name="alert" :size="16" />{{ actionError }}</p>
     <section class="card actions">
       <a v-for="l in links" :key="l.url" class="btn primary" :href="l.safe!" target="_blank" rel="noopener noreferrer">
         <SourceLogo :source="l.source" :size="22" /> Voir l'offre sur {{ linkLabel(l.source, l.url) }}

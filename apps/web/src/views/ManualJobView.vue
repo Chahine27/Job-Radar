@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, toRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ApiError, api } from "../api";
+import { ApiError, api, errorMessage } from "../api";
 import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
-import { SOURCE_LABELS, STATUS_LABELS, mapsUrl, originLabel, timeAgo } from "../format";
+import { SOURCE_LABELS, STATUS_LABELS, mapsUrl, originLabel, place, timeAgo } from "../format";
 import { usePrefs } from "../prefs";
 import type { JobDetail, JobSummary, JobTextAnalysis, ManualJobForm, RemoteType } from "../types";
 
@@ -209,7 +209,7 @@ async function readWithAi(text: string, hints: { title?: string | null; company?
     return true;
   } catch (e) {
     // IA indisponible : lecture simple + infos de la page, comme avant.
-    aiError.value = e instanceof ApiError ? e.message : "L'IA n'a pas pu lire l'annonce.";
+    aiError.value = errorMessage(e, "L'IA n'a pas pu lire l'annonce.");
     aiText = "";
     lastAnalyzed = "";
     await analyze(text);
@@ -355,7 +355,7 @@ async function completeKnown() {
     }
     await router.push({ name: "job", params: { id } });
   } catch (e) {
-    completeError.value = e instanceof ApiError ? e.message : "Impossible de compléter l'offre.";
+    completeError.value = errorMessage(e, "Impossible de compléter l'offre.");
   } finally {
     completing.value = false;
   }
@@ -452,8 +452,6 @@ async function remove(job: JobSummary) {
   await loadList();
 }
 
-const place = (j: JobSummary) =>
-  [j.city, j.department && !j.city?.includes(j.department) ? `(${j.department})` : null].filter(Boolean).join(" ");
 const manualUrl = (j: JobSummary) => j.sources.find((s) => s.source === "manual")?.url ?? "";
 </script>
 

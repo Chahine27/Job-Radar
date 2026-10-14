@@ -50,6 +50,8 @@ export const ProfileSchema = z
   .object({
     /** Ce que tu maîtrises : sert à comparer les compétences de l'offre. */
     skills: z.array(z.string().trim().min(1)).default([]),
+    /** Compétences vues seulement en formation ou en projets (jamais en poste) : comptent à moitié dans le score. */
+    projectSkills: z.array(z.string().trim().min(1)).max(100).default([]),
     contracts: z.array(z.string().min(1)).min(1),
     experienceMin: z.number().int().min(0),
     experienceMax: z.number().int().min(0),
@@ -60,6 +62,8 @@ export const ProfileSchema = z
     salaryTarget: z.number().int().positive().nullable(),
     salaryMinimum: z.number().int().positive().nullable(),
     locations: z.array(LocationTargetSchema),
+    /** Départements acceptés en plus de tes zones (ex. un département voisin) : « dans ta zone », sans recherche en plus sur les sites. */
+    extraDepartments: z.array(LocationTargetSchema.shape.department).max(110).default([]),
     /** Rayon autour du point de départ : une offre à moins de N km est « dans ta zone » même hors de tes départements. null = désactivé. */
     searchRadiusKm: z.number().int().min(5).max(200).nullable().default(null),
     /** Ce que tu préfères : sert aux recherches et à départager deux offres de même score. */
@@ -96,6 +100,7 @@ export type Profile = z.infer<typeof ProfileSchema>;
  */
 export const EXAMPLE_PROFILE: Profile = {
   skills: EXAMPLE_SKILLS,
+  projectSkills: [],
   contracts: ["CDI"],
   experienceMin: 1,
   experienceMax: 5,
@@ -107,6 +112,7 @@ export const EXAMPLE_PROFILE: Profile = {
     { label: "Zone A", department: "69" },
     { label: "Paris", department: "75" },
   ],
+  extraDepartments: [],
   searchRadiusKm: null,
   preferredTechs: [
     { name: "Excel", weight: 1 },
@@ -144,6 +150,7 @@ export const EXAMPLE_PROFILE: Profile = {
 /** Profil vierge d'un nouvel utilisateur : rempli au premier lancement (CV lu par l'IA, puis validé). */
 export const DEFAULT_PROFILE: Profile = {
   skills: [],
+  projectSkills: [],
   contracts: ["CDI"],
   experienceMin: 0,
   experienceMax: 5,
@@ -152,6 +159,7 @@ export const DEFAULT_PROFILE: Profile = {
   salaryTarget: null,
   salaryMinimum: null,
   locations: [],
+  extraDepartments: [],
   searchRadiusKm: null,
   preferredTechs: [],
   searches: [],
@@ -161,3 +169,8 @@ export const DEFAULT_PROFILE: Profile = {
   minScoreForNotification: 70,
   setupDone: false,
 };
+
+/** Départements de ta zone : ceux de tes recherches et ceux acceptés en plus. */
+export function zoneDepartments(profile: Pick<Profile, "locations" | "extraDepartments">): Set<string> {
+  return new Set([...profile.locations.map((l) => l.department), ...(profile.extraDepartments ?? [])]);
+}

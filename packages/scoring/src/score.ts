@@ -1,8 +1,8 @@
-import { neighborDepartments, type Profile, type RemoteType } from "@job-radar/shared";
+import { departmentName, neighborDepartments, type Profile, type RemoteType, zoneDepartments } from "@job-radar/shared";
 import { extractSkills, getSkill, resolveSkill } from "@job-radar/skills";
 import { DEFAULT_RULES, type ScoringRules } from "./rules";
 import { salaryOfJob } from "./salary";
-import { contractOfJob, detectSeniority, normalizeContract, productExperienceRequired, type Seniority } from "./signals";
+import { contractOfJob, detectSeniority, fluentEnglishRequired, normalizeContract, productExperienceRequired, splitRequired, type Seniority } from "./signals";
 
 /** Ce dont le score a besoin. Les champs inconnus sont `null` — jamais devinés. */
 export type ScoringInput = {
@@ -69,9 +69,14 @@ const k = (n: number) => `${Math.round(n / 1000)}k`;
 
 // ───────── Technique ─────────
 // Pourcentage des compétences de l'offre que tu maîtrises (outils compris).
+// Vue seulement en formation / projets : comptée à moitié. Citée seulement comme « un plus » : pèse moitié.
 
 function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRules) {
-  const owned = profile.skills.map(resolveSkill);
+  const atWork = profile.skills.map(resolveSkill);
+  const projects = (profile.projectSkills ?? []).map(resolveSkill);
+  const owned = [...atWork, ...projects];
+  const atWorkIds = new Set(atWork.map((s) => s.id));
+  const credit = (id: string) => (atWorkIds.has(id) ? 1 : ownedIds.has(id) ? 0.5 : 0);
   const preferred = profile.preferredTechs.map((p) => resolveSkill(p.name));
   const customSkills = [...owned, ...preferred].filter((s) => s.id.startsWith("custom:"));
   const text = [input.title, input.description, ...(input.technologies ?? [])].join("\n");
@@ -107,13 +112,16 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
     };
     const reqOk = req.filter((id) => ownedIds.has(id));
     const bonusOk = bonus.filter((id) => ownedIds.has(id));
+    const sum = (ids: string[]) => ids.reduce((n, id) => n + credit(id), 0);
     const total = req.length + bonus.length / 2;
-    const part: Part = { score: clamp((100 * (reqOk.length + bonusOk.length / 2)) / total), reasons: [], warnings: [] };
+    const part: Part = { score: clamp((100 * (sum(req) + sum(bonus) / 2)) / total), reasons: [], warnings: [] };
     if (req.length) part.reasons.push(`${reqOk.length}/${req.length} compétences exigées dans ton profil (lu par l'IA)`);
     if (bonus.length) part.reasons.push(`${bonusOk.length}/${bonus.length} « plus » dans ton profil`);
     const matchedAi = [...reqOk, ...bonusOk].map(aiLabel);
     const missingAi = [...req, ...bonus].filter((id) => !ownedIds.has(id)).map(aiLabel);
     if (matchedAi.length) part.reasons.push(`Tu as : ${matchedAi.join(", ")}`);
+    const inProjectsAi = [...req, ...bonus].filter((id) => credit(id) === 0.5).map(aiLabel);
+    if (inProjectsAi.length) part.reasons.push(`Vu seulement en formation / projets (compté à moitié) : ${inProjectsAi.join(", ")}`);
     const missingReq = req.filter((id) => !ownedIds.has(id)).map(aiLabel);
     if (missingReq.length) {
       part.warnings.push(`Compétences exigées absentes de ton profil : ${missingReq.join(", ")} — à ajouter au CV si tu les maîtrises`);
@@ -137,10 +145,19 @@ function scoreTechnical(input: ScoringInput, profile: Profile, rules: ScoringRul
     part.score = rules.neutral;
     part.warnings.push("Aucune compétence reconnue dans l'annonce");
   } else {
-    part.score = clamp((100 * matched.length) / found.length);
+    // Citée seulement dans « un plus / apprécié » : pas exigée, pèse moitié.
+    const { required: requiredPart } = splitRequired(input.description);
+    const requiredIds = new Set(extractSkills([input.title, requiredPart, ...(input.technologies ?? [])].join("\n"), customSkills));
+    const weight = (id: string) => (requiredIds.has(id) ? 1 : 0.5);
+    const total = found.reduce((n, id) => n + weight(id), 0);
+    part.score = clamp((100 * found.reduce((n, id) => n + weight(id) * credit(id), 0)) / total);
     part.reasons.push(`${matched.length}/${found.length} compétences de l'offre dans ton profil`);
+    const optional = found.filter((id) => !requiredIds.has(id)).map(label);
+    if (optional.length) part.reasons.push(`Citées comme « un plus » (comptent moitié) : ${optional.join(", ")}`);
   }
   if (matched.length) part.reasons.push(`Tu as : ${matched.join(", ")}`);
+  const inProjects = found.filter((id) => credit(id) === 0.5).map(label);
+  if (inProjects.length) part.reasons.push(`Vu seulement en formation / projets (compté à moitié) : ${inProjects.join(", ")}`);
   if (missing.length) {
     part.warnings.push(
       `Mots-clés absents de ton profil : ${missing.join(", ")} — à ajouter au CV si tu les maîtrises`,
@@ -244,8 +261,10 @@ function scoreLocation(input: ScoringInput, profile: Profile, rules: ScoringRule
   const dept = input.department;
   const km = input.distanceKm ?? null;
   if (!dept && km === null) return { score: 50, reasons: [], warnings: ["Lieu de travail non précisé"] };
-  const target = dept ? profile.locations.find((l) => l.department === dept) : undefined;
-  if (target) return { score: 100, reasons: [`Dans ta zone : ${target.label}`], warnings: [] };
+  if (dept && zoneDepartments(profile).has(dept)) {
+    const label = profile.locations.find((l) => l.department === dept)?.label ?? departmentName(dept) ?? dept;
+    return { score: 100, reasons: [`Dans ta zone : ${label}`], warnings: [] };
+  }
   const radius = profile.searchRadiusKm;
   if (radius !== null && km !== null && km <= radius) {
     return { score: 80, reasons: [`À ${Math.round(km)} km de ton point de départ (rayon ${radius} km)`], warnings: [] };
@@ -352,6 +371,7 @@ export function scoreJob(input: ScoringInput, profile: Profile, rules: ScoringRu
 
   const all = Object.values(parts);
   const warnings = all.flatMap((p) => p.warnings);
+  if (fluentEnglishRequired(input.description)) warnings.push("Anglais courant exigé");
   if (capLabel) warnings.unshift(`Score plafonné à ${final} % : ${capLabel} (sinon ${weighted} %)`);
   return {
     final,

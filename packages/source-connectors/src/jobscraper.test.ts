@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { JobScraperSource, classifyProbe, detailsFromPage, fetchJobScraperDetails, relativeAge, isJobScraperNoResultsOutput, jobScraperLocation, linkedinJobIsOpen, mapJobScraperOfferToRawJob, searchWttj } from "./jobscraper";
+import { JobScraperSource, LINKEDIN_PAUSE_MS, classifyProbe, detailsFromPage, fetchJobScraperDetails, relativeAge, isJobScraperNoResultsOutput, jobScraperLocation, linkedinJobIsOpen, mapJobScraperOfferToRawJob, searchWttj } from "./jobscraper";
 import { SourceUnavailableError } from "./types";
 
 const offer = {
@@ -63,6 +63,31 @@ describe("détection de blocage d'IP", () => {
       expect(await make("OK").search({ keywords: "dev" })).toEqual([]);
       await expect(make("BLOCKED").search({ keywords: "dev" })).rejects.toThrow(/IP bloquée — LinkedIn limite tes requêtes/);
       await expect(make("BLOCKED").search({ keywords: "dev" })).rejects.toBeInstanceOf(SourceUnavailableError);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("rythme LinkedIn", () => {
+  it("attend 10 à 15 s entre deux recherches LinkedIn (pas avant la première)", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "fake-jobscraper-"));
+    await writeFile(path.join(dir, "main.py"), 'console.log("Aucune offre trouvée.")');
+    const waits: number[] = [];
+    const source = new JobScraperSource({
+      provider: "linkedin",
+      enabled: true,
+      path: dir,
+      python: process.execPath,
+      probe: async () => ({ status: "OK", detail: "" }),
+      sleep: async (ms) => void waits.push(ms),
+    });
+    try {
+      await source.search({ keywords: "aide-soignant" });
+      await source.search({ keywords: "aide-soignant" });
+      expect(waits).toHaveLength(1);
+      expect(waits[0]).toBeGreaterThan(LINKEDIN_PAUSE_MS - 2000);
+      expect(waits[0]).toBeLessThanOrEqual(LINKEDIN_PAUSE_MS + 5000);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

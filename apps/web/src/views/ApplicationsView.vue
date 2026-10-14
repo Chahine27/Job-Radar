@@ -5,7 +5,7 @@ import Icon from "../components/Icon.vue";
 import PageHeader from "../components/PageHeader.vue";
 import ScoreBadge from "../components/ScoreBadge.vue";
 import SourceLogo from "../components/SourceLogo.vue";
-import { mapsUrl, timeAgo } from "../format";
+import { mapsUrl, place, timeAgo } from "../format";
 import { usePrefs } from "../prefs";
 import type { Application, JobStatus, SentSpontaneous } from "../types";
 
@@ -54,9 +54,6 @@ async function setStatus(j: Application, status: JobStatus) {
 
 const leadPlace = (s: SentSpontaneous) => [s.lead.postcode, s.lead.city].filter(Boolean).join(" ");
 const day = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-
-const place = (j: Application) =>
-  [j.city, j.department && !j.city?.includes(j.department) ? `(${j.department})` : null].filter(Boolean).join(" ");
 </script>
 
 <template>

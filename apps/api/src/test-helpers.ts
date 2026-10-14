@@ -398,7 +398,7 @@ export function createFakeCollector() {
         finishing: false,
         lastRun: null,
         sources: [],
-        newJobs: 3,
+        newJobs: 99, // toutes les offres NEW en base, masquées comprises
       };
     },
   };

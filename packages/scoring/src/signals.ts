@@ -169,3 +169,32 @@ export function productExperienceRequired(title: string, description: string, ex
   });
   return ids.size ? { ids: [...ids], years } : null;
 }
+
+/** « un plus », « apprécié », « nice to have » : ce qui suit n'est pas exigé. */
+const OPTIONAL = /un plus|apprecie|idealement|serait un atout|bonus|nice to have|strongly preferred|would be a plus/;
+
+/**
+ * L'annonce coupée en deux : ce qui est exigé, et ce qui est présenté comme un plus (phrases « … un plus », et rubriques
+ * « Un plus / Nice to have » jusqu'au titre de rubrique suivant : ligne courte, sans puce ni point final).
+ */
+export function splitRequired(description: string): { required: string; optional: string } {
+  let section = false;
+  const required: string[] = [];
+  const optional: string[] = [];
+  // Par phrase : une annonce en un seul paragraphe ne devient pas « un plus » en entier pour un mot « apprécié ».
+  for (const line of description.split(/\n+|(?<=[.!?;])\s+/)) {
+    const t = normalizeText(line).trim();
+    const heading = t.length > 0 && t.length <= 60 && !/^[•·*-]/.test(t) && !/[.,;]$/.test(t); // « Un plus : » est un titre
+    if (heading) section = OPTIONAL.test(t);
+    (section || OPTIONAL.test(t) ? optional : required).push(line);
+  }
+  return { required: required.join("\n"), optional: optional.join("\n") };
+}
+
+/** Anglais courant ou bilingue exigé, ou candidature en anglais. Les lignes « un plus » ne comptent pas. */
+export function fluentEnglishRequired(description: string): boolean {
+  const t = normalizeText(splitRequired(description).required);
+  return /\b(fluent|fluency in|bilingual|native)\s+(in\s+)?english\b|\benglish\b[^.\n]{0,20}\b(fluent|fluency|bilingual|courant|native)\b|\banglais\s+(courant|bilingue|fluide|professionnel courant|parfait|natif)\b|\bbilingue\s+(en\s+)?anglais\b|\bapply in english\b|\bcandidat(ure|ez|er) en anglais\b/.test(
+    t,
+  );
+}

@@ -46,7 +46,7 @@ describe(`scores figés — règles ${DEFAULT_RULES.version}`, () => {
   });
 
   it("version des règles attendue", () => {
-    expect(DEFAULT_RULES.version).toBe("2026-10-13.1");
+    expect(DEFAULT_RULES.version).toBe("2026-10-14.1");
   });
 });
 
@@ -355,6 +355,12 @@ describe("zone : départements, voisins, rayon, télétravail", () => {
     expect(score({ ...far, distanceKm: 80 }, withRadius).hidden).toBe(true);
     expect(score({ ...PERFECT, department: "01", distanceKm: 80 }, withRadius).hidden).toBe(true);
   });
+  it("département accepté en plus : dans ta zone, avec son nom", () => {
+    const r = score(far, { ...DEV_PROFILE, extraDepartments: ["13"] });
+    expect(r.hidden).toBe(false);
+    expect(r.breakdown.location).toBe(100);
+    expect(r.reasons).toContain("Dans ta zone : Bouches-du-Rhône");
+  });
 });
 
 /** Profil non informaticien : le score marche pour tous les métiers. */
@@ -391,5 +397,25 @@ describe("profil aide-soignante (fictif)", () => {
   });
   it("stage d'aide-soignant : contrat hors profil → 0", () => {
     expect(scoreJob({ ...JOB, title: "Stage aide-soignant" }, CARE).final).toBe(0);
+  });
+  it("compétence vue seulement en formation : comptée à moitié", () => {
+    const full = scoreJob(JOB, CARE).breakdown.technical;
+    const school = { ...CARE, skills: CARE.skills.filter((s) => s !== "Bionettoyage" && s !== "Transmissions"), projectSkills: ["Transmissions"] };
+    const r = scoreJob(JOB, school);
+    expect(r.breakdown.technical).toBeLessThan(full);
+    expect(r.breakdown.technical).toBeGreaterThan(scoreJob(JOB, { ...school, projectSkills: [] }).breakdown.technical);
+    expect(r.reasons).toContain("Vu seulement en formation / projets (compté à moitié) : Transmissions");
+  });
+  it("compétence citée seulement comme « un plus » : pèse moitié", () => {
+    const withPlus = { ...JOB, description: `${JOB.description}\nUn plus :\n- Bionettoyage` };
+    const lacking = { ...CARE, skills: CARE.skills.filter((s) => s !== "Bionettoyage"), projectSkills: ["Bionettoyage"] };
+    const asRequired = scoreJob({ ...JOB, description: `${JOB.description} Bionettoyage.` }, lacking).breakdown.technical;
+    const r = scoreJob(withPlus, lacking);
+    expect(r.breakdown.technical).toBeGreaterThan(asRequired);
+    expect(r.reasons).toContain("Citées comme « un plus » (comptent moitié) : Bionettoyage");
+  });
+  it("anglais courant exigé : avertissement ; « un plus » : rien", () => {
+    expect(scoreJob({ ...JOB, description: `${JOB.description} Anglais courant exigé.` }, CARE).warnings).toContain("Anglais courant exigé");
+    expect(scoreJob({ ...JOB, description: `${JOB.description} Anglais courant apprécié.` }, CARE).warnings).not.toContain("Anglais courant exigé");
   });
 });
